@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# only python 3 are compatible
 import re, csv, sys, os, glob, warnings, itertools
 from math import ceil
 from optparse import OptionParser
