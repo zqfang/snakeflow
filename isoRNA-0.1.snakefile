@@ -214,7 +214,7 @@ rule complie_htseq:
         from pandas import read_table, concat
         count_df=[]
         for count in input.cnt:
-            cnt = read_table(count, index_col=0, header=None)
+            cnt = read_table(count, index_col=0, header=None, skipfooter=5)
             cnt.columns = [count.split("/")[-1].rstrip(".htseq.tsv")]
             cnt = cnt.sort_index()
             count_df.append(cnt)
