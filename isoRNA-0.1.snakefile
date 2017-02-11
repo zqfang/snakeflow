@@ -132,11 +132,7 @@ rule bam_sort:
 rule bam_index:
     input: "mapped/{sample}.sorted.bam"
     output: "mapped/{sample}.sorted.bam.bai"
-    shell:
-        """
-        samtools index {input}
-        rm mapped/{wildcards.sample}.bam
-        """
+    shell: "samtools index {input}"
 
 rule bam_stats:
     input:
@@ -145,7 +141,10 @@ rule bam_stats:
     output:
         "logs/bamstats/{sample}.bam.stats.txt"
     shell:
-        "samtools idxstats {input.bam} > {output}"
+        """
+		samtools idxstats {input.bam} > {output}
+		rm mapped/{wildcards.sample}.bam
+		"""
 
 rule geneBody_coverage:
     input:
@@ -293,7 +292,7 @@ rule rmats:
         b2=",".join(expand("mapped/{sample}.sorted.bam", sample=GROUP2)),
         rmats=RMATS_DIR,
         prefix="alternative_splicing/{sample1}_vs_{sample2}".format(sample1='GROUP1', sample2='GROUP2'),
-        extra="-t paried -len 150 -a 1 -c 0.0001 -analysis U -novelSS 0"
+        extra="-t paried -len %s -a 1 -c 0.0001 -analysis U -novelSS 0"%READ_LEN
     shell:
         "python {params.rmats} -b1 {params.b1} -b2 {params.b2} "
         "-gtf {input.gtf}  -o {params.prefix} {params.extra}"
