@@ -138,13 +138,8 @@ rule bam_stats:
     input:
         bam="mapped/{sample}.sorted.bam",
         bai="mapped/{sample}.sorted.bam.bai"
-    output:
-        "logs/bamstats/{sample}.bam.stats.txt"
-    shell:
-        """
-		samtools idxstats {input.bam} > {output}
-		rm mapped/{wildcards.sample}.bam
-		"""
+    output: "logs/bamstats/{sample}.bam.stats.txt"
+    shell: "samtools idxstats {input.bam} > {output}"
 
 rule geneBody_coverage:
     input:
