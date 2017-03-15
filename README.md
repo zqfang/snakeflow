@@ -4,15 +4,11 @@
 
 
 * hisat2-stringtie-ballgwon
-* DESeq2,gfold
-* Enrichr, GSEApy, Clusterprofiler
-
-### ChIP-seq workflow based on snakemake
-
-* bowtie2-macs2/sicer
-* ngs.plot.r, deeptools, ChIPseeker
-* DiffBind
-* findMotif.pl
 
 
+### Dependency
+
+* python 3.5
+  - 
+* hisat2, stringtie, ballgown
 

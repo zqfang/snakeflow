@@ -1,0 +1,5 @@
+conda env export -n root  > bioninja_conda_env.yml
+#Create a copy of another developer’s environment from their environment.yml file:
+conda env create -f bioninja_conda_env.yml
+#or upload to anaconda cloud
+conda env upload --file=./bioinja_conda_env.yml
