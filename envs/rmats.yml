@@ -1,0 +1,9 @@
+name: rmats
+channels:
+  - defaults
+dependencies:
+  - python=2.7 
+  - pip:
+    - scipy
+    - numpy
+    - pysam

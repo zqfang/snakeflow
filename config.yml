@@ -1,0 +1,55 @@
+# Full path to a Genome dir
+genome: "/root/genome"
+
+# Path to an uncompressed FASTA file with all choromsome genome sequences.
+fasta: "/root/genome/GRCh38.p7.genome.fa"
+
+# Path to an uncompressed FASTA file with all transcript sequences.
+cdna: "/root/genome/gencode.v25.transcripts.fa"
+
+
+# GTF file path
+gtf: "/root/genome/gencode.v25.annotation.gtf"
+
+# Index dir
+index_dir: "/root/genome/hisat2Indices_hg38"
+
+# Index basebame (only for hisat2)
+index_prefix: "hg38"
+
+# Full path to a folder where output files will be created.
+workdir: "/root/project_zhongshan"
+
+# Full path to a folder that holds all of your FASTQ files
+fastq_dir: "/root/fastq"
+
+# Sequencing read length, only reqired for running rMATS or preDEseq.py.
+read_length: 150
+
+# Paired end sequencing library? True or False.
+paired: True
+
+# Stranded library ? True or False
+stranded: False
+
+# if you have a fastq file named Sample1_R1.fastq.gz,
+# extract the sample pattern blow
+
+# fastq files prefix
+samples:
+    name: "WGC096874R_combined WGC096875R_combined WGC096876R_combined WGC096877R_combined" # keep order for each sample
+    alias: "S74 S75 S76 S77" # short names for sample names.
+    group: "A B A B" #each lable should correspond to samples
+    time: "0 0 0 0" # optional, if your data is not time-series, ignore this. 
+    
+# only fastq files suffix can be modified, e.g. ".R1.fq.gz"
+read_pattern: 
+    r1: "{sample}_R1.fastq.gz" # don't change {sample}
+    r2: "{sample}_R2.fastq.gz" # don't change {sample}
+
+
+# Note: if you have a own running env for a specific rules of snakemake, you should
+# set tools dir and running evironment using conda.
+rmats:
+    dir: "/root/program/rMATS.3.2.5/RNASeq-MATS.py"
+    conda_env: "/root/envs/rmats.yml" 
