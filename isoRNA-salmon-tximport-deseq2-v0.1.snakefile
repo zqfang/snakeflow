@@ -4,6 +4,7 @@ from os.path import join, basename, dirname
 from snakemake.utils import R
 from snakemake.shell import shell
 from pandas import read_table, read_excel, concat, ExcelWriter
+from numpy import log10
 import json
 
 
@@ -77,11 +78,15 @@ SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
 SAMPLE_DIFF_ANNO = "differential_expression/differential_expression_annotated.xls"
 ROBJ_DESeq ="salmon/txi.salmon.RData"   
 DESEQ_RES = "differential_expression/deseq2.results.txt"
+ENRICHR_BAR = expand("alternative_splicing/Enrichr_{domain}_{types}/enrichr.reports.{domain}.pdf",
+                       domain=GO_DOMAIN, types=['all','up','down'])
+GSEA_PRERANK = expand("alternative_splicing/GSEA_prerank_{domain}/gseapy.gene_set.prerank.reports.csv", domain=GO_DOMAIN)
 ################## Rules #######################################
 
 
 rule target:
-    input: FASTQC, RAW_COUNTS, SAMPLE_TPM, SAMPLE_TPM_ANNO, ROBJ_DESeq,DESEQ_RES
+    input: FASTQC, RAW_COUNTS, SAMPLE_TPM, SAMPLE_TPM_ANNO, ROBJ_DESeq,
+           DESEQ_RES, GSEA_PRERANK, ENRICHR_BAR
 
 
 rule fastqc:
@@ -274,7 +279,7 @@ rule gtf_extract:
         out2.close()
 
 
-rule annotation:
+rule annotate_genes:
     input: 
         annotation=GTF_Genes, 
         tpm=SAMPLE_TPM, 
@@ -310,11 +315,13 @@ rule annotation:
         sig_deg_dw.to_excel(writer,sheet_name="sig-down",)
         writer.save()
 
-rule GSEA_prerank:
+rule GSEA_Enrichr:
     input: 
-        go=GO_DOMAIN,
         diff=SAMPLE_DIFF_ANNO
     output:
+        gsea=expand("alternative_splicing/GSEA_prerank_{domain}/gseapy.gene_set.prerank.reports.csv", domain=GO_DOMAIN),
+        enrichr=expand("alternative_splicing/Enrichr_{domain}_{types}/enrichr.reports.{domain}.txt",
+                       domain=GO_DOMAIN, types=['all','up','down'])
     params:
         log2fc=1,
         padj=0.05
@@ -323,11 +330,8 @@ rule GSEA_prerank:
         sig_deg = read_excel(writer,sheet_name="sig-fc%s-padj%s"%(params.log2fc, params.padj))
         sig_deg_up= read_excel(writer,sheet_name="sig-up",)
         sig_deg_dw= read_excel(writer,sheet_name="sig-down",)
-
-        deg_all = sig_deg.gene_name.squeeze().tolist()
-        deg_up = sig_deg_up.gene_name.squeeze().tolist()
-        deg_dw = sig_deg_dw.gene_name.squeeze().tolist()
-
+        
+        degs_sig = [deg.gene_name.squeeze().tolist() for deg in[sig_deg, sig_deg_up,sig_deg_dw]]
 
         sig_deg_gsea = sig_deg[['gene_name','log2FoldChange']]
         sig_deg_gsea_sort = sig_deg_gsea.sort_values('log2FoldChange',ascending=False)
@@ -339,9 +343,30 @@ rule GSEA_prerank:
             prerank = gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain, pheno_pos='', pheno_neg='', min_size=15, max_size=500, 
                                  outdir='GSEA_prerank_'+domain)
         for domain in input.go:
-            for glist, gl_type in zip([deg_all, deg_up, deg_dw],['all','up','down']):
-                enrichr = gp.enrichr(glist=glist, gene_sets=domain, no_plot=True, outdir='Enrichr_%s_%s'%(domain, gl_type))
+            for glist, gl_type in zip(degs_sig, ['all','up','down']):
+                enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, 
+                                     no_plot=True,  description=gl_type,
+                                     outdir='Enrichr_%s_%s'%(domain, gl_type))
 
+
+rule barplot:
+    """Enrichr Results plotting"""
+    input:
+        f="alternative_splicing/Enrichr_{domain}/enrichr.reports.{description}.txt"
+    output:
+        png="alternative_splicing/Enrichr_{domain}/enrichr.reports.{description}.png",
+        pdf="alternative_splicing/Enrichr_{domain}/enrichr.reports.{description}.pdf",
+    run:
+        d = read_table(input.f)
+        d['logAP'] = -log10(d['Adjusted P-value']) 
+        d = d.sort_values('logAP', ascending=False)
+        dd = d.head(10).sort_values('logAP')
+        bar = dd.plot.barh(x='Term', y='logAP', color="salmon", alpha=0.75, edgecolor='none',fontsize=32)
+        bar.set_xlabel("-log$_{10}$ Adjust P-value", fontsize=32)
+        bar.set_title(f.split("/")[-1].split(".")[-2],fontsize=32)
+        bar.legend(loc=4)
+        bar.figure.savefig(output.png, bbox_inches='tight')
+        bar.figure.savefig(output.pdf, bbox_inches='tight')
 
 
 
