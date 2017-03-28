@@ -78,9 +78,9 @@ SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
 SAMPLE_DIFF_ANNO = "differential_expression/differential_expression_annotated.xls"
 ROBJ_DESeq ="salmon/txi.salmon.RData"   
 DESEQ_RES = "differential_expression/deseq2.results.txt"
-ENRICHR_BAR = expand("alternative_splicing/Enrichr_{domain}_{types}/enrichr.reports.{domain}.pdf",
+ENRICHR_BAR = expand("differential_expression/Enrichr_{domain}_{types}/enrichr.reports.{domain}.pdf",
                        domain=GO_DOMAIN, types=['all','up','down'])
-GSEA_PRERANK = expand("alternative_splicing/GSEA_prerank_{domain}/gseapy.gene_set.prerank.reports.csv", domain=GO_DOMAIN)
+GSEA_PRERANK = expand("differential_expression/GSEA_prerank_{domain}/gseapy.gene_set.prerank.reports.csv", domain=GO_DOMAIN)
 ################## Rules #######################################
 
 
@@ -319,8 +319,8 @@ rule GSEA_Enrichr:
     input: 
         diff=SAMPLE_DIFF_ANNO
     output:
-        gsea=expand("alternative_splicing/GSEA_prerank_{domain}/gseapy.gene_set.prerank.reports.csv", domain=GO_DOMAIN),
-        enrichr=expand("alternative_splicing/Enrichr_{domain}_{types}/enrichr.reports.{domain}.txt",
+        gsea=expand("differential_expression/GSEA_prerank_{domain}/gseapy.gene_set.prerank.reports.csv", domain=GO_DOMAIN),
+        enrichr=expand("differential_expression/Enrichr_{domain}_{types}/enrichr.reports.{domain}.txt",
                        domain=GO_DOMAIN, types=['all','up','down'])
     params:
         log2fc=1,
@@ -352,10 +352,10 @@ rule GSEA_Enrichr:
 rule barplot:
     """Enrichr Results plotting"""
     input:
-        f="alternative_splicing/Enrichr_{domain}/enrichr.reports.{description}.txt"
+        f="differential_expression/Enrichr_{domain}/enrichr.reports.{description}.txt"
     output:
-        png="alternative_splicing/Enrichr_{domain}/enrichr.reports.{description}.png",
-        pdf="alternative_splicing/Enrichr_{domain}/enrichr.reports.{description}.pdf",
+        png="differential_expression/Enrichr_{domain}/enrichr.reports.{description}.png",
+        pdf="differential_expression/Enrichr_{domain}/enrichr.reports.{description}.pdf",
     run:
         d = read_table(input.f)
         d['logAP'] = -log10(d['Adjusted P-value']) 
@@ -363,6 +363,7 @@ rule barplot:
         dd = d.head(10).sort_values('logAP')
         bar = dd.plot.barh(x='Term', y='logAP', color="salmon", alpha=0.75, edgecolor='none',fontsize=32)
         bar.set_xlabel("-log$_{10}$ Adjust P-value", fontsize=32)
+        bar.set_ylabel("")
         bar.set_title(f.split("/")[-1].split(".")[-2],fontsize=32)
         bar.legend(loc=4)
         bar.figure.savefig(output.png, bbox_inches='tight')
