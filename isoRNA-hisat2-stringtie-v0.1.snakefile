@@ -41,6 +41,9 @@ INDEX_PREFIX = config['index_prefix']
 GTF_FILE =       config['gtf']
 GTF_Genes =      GTF_FILE.rstrip(".gtf")+".extracted.genes.annotation.txt"
 GTF_Trans =      GTF_FILE.rstrip(".gtf")+".extracted.transx2gene.txt"
+
+#rseqc_annotation
+RSEQC_ANNO  = config['rseqc']
 ############ Samples ##################
 # A Snakemake regular expression matching the forward mate FASTQ files.
 # the part in curly brackets {} will be saved, so the variable SAMPLES
@@ -70,7 +73,7 @@ PATTERN_R2 = config['read_pattern']['r2']
 
 ####### Tools dir#################
 RMATS_DIR=config['rmats']['dir']
-
+SCRIPTS = config['scripts']
 #rmats runing envs
 RMATS_ENV = config['rmats']['conda_env']
 
@@ -105,7 +108,7 @@ rule target:
 
 rule fastqc:
     input:
-        "fastq/{prefix}.fastq.gz",
+        join(FASTQ_DIR,"{prefix}.fastq.gz"),
     output:
         "qc/fastqc/{prefix}_fastqc.html",
         "qc/fastqc/{prefix}_fastqc.zip",
@@ -176,14 +179,23 @@ rule bam_stats:
 rule geneBody_coverage:
     input:
         bam="mapped/{sample}.sorted.bam",
-	bai="mapped/{sample}.sorted.bam.bai",
-        anno=RSEQC_ANNO
+	    bai="mapped/{sample}.sorted.bam.bai",
+        anno=RSEQC_ANNO['housekeep']
     output:
         "qc/rseqc/{sample}.geneBodyCoverage.r",
         "qc/rseqc/{sample}.geneBodyCoverage.txt"
     log:"logs/rseqc/{sample}.geneBodyCoverage.log"
-    run:
-        shell("geneBody_coverage.py -r {input.anno} -i {input.bam}  -o qc/rseqc/{wildcards.sample} &> {log}")
+    shell:
+        "geneBody_coverage.py -r {input.anno} -i {input.bam}  -o qc/rseqc/{wildcards.sample} &> {log}"
+
+rule read_distribution:
+    input:
+        bam="mapped/{sample}.sorted.bam",
+        bai="mapped/{sample}.sorted.bam.bai",
+        bed=RSEQC_ANNO['refseq']  
+    output:"qc/rseqc/{sample}.readDistribution.txt"
+    shell:
+        "read_distribution.py -i {input.bam} -r {input.bed} > {output}"
 
 #quantification
 rule stringtie:
@@ -222,7 +234,7 @@ rule ballgown:
 ##### Read Count #####
 rule stringtie_counts:
     input:
-        source="scripts/preDEseq.py",
+        source=join(SCRIPTS,"preDEseq.py"),
         gtf=expand("gene_expression/{sample}/{sample}.gtf", sample=SAMPLES)
     output: "counts/gene_count_matrix.csv"
     params:
@@ -324,13 +336,13 @@ rule rmats:
 ##### Aggreate QC ##########
 rule multiqc:
     input:
-        expand("qc/fastqc/{sample}_{read}_fastqc.{suf}", sample=SAMPLES, read=['R1','R2'], suf=['zip','html']),
-        expand("qc/rseqc/{sample}.geneBodyCoverage.{suf}", sample=SAMPLES, suf=['r','txt']),
-	    expand("logs/bamstats/{sample}.bam.stats.txt",sample=SAMPLES),
+        expand("qc/fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
+        expand("qc/rseqc/{sample}.geneBodyCoverage.txt", sample=SAMPLES,),
+	    expand("qc/rseqc/{sample}.readDistribution.txt",sample=SAMPLES),
 	#expand("counts/{sample}.htseq.tsv",sample=SAMPLES)
     output: html='qc/multiqc_report.html'
     params:
-        analysis_dir='.',
-	outdir="qc",
+        analysis_dir=config['workdir'],
+	    outdir="qc",
         extra="--config multiqc_config.yaml"
     shell: "multiqc --quiet --force -p -o {params.outdir} {params.analysis_dir}"

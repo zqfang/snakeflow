@@ -20,8 +20,13 @@ index_prefix: "hg38"
 # Full path to a folder where output files will be created.
 workdir: "/root/project_zhongshan"
 
+# extra scripts' dir for running. e.g preDEseq.py (StringTie)
+scripts: "/root/isomake/scripts"
+
 # Full path to a folder that holds all of your FASTQ files
 fastq_dir: "/root/fastq"
+
+
 
 # Sequencing read length, only reqired for running rMATS or preDEseq.py.
 read_length: 150
@@ -42,7 +47,9 @@ samples:
     group: "A B A B" #each lable should correspond to samples
     time: "0 0 0 0" # optional, if your data is not time-series, ignore this. 
     
-# only fastq files suffix can be modified, e.g. ".R1.fq.gz"
+# Before running with your samples,
+# please rename all your samples with the same suffix below.
+# for example, rename all your sample like this: "WGC096874R_combined_R1.fastq.gz"
 read_pattern: 
     r1: "{sample}_R1.fastq.gz" # don't change {sample}
     r2: "{sample}_R2.fastq.gz" # don't change {sample}
@@ -52,4 +59,10 @@ read_pattern:
 # set tools dir and running evironment using conda.
 rmats:
     dir: "/root/program/rMATS.3.2.5/RNASeq-MATS.py"
-    conda_env: "/root/envs/rmats.yml" 
+    conda_env: "/root/isomake/envs/rmats.yml" 
+
+
+# RSeQC bed file
+rseqc: 
+    refseq: "/root/genome/hg38_RefSeq.bed"
+    housekeep: "/root/genome/hg38.HouseKeepingGenes.bed"
