@@ -1,4 +1,4 @@
-# isomake
+# snakeflow
 
 ## RNA-Seq workflow based on snakemake
 
@@ -47,17 +47,16 @@
     
 ## usage
     
-	#Step1: activate snakemake
+    #Step1: activate snakemake
     source activate snakeflow
 
     #Step2: clone this repo
-    git clone https://DeltaNinja@bitbucket.org/isotex/isomake.git
-
-     
+    
     #Step3: copy all your fastq files into fastq dir
     find . -name "*fastq.gz" | while read id; do cp $id fastq/; done;
     
     #Step4: modify config.yml with your own paramter
+    #Note: put config.yml in the same dir with your snakefile.
     vim  config.yml
 
     #Step5: run snakemake with -np option. this test your workflow runs without errors.
