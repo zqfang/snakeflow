@@ -1,9 +1,6 @@
 # snakeflow
 
-## RNA-Seq workflow based on snakemake
-
-
-## Warning: Before you run snakefiles, you should understand what exactly are snakemake workflows doing!
+### RNA-Seq workflow based on snakemake
 
 ## Dependency
 * python 3.5
