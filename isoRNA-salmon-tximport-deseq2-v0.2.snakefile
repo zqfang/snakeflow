@@ -1,12 +1,6 @@
 #this is snakemake script used for RNA-seq
 
-from os.path import join, basename, dirname
-from snakemake.utils import R
-from snakemake.shell import shell
-from pandas import read_table, read_excel, concat, ExcelWriter
-from numpy import log10
-import json
-
+from os.path import join
 
 configfile: 'config.yml'
 #Workding directory
@@ -197,31 +191,9 @@ rule gtf_extract:
     output: 
         gene_anno=GTF_Genes,
         tx2gene = GTF_Trans
-    run:
-        lines_seen = set()
-        tx2gene_seen = set()
+    script:
+        "scripts/extractGTF.py"
 
-        out1 = open(output.gene_anno, 'w') 
-        out2 = open(output.tx2gene, 'w')
-        out1.write("gene_id\tgene_name\tgene_type\tgene_status\n")
-        out2.write("tx_id\tgene_id\n")
-        for line in open(input[0]):
-            if line.startswith('#'): continue
-            attr = dict(item.strip().split(' ')  for item in line.split('\t')[8].strip('\n').split(';') if item)
-            line_1st = attr['gene_id'].strip('\"')+'\t'+ attr['gene_name'].strip('\"')+'\t'
-            line_2nd = attr['gene_type'].strip('\"')+'\t'+attr['gene_status'].strip('\"')+'\n'
-            line_out = line_1st + line_2nd
-
-            if line_out not in lines_seen:
-                out1.write(line_out)
-                lines_seen.add(line_out)
-            if 'transcript_id' in attr:
-                tx2gene_out = attr['transcript_id'].strip('\"')+'\t'+ attr['gene_id'].strip('\"')+'\n'
-                if tx2gene_out not in tx2gene_seen:
-                    out2.write(tx2gene_out)
-                    tx2gene_seen.add(tx2gene_out)
-        out1.close()
-        out2.close()
 
 
 rule annotate_genes:
@@ -232,34 +204,12 @@ rule annotate_genes:
     params:
         log2fc=1,
         padj=0.05
-    run:
-        anno = read_table(input.annotation, index_col='gene_id')
+    script:
+        "scripts/annotateGenes.py"
 
-        tpm = read_table(input.tpm, index_col=0)
-        tpm.columns = ['TPM.'+col for col in tpm.columns]
-        deseq = read_table(input.deseq, index_col=0)
-        #merge results
-        merge = concat([anno, deseq, tpm], axis=1, join='inner')
-        merge.index.name ='gene_id'
-        merge.to_csv(output.sample_anno)
-
-        sig_deg = merge[(merge['log2FoldChange'].abs()> params.log2fc) & (merge['padj'] < params.padj) ]
-        sig_deg = sig_deg.sort_values('padj',axis=0)
-        sig_deg.loc[:,'up_down'] = sig_deg.log2FoldChange.apply(lambda x : 'up' if x > 0 else 'down' )
-         
-
-        sig_deg_up = sig_deg[sig_deg['up_down'] == 'up']
-        sig_deg_dw = sig_deg[sig_deg['up_down'] == 'down'] 
-
-        writer = ExcelWriter(output.diff_anno)
-        sig_deg.to_excel(writer,sheet_name="sig-log2fc%s-padj%s"%(params.log2fc, params.padj))
-        sig_deg_up.to_excel(writer,sheet_name="sig-up",)
-        sig_deg_dw.to_excel(writer,sheet_name="sig-down",)
-        writer.save()
 
 rule GSEA_Enrichr:
-    input: 
-        diff=SAMPLE_DIFF_ANNO
+    input: SAMPLE_DIFF_ANNO
     output:
         gsea=GSEA_PRERANK,
         enrichr=expand("differential_expression/Enrichr_{domain}_{types}/enrichr.reports.{types}.txt",
@@ -268,28 +218,9 @@ rule GSEA_Enrichr:
         log2fc=1,
         padj=0.05,
         go=GO_DOMAIN,
-    run:
-        writer = input.diff
-        sig_deg = read_excel(writer,sheet_name="sig-fc%s-padj%s"%(params.log2fc, params.padj))
-        sig_deg_up= read_excel(writer,sheet_name="sig-up",)
-        sig_deg_dw= read_excel(writer,sheet_name="sig-down",)
-        
-        degs_sig = [deg.gene_name.squeeze().tolist() for deg in[sig_deg, sig_deg_up,sig_deg_dw]]
+    script:
+        "scripts/gseaEnrichr.py"
 
-        sig_deg_gsea = sig_deg[['gene_name','log2FoldChange']]
-        sig_deg_gsea_sort = sig_deg_gsea.sort_values('log2FoldChange',ascending=False)
-        sig_deg_gsea_sort = sig_deg_gsea_sort.reset_index(drop=True)
-
-
-        import gseapy as gp
-        for domain in params.go:
-            prerank = gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain, pheno_pos='', pheno_neg='', min_size=15, max_size=500, 
-                                 outdir='differential_expression/GSEA_prerank_'+domain)
-        for domain in params.go:
-            for glist, gl_type in zip(degs_sig, ['all','up','down']):
-                enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, 
-                                     no_plot=True,  description=gl_type,
-                                     outdir='differential_expression/Enrichr_%s_%s'%(domain, gl_type))
 
 
 rule barplot:
@@ -298,23 +229,9 @@ rule barplot:
     output:
         png="differential_expression/Enrichr_{domain}/enrichr.reports.{description}.png",
         pdf="differential_expression/Enrichr_{domain}/enrichr.reports.{description}.pdf",
-    run:
-        from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-        from matplotlib.figure import Figure
-        d = read_table(input[0])
-        d['logAP'] = -log10(d['Adjusted P-value']) 
-        d = d.sort_values('logAP', ascending=False)
-        dd = d.head(10).sort_values('logAP')
-        fig = Figure(figsize=(12,6))
-        canvas = FigureCanvas(fig)
-        ax = fig.add_subplot(111)
-        bar = dd.plot.barh(x='Term', y='logAP', color="salmon", alpha=0.75, edgecolor='none',fontsize=32, ax=ax)
-        bar.set_xlabel("-log$_{10}$ Adjust P-value", fontsize=32)
-        bar.set_ylabel("")
-        bar.set_title(f.split("/")[-1].split(".")[-2],fontsize=32)
-        bar.legend(loc=4)
-        fig.savefig(output.png, bbox_inches='tight')
-        fig.savefig(output.pdf, bbox_inches='tight')
+    script:
+        "scripts/barplot.py"
+
 
 
 
