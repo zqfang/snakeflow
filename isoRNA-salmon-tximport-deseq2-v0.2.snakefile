@@ -100,7 +100,7 @@ rule salmon_index:
     output: SALMON_INDEX
     threads: 8
     params: 
-        outdir=SALMON_INDEX_DIR，
+        outdir=SALMON_INDEX_DIR,
         extra=" --gencode --type quasi -k 31"
     shell: 
         "salmon index {params.extra} -t {input} -i {params.outdir}"
