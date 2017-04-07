@@ -1,4 +1,4 @@
-def extract_gtf(diff, log2fc, padj, go, threads):
+def gsea_enrichr(diff, log2fc, padj, go, threads):
     # python code
     from pandas import read_table, read_excel, concat, ExcelWriter
     import gseapy as gp
@@ -25,5 +25,5 @@ def extract_gtf(diff, log2fc, padj, go, threads):
                                  no_plot=True,  description=gl_type,
                                  outdir='differential_expression/Enrichr_%s_%s'%(domain, gl_type))
 
-extract_gtf(snakemake.input[0], snakemake.params['log2fc'], snakemake.params['padj'],
+gsea_enrichr(snakemake.input[0], snakemake.params['log2fc'], snakemake.params['padj'],
             snakemake.params['go'], snakemake.threads)

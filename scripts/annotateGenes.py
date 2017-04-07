@@ -1,4 +1,4 @@
-def gsea_enrichr(annotation, tpms, deseq, sample_anno, diff_anno, log2fc, padj, threads):
+def anno_genes(annotation, tpms, deseq, sample_anno, diff_anno, log2fc, padj, threads):
     # python code
     from pandas import read_table, read_excel, concat, ExcelWriter
 
@@ -26,7 +26,7 @@ def gsea_enrichr(annotation, tpms, deseq, sample_anno, diff_anno, log2fc, padj, 
     sig_deg_dw.to_excel(writer,sheet_name="sig-down",)
     writer.save()
 
-gsea_enrichr(snakemake.input[0], snakemake.input[1], snakemake.input[2], 
+anno_genes(snakemake.input[0], snakemake.input[1], snakemake.input[2], 
              snakemake.output['sample_anno'],snakemake.output['diff_anno'],  
              snakemake.params['log2fc'],snakemake.params['padj'],
              snakemake.threads)
