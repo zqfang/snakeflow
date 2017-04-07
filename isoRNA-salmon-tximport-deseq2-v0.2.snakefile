@@ -78,15 +78,16 @@ SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
 SAMPLE_DIFF_ANNO = "differential_expression/differential_expression_annotated.xls"
 ROBJ_DESeq ="salmon/txi.salmon.RData"   
 DESEQ_RES = "differential_expression/deseq2.results.txt"
-ENRICHR_BAR = expand("differential_expression/Enrichr_{domain}_{types}/enrichr.reports.{domain}.pdf",
+ENRICHR_BAR = expand("differential_expression/Enrichr_{domain}_{types}/enrichr.reports.{types}.pdf",
                        domain=GO_DOMAIN, types=['all','up','down'])
-GSEA_PRERANK = expand("differential_expression/GSEA_prerank_{domain}/gseapy.gene_set.prerank.reports.csv", domain=GO_DOMAIN)
+GSEA_PRERANK = expand("differential_expression/GSEA_prerank_{domain}/gseapy.prerank.reports.csv", domain=GO_DOMAIN)
 ################## Rules #######################################
 
 
 rule target:
     input: FASTQC, RAW_COUNTS, SAMPLE_TPM, SAMPLE_TPM_ANNO, ROBJ_DESeq,
-           DESEQ_RES, GSEA_PRERANK, ENRICHR_BAR
+           DESEQ_RES, GSEA_PRERANK
+           #ENRICHR_BAR
 
 
 rule fastqc:
@@ -105,12 +106,11 @@ rule salmon_index:
     input: CDNA
     output: SALMON_INDEX
     threads: 8
-    log: join(SALMON_INDEX_DIR，"salmon.index.log")
     params: 
         outdir=SALMON_INDEX_DIR，
         extra=" --gencode --type quasi -k 31"
     shell: 
-        "salmon index {params.extra} -t {input} -i {params.outdir} &> {log}"
+        "salmon index {params.extra} -t {input} -i {params.outdir}"
 
 ########## notes on salmon quant ###################################################################
 
@@ -177,45 +177,10 @@ rule tximport:
         image=ROBJ_DESeq       
     params:
         ids =",".join(SAMPLES)
-    threads: 8
-    run:
-        R("""
-          library(tximport)
-          library(readr)
-          
-          # hg38, create a tx2gene.txt table
-          #library(EnsDb.Hsapiens.v86)
-          #edb <- EnsDb.Hsapiens.v86
-          #Tx.ensemble <- transcripts(edb,
-                                     columns = c("tx_id", "gene_id", "gene_name"),
-                                     return.type = "DataFrame")
-          #nrow(Tx.ensemble)
-          #tx2gene<- Tx.ensemble[,c(1,2)]
-          #write.table(tx2gene, "{output.tx2gene}", col.names = F, row.names = F, sep="\t", quote=F)
+    threads: 1
+    script:
+        "scripts/runTximport.R"
 
-          tx2gene <- read.table("{input.tx2gene}", header= T, sep="\t", stringsAsFactors = F)
-          samples <- unlist(strsplit("{params.ids}",","))
-
-          salmon.files <- file.path('salmon',samples, "quant.sf")
-          names(salmon.files) <- samples
-          all(file.exists(salmon.files))
-
-          #aggregate transcripts to genes 
-          txi.salmon <- tximport(salmon.files, type = "salmon", 
-                                 tx2gene = tx2gene, reader = read_tsv,
-                                 countsFromAbundance = "lengthScaledTPM")
-
-          salmon.counts<- txi.salmon$counts
-          salmon.counts<- as.data.frame(salmon.counts)
-          #salmon.counts$gene_name<- rownames(salmon.counts)
-          write.table(salmon.counts, "{output.counts}", sep="\t", quote=F)
-
-          salmon.TPM<- txi.salmon$abundance
-          salmon.TPM<- as.data.frame(salmon.TPM)
-          #salmon.TPM$gene_name<- rownames(salmon.TPM)
-          write.table(salmon.TPM, "{output.tpm}", sep="\t", quote=F)
-          save.image(file="{output.image}")
-          """)
 
 rule deseq2:
     input: 
@@ -224,25 +189,8 @@ rule deseq2:
         res=DESEQ_RES,
     params:
         group=GROUP,#used for grouping each sample, to dectect degs.
-    run:
-        R("""
-          library(DESeq2)
-          load("{input.image}")
-
-          #assign each sample to differrent group.
-          group=unlist(strsplit("{params.group}", " "))
-          sampleTable <- data.frame(condition = factor(group))
-          rownames(sampleTable) <- colnames(txi.salmon$counts)
-
-          #run DESeq2
-          dds <- DESeqDataSetFromTximport(txi.salmon, sampleTable, ~condition)
-          dds <- DESeq(dds)
-          res <- results(dds,addMLE=TRUE)
-          resOrdered <- res[order(res$padj),]
-          resOrdered = as.data.frame(resOrdered)
-          write.table(resOrdered, file="{output.res}",sep="\t")
-
-          """)
+    script:
+        "scripts/runDESeq2.R"
 
 rule gtf_extract:
     input: GTF_FILE
@@ -277,10 +225,7 @@ rule gtf_extract:
 
 
 rule annotate_genes:
-    input: 
-        annotation=GTF_Genes, 
-        tpm=SAMPLE_TPM, 
-        deseq=DESEQ_RES
+    input: GTF_Genes, SAMPLE_TPM, DESEQ_RES
     output: 
         sample_anno=SAMPLE_TPM_ANNO,
         diff_anno=SAMPLE_DIFF_ANNO,
@@ -298,7 +243,7 @@ rule annotate_genes:
         merge.index.name ='gene_id'
         merge.to_csv(output.sample_anno)
 
-        sig_deg = merge[(merge['log2FoldChange'].abs()> params.log2fc) & (merge1['padj'] < params.padj) ]
+        sig_deg = merge[(merge['log2FoldChange'].abs()> params.log2fc) & (merge['padj'] < params.padj) ]
         sig_deg = sig_deg.sort_values('padj',axis=0)
         sig_deg.loc[:,'up_down'] = sig_deg.log2FoldChange.apply(lambda x : 'up' if x > 0 else 'down' )
          
@@ -307,7 +252,7 @@ rule annotate_genes:
         sig_deg_dw = sig_deg[sig_deg['up_down'] == 'down'] 
 
         writer = ExcelWriter(output.diff_anno)
-        sig_deg.to_excel(writer,sheet_name="sig-fc%s-padj%s"%(params.log2fc, params.padj))
+        sig_deg.to_excel(writer,sheet_name="sig-log2fc%s-padj%s"%(params.log2fc, params.padj))
         sig_deg_up.to_excel(writer,sheet_name="sig-up",)
         sig_deg_dw.to_excel(writer,sheet_name="sig-down",)
         writer.save()
@@ -316,8 +261,8 @@ rule GSEA_Enrichr:
     input: 
         diff=SAMPLE_DIFF_ANNO
     output:
-        gsea=expand("differential_expression/GSEA_prerank_{domain}/gseapy.gene_set.prerank.reports.csv", domain=GO_DOMAIN),
-        enrichr=expand("differential_expression/Enrichr_{domain}_{types}/enrichr.reports.{domain}.txt",
+        gsea=GSEA_PRERANK,
+        enrichr=expand("differential_expression/Enrichr_{domain}_{types}/enrichr.reports.{types}.txt",
                        domain=GO_DOMAIN, types=['all','up','down'])
     params:
         log2fc=1,
@@ -339,33 +284,37 @@ rule GSEA_Enrichr:
         import gseapy as gp
         for domain in params.go:
             prerank = gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain, pheno_pos='', pheno_neg='', min_size=15, max_size=500, 
-                                 outdir='GSEA_prerank_'+domain)
+                                 outdir='differential_expression/GSEA_prerank_'+domain)
         for domain in params.go:
             for glist, gl_type in zip(degs_sig, ['all','up','down']):
                 enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, 
                                      no_plot=True,  description=gl_type,
-                                     outdir='Enrichr_%s_%s'%(domain, gl_type))
+                                     outdir='differential_expression/Enrichr_%s_%s'%(domain, gl_type))
 
 
 rule barplot:
     """Enrichr Results plotting"""
-    input:
-        f="differential_expression/Enrichr_{domain}/enrichr.reports.{description}.txt"
+    input: "differential_expression/Enrichr_{domain}/enrichr.reports.{description}.txt"
     output:
         png="differential_expression/Enrichr_{domain}/enrichr.reports.{description}.png",
         pdf="differential_expression/Enrichr_{domain}/enrichr.reports.{description}.pdf",
     run:
-        d = read_table(input.f)
+        from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+        from matplotlib.figure import Figure
+        d = read_table(input[0])
         d['logAP'] = -log10(d['Adjusted P-value']) 
         d = d.sort_values('logAP', ascending=False)
         dd = d.head(10).sort_values('logAP')
-        bar = dd.plot.barh(x='Term', y='logAP', color="salmon", alpha=0.75, edgecolor='none',fontsize=32)
+        fig = Figure(figsize=(12,6))
+        canvas = FigureCanvas(fig)
+        ax = fig.add_subplot(111)
+        bar = dd.plot.barh(x='Term', y='logAP', color="salmon", alpha=0.75, edgecolor='none',fontsize=32, ax=ax)
         bar.set_xlabel("-log$_{10}$ Adjust P-value", fontsize=32)
         bar.set_ylabel("")
         bar.set_title(f.split("/")[-1].split(".")[-2],fontsize=32)
         bar.legend(loc=4)
-        bar.figure.savefig(output.png, bbox_inches='tight')
-        bar.figure.savefig(output.pdf, bbox_inches='tight')
+        fig.savefig(output.png, bbox_inches='tight')
+        fig.savefig(output.pdf, bbox_inches='tight')
 
 
 
