@@ -52,7 +52,7 @@ log "copy index files for salmon"
 #cp -r /reference/Indices/Salmon/  $HOME/genome
 #cp -r /reference/gtf/             $HOME/genome
 log "install snakemake-env-packages"
-conda install ipython numpy scipy pandas matplotlib snakmake rpy2 gseapy
+conda install ipython numpy scipy pandas matplotlib snakmake gseapy xlrd xlwt
 
 conda install hisat2 stringtie salmon star samtools bedtools fastqc rseqc multiqc graphviz
 
