@@ -33,11 +33,8 @@
     source activate snakeflow
     pip install snakemake
     pip install pandas
-    pip install rpy
 
 #### Step3: install other required bioinfo softwares above... 
-
-
 
     
 ## usage
