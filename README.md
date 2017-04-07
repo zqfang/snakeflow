@@ -7,12 +7,10 @@
   - numpy
   - pandas
   - snakemake
-  - rpy2
 
 * hisat2, stringtie, ballgwon
 * salmon, tximport, deseq2
 * samtools
-* htseq-count 
 * fastqc, rseqc, multiqc
 * graphviz
 
