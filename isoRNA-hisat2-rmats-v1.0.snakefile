@@ -1,6 +1,5 @@
 from os.path import join
-from snakemake.utils import R
-from snakemake.shell import shell
+
 
 configfile: 'config.yml'
 #Workding directory
@@ -91,12 +90,14 @@ rule hisat2_index:
     input:
         fasta = FASTA_REF,
         gtf = GTF_FILE,
-    output: expand(join(HISAT2_REFDIR,INDEX_PREFIX)+".{ids}.ht2",ids=range(1,9))
+    output: 
+        expand(join(HISAT2_REFDIR,INDEX_PREFIX)+".{ids}.ht2",ids=range(1,9))
     params:
         basename=join(HISAT2_REFDIR, INDEX_PREFIX)
     log: "logs/hisat2/hisat2.index.build.log"
     threads: 12
-    shell: "hisat2-build -f {input.fasta}  -p {threads}  {params.basename} &> {log}"
+    shell: 
+        "hisat2-build -f {input.fasta}  -p {threads}  {params.basename} &> {log}"
 
 
 rule hisat2_extract_splicesites:
@@ -139,7 +140,8 @@ rule bam_sort:
 rule bam_index:
     input: "mapped/{sample}.sorted.bam"
     output: "mapped/{sample}.sorted.bam.bai"
-    shell: "samtools index {input}"
+    shell: 
+        "samtools index {input}"
 
 
 # Alternative splicing

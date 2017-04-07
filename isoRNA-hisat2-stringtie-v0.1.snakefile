@@ -1,7 +1,5 @@
 from os.path import join
-from snakemake.utils import R
-from snakemake.shell import shell
-from pandas import read_table, concat
+
 ############# Globals ######################################
 
 configfile: 'config.yml'
@@ -96,10 +94,6 @@ BALLGOWN = ["gene_expression/ballgown_transcripts_expression_table.csv",
 RMATS = expand("alternative_splicing/{sample1}_vs_{sample2}/MATS_output/{type}.MATS.ReadsOnTargetAndJunctionCounts.txt",
                 sample1= grpname1, sample2= grpname2, type=['A3SS','A5SS','MXE','RI','SE'])
 ###
-
-
-
-
 ################## Rules #######################################
 
 rule target:
@@ -220,16 +214,8 @@ rule ballgown:
         genex="gene_expression/ballgown_gene_expression_table.csv",
     params:
         ids =",".join(expand("gene_expression/{sample}",sample=SAMPLES)),
-    run:
-        R("""
-          library("ballgown")
-          samples = unlist(strsplit("{params.ids}",","))
-          bg = ballgown(samples = samples, meas='all')
-          whole_tx_table = texpr(bg, 'all')
-          gene_expression = gexpr(bg)
-          write.csv(whole_tx_table,file="{output.transx}")
-          write.csv(gene_expression,file="{output.genex}")
-          """)
+    script:
+        "scripts/runBallgown.R"
 
 ##### Read Count #####
 rule stringtie_counts:
@@ -244,9 +230,9 @@ rule stringtie_counts:
 rule htseq:
     input: 
         bam="mapped/{sample}.sorted.bam", 
-	bai="mapped/{sample}.sorted.bam.bai",
-	gtf=GTF_FILE
-    output: "counts/{sample}.htseq.tsv"
+	    bai="mapped/{sample}.sorted.bam.bai",
+	    gtf=GTF_FILE
+        output: "counts/{sample}.htseq.tsv"
     log: "logs/htseq/{sample}.htseq-count.log"
     threads: 1
     shell: "htseq-count -r pos -s no -f bam {input.bam} {input.gtf}  > {output} 2> {log}"
@@ -255,6 +241,7 @@ rule complie_htseq:
     input: cnt=expand("counts/{sample}.htseq.tsv", sample=SAMPLES)
     output: deseq="counts/All.raw.counts.for.Deseq2.txt"
     run:
+        from pandas import read_table, concat
         count_df=[]
         for count in input.cnt:
             cnt = read_table(count, index_col=0, header=None, skipfooter=5)
@@ -264,23 +251,15 @@ rule complie_htseq:
         merge_cnt = concat(count_df, axis=1)
         merge_cnt.to_csv(output.deseq)
 
-####complied stringtie output####
-rule extract_gtf:
+
+rule gtf_extract:
     input: GTF_FILE
-    output: GTF_Genes
-    run:
-        lines_seen = set()
-        with open(output[0], 'w') as out:
-            out.write("gene_id\tgene_name\tgene_type\tgene_status\n")
-            for line in open(input[0]):
-                if line.startswith('#'): continue
-                attr = dict(item.strip().split(' ')  for item in line.split('\t')[8].strip('\n').split(';') if item)
-                line_1st = attr['gene_id'].strip('\"')+'\t'+ attr['gene_name'].strip('\"')+'\t'
-                line_2nd = attr['gene_type'].strip('\"')+'\t'+attr['gene_status'].strip('\"')+'\n'
-                line_out = line_1st + line_2nd
-                if line_out not in lines_seen:
-                    out.write(line_out)
-                    lines_seen.add(line_out)
+    output: 
+        gene_anno=GTF_Genes,
+        tx2gene = GTF_Trans
+    script:
+        "scripts/extractGTF.py"
+
 
 rule compile_stringtie:
     """
@@ -293,31 +272,12 @@ rule compile_stringtie:
         full = "gene_expression/gene_expression_table_annotated.full.csv",
         tpm  = "gene_expression/gene_expression_table_annotated.tpm.csv",
         fpkm = "gene_expression/gene_expression_table_annotated.fpkm.csv",
-    run:
-        anno = read_table(input.annotation)
-        frames = []
-        for f in input.filelist:
-            name = f.split("/")[-1].strip(".tab")
-            frame = read_table(f, index_col="Gene ID")
-            frame = frame.sort_index()
-            frame.rename(columns={'Coverage': 'Coverage.'+name,
-                                  'FPKM': 'FPKM.'+name, 'TPM':'TPM.'+name},
-                         inplace=True)
-            frames.append(frame)
+    script:
+        "scripts/mergeStringTie.py"
 
-        #when concat dataframe, differrent dataframes will ordered by their index by default
-        result = concat(frames, axis=1)
-        df = result.loc[:,~result.columns.duplicated()]
-        df_merge = anno.merge(df, left_on='gene_id',right_index=True, how='right')
-        df_merge.drop('Gene Name', axis=1, inplace=True)
-        df_merge.to_csv(output.full, index=False)
-        col_tpm = ['gene_id','gene_name'] + [item for item in df_merge.columns if item.startswith("TPM.")]
-        col_fpkm = ['gene_id','gene_name'] + [item for item in df_merge.columns if item.startswith("FPKM.")]
-        df_merge[col_tpm].to_csv(output.tpm, index=False)
-        df_merge[col_fpkm].to_csv(output.fpkm, index=False)
 
-# Alternative splicing
 rule rmats:
+    """Alternative splicing"""
     input:
         bam=expand("mapped/{sample}.sorted.bam", sample=SAMPLES),
         bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
@@ -333,8 +293,9 @@ rule rmats:
     shell:
         "python2 {params.rmats} -b1 {params.b1} -b2 {params.b2} "
         "-gtf {input.gtf}  -o {params.prefix} {params.extra}"
-##### Aggreate QC ##########
+
 rule multiqc:
+    """Aggreate QC """
     input:
         expand("qc/fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
         expand("qc/rseqc/{sample}.geneBodyCoverage.txt", sample=SAMPLES,),
