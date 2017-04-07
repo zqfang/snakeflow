@@ -80,8 +80,7 @@ GSEA_PRERANK = expand("differential_expression/GSEA_prerank_{domain}/gseapy.prer
 
 rule target:
     input: FASTQC, RAW_COUNTS, SAMPLE_TPM, SAMPLE_TPM_ANNO, ROBJ_DESeq,
-           DESEQ_RES, GSEA_PRERANK
-           #ENRICHR_BAR
+           DESEQ_RES, GSEA_PRERANK, ENRICHR_BAR
 
 
 rule fastqc:
