@@ -187,7 +187,8 @@ rule read_distribution:
         bam="mapped/{sample}.sorted.bam",
         bai="mapped/{sample}.sorted.bam.bai",
         bed=RSEQC_ANNO['refseq']  
-    output:"qc/rseqc/{sample}.readDistribution.txt"
+    output:
+        "qc/rseqc/{sample}.readDistribution.txt"
     shell:
         "read_distribution.py -i {input.bam} -r {input.bed} > {output}"
 
@@ -196,7 +197,7 @@ rule stringtie:
     input:
         gtf= GTF_FILE,
         bam="mapped/{sample}.sorted.bam",
-	bai="mapped/{sample}.sorted.bam.bai"
+	    bai="mapped/{sample}.sorted.bam.bai"
     output:
         anno="gene_expression/{sample}/{sample}.gtf",
         tab="gene_expression/{sample}.tab"
