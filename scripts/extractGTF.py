@@ -1,7 +1,7 @@
 def extract_gtf(gtf, gene_anno, tx2gene, threads):
     # python code
-        lines_seen = set()
-        tx2gene_seen = set()
+    lines_seen = set()
+    tx2gene_seen = set()
 
     out1 = open(gene_anno, 'w') 
     out2 = open(tx2gene, 'w')
