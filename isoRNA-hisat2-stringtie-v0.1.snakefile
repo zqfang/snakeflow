@@ -173,7 +173,7 @@ rule bam_stats:
 rule geneBody_coverage:
     input:
         bam="mapped/{sample}.sorted.bam",
-	    bai="mapped/{sample}.sorted.bam.bai",
+        bai="mapped/{sample}.sorted.bam.bai",
         anno=RSEQC_ANNO['housekeep']
     output:
         "qc/rseqc/{sample}.geneBodyCoverage.r",
@@ -231,9 +231,9 @@ rule stringtie_counts:
 rule htseq:
     input: 
         bam="mapped/{sample}.sorted.bam", 
-	    bai="mapped/{sample}.sorted.bam.bai",
-	    gtf=GTF_FILE
-        output: "counts/{sample}.htseq.tsv"
+        bai="mapped/{sample}.sorted.bam.bai",
+        gtf=GTF_FILE,
+    output: "counts/{sample}.htseq.tsv"
     log: "logs/htseq/{sample}.htseq-count.log"
     threads: 1
     shell: "htseq-count -r pos -s no -f bam {input.bam} {input.gtf}  > {output} 2> {log}"
@@ -300,11 +300,11 @@ rule multiqc:
     input:
         expand("qc/fastqc/{sample}_R1_fastqc.html", sample=SAMPLES),
         expand("qc/rseqc/{sample}.geneBodyCoverage.txt", sample=SAMPLES,),
-	    expand("qc/rseqc/{sample}.readDistribution.txt",sample=SAMPLES),
-	#expand("counts/{sample}.htseq.tsv",sample=SAMPLES)
+        expand("qc/rseqc/{sample}.readDistribution.txt",sample=SAMPLES),
+        #expand("counts/{sample}.htseq.tsv",sample=SAMPLES)
     output: html='qc/multiqc_report.html'
     params:
         analysis_dir=config['workdir'],
-	    outdir="qc",
+        outdir="qc",
         extra="--config multiqc_config.yaml"
     shell: "multiqc --quiet --force -p -o {params.outdir} {params.analysis_dir}"
