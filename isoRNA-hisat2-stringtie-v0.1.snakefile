@@ -197,7 +197,7 @@ rule stringtie:
     input:
         gtf= GTF_FILE,
         bam="mapped/{sample}.sorted.bam",
-	    bai="mapped/{sample}.sorted.bam.bai"
+        bai="mapped/{sample}.sorted.bam.bai",
     output:
         anno="gene_expression/{sample}/{sample}.gtf",
         tab="gene_expression/{sample}.tab"

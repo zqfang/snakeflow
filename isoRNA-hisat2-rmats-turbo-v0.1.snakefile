@@ -183,4 +183,4 @@ rule rMATS_turbo:
     shell:
         "docker run -v {params.wkdir}:/data rmats:turbo01 "
         "--b1 /data/temp/b1.txt --b2 /data/temp/b2.txt --gtf /data/{params.gtf} "
-        "--od /data/{params.prefix}  --nthread {threads} --tstat {threads} {params.extra} "
+        "--od /data/{params.prefix}  --nthread {threads} --tstat {threads} {params.extra} &> {log}"
