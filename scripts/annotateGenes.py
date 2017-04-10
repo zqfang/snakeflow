@@ -12,7 +12,7 @@ def anno_genes(annotation, tpms, deseq, sample_anno, diff_anno, log2fc, padj, th
     merge.index.name ='gene_id'
     merge.to_csv(sample_anno)
 
-    sig_deg = merge[(merge['log2FoldChange'].abs()> params.log2fc) & (merge['padj'] < params.padj) ]
+    sig_deg = merge[(merge['log2FoldChange'].abs()> log2fc) & (merge['padj'] < padj) ]
     sig_deg = sig_deg.sort_values('padj',axis=0)
     sig_deg.loc[:,'up_down'] = sig_deg.log2FoldChange.apply(lambda x : 'up' if x > 0 else 'down' )
      
