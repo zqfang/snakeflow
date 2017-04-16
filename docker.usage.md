@@ -10,16 +10,12 @@ debian7安装docker
 
 wheezy-in-60-seconds.html
 
-    echo deb http://get.docker.io/ubuntu docker main | sudo 
-
-tee/etc/apt/sources.list.d/docker.list  
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 
-
-36A1D7869245C8950F966E92D8576A8BA88D21E9  
+    echo deb http://get.docker.io/ubuntu docker main | sudo tee/etc/apt/sources.list.d/docker.list  
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9  
     sudo apt-get update  
     sudo apt-get install -y lxc-docker 
 
-#四行命令，Docker就安装好了。下面创建一个ubuntu虚拟系统：
+**四行命令，Docker就安装好了**。下面创建一个ubuntu虚拟系统：
 
     docker pull ubuntu #此处是从官网拉取名为ubuntu的image，也可手动在
 
