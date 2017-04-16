@@ -2,7 +2,7 @@
 
 ## docker详细的基础用法
 
-1、docker安装
+#### 1、docker安装
 
 debian7安装docker
 
@@ -15,20 +15,22 @@ wheezy-in-60-seconds.html
     sudo apt-get update  
     sudo apt-get install -y lxc-docker 
 
+unbuntu安装docker
+
+    sudo apt-get install -y docker.io
+
 ### **四行命令，Docker就安装好了**。
 
 下面创建一个ubuntu虚拟系统：
 
-    docker pull ubuntu #此处是从官网拉取名为ubuntu的image，也可手动在
-
-https://index.docker.io上搜索想要的镜像。  
+    docker pull ubuntu #此处是从官网拉取名为ubuntu的image，也可手动在https://index.docker.io上搜索想要的镜像。  
     docker run -i -t ubuntu /bin/bash #创建一个容器，-t是临时终端。 
 
 ubuntu12.04、windows、macOS安装docker
 
 参考docker中文文档http://www.widuu.com/docker/
 
-2、docker使用过程实践
+#### 2、docker使用过程实践
 
 2.1 在测试机启动容器，安装ssh
 
@@ -74,7 +76,7 @@ ubuntu12.04、windows、macOS安装docker
 
     docker容器迁移简单方便，可以任意的拷贝部署，以后再也不怕新部署环境了，一堆依赖装的想死有木有。 
 
-3、关于docker容器的端口映射
+#### 3、关于docker容器的端口映射
 
 由于docker容器的IP地址每次启动都会变，所以不适用于手动添加端口映射(难道
 每次重启都来查看容器的IP么？)，所以需要每次启动容器时由docker程序自动添
@@ -94,7 +96,7 @@ docker stop,start来控制容器进程。
 
 docker网络配置：http://www.open-open.com/lib/view/open1404896485747.html
 
-4、关于docker容器的多程序开机自动运行
+#### 4、关于docker容器的多程序开机自动运行
 
 docker容器每次启动时，开机自启动的命令都要在启动容器前指定。如 docker 
 
@@ -112,7 +114,7 @@ run -I -t debian /bin/bash命令，只会运行/bin/bash程序，其它的程序
 命令是创建一个新的容器，如果要启动一个曾经运行过的容器，则用命令docker 
 ps -a中找对应的容器ID，然后使用docker start <容器ID>即可。
 
-5、关于docker容器和镜像的关系
+#### 5、关于docker容器和镜像的关系
 
 无论容器里做什么操作，写文件，删文件。该容器的基本镜像都不会有任何改变。
 这是因为Docker从父镜像建立增量镜像，只存储每个容器的更改。因此，如果你有
@@ -141,7 +143,7 @@ http://www.colorscode.net/2014/01/04/howto-build-image-with-automatic-
 
 startup-ssh-service-from-dockerfile/
 
-6、docker参数详解
+#### 6、docker参数详解
 
     docker  
     useage of docker  
@@ -162,7 +164,7 @@ startup-ssh-service-from-dockerfile/
     -s 默认是空 ，这个是docker运行是使用一个指定的存储驱动器  
     -v 默认false 打印版本信息和退出 
 
-7、docker run命令详解
+#### 7、docker run命令详解
 
     Usage: docker run [OPTIONS] IMAGE[:TAG] [COMMAND] [ARG...]  
     Run a command in a new container  
@@ -192,7 +194,7 @@ startup-ssh-service-from-dockerfile/
     -name="": 分配容器的名称，如果没有指定就会随机生成一个  
     -P=false: Publish all exposed ports to thehost interfaces 公布所有显示的端口主机接口 
 
-8、docker常用命令总结
+#### 8、docker常用命令总结
 
     docker pull <镜像名:tag> #从官网拉取镜像  
     docker search <镜像名> #搜索在线可用镜像名 
@@ -250,7 +252,7 @@ http://www.fanli7.net/a/bianchengyuyan/C__/20140423/452256.html
     CMD ["/root/start.sh"] #这是启动命令  
     root@yangrong:/data# docker build -t <新镜像名> ./ #生成新的镜像 
 
-Dockfile更多参数参考：
+## Dockfile更多参数参考：
 
 http://www.tuicool.com/articles/FRvAbe
 
