@@ -177,7 +177,7 @@ rule rMATS_turbo:
     log: "logs/rMATS-turbo/{sample1}_vs_{sample2}.rMATS.turbo.log".format(sample1=grpname1, sample2=grpname2),
     params:
         prefix="alternative_splicing/rMATS.{sample1}_vs_{sample2}".format(sample1=grpname1, sample2=grpname2),
-        extra=" -t %s --readLength %s --anchorLength 8 "%(PAIRED, READ_LEN),
+        extra=" -t %s --readLength %s --anchorLength 1 "%(PAIRED, READ_LEN),
         wkdir= config['workdir'],
         gtf= join("temp", GTF_FILE.split("/")[-1]),
     shell:

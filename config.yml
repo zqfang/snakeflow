@@ -1,24 +1,32 @@
-# Full path to a Genome dir
-genome: "/root/genome"
+#this is a snakemake config file.
+# 2017-03-28
 
+# dir contains all indexes, genome sequences
+genome: "/root/genome" 
 # Path to an uncompressed FASTA file with all choromsome genome sequences.
+# we use gencode archive, downlaod from here: 
+# http://www.gencodegenes.org/releases/current.html
 fasta: "/root/genome/GRCh38.p7.genome.fa"
 
 # Path to an uncompressed FASTA file with all transcript sequences.
+# we use gencode archive, downlaod from here: 
+# http://www.gencodegenes.org/releases/current.html
 cdna: "/root/genome/gencode.v25.transcripts.fa"
 
-
 # GTF file path
+# we use gencode archive, downlaod from here: 
+# http://www.gencodegenes.org/releases/current.html
 gtf: "/root/genome/gencode.v25.annotation.gtf"
 
 # Index dir
 index_dir: "/root/genome/hisat2Indices_hg38"
+#index_dir:"/root/genome/salmonIndices_gencode.v25.hg38"
 
 # Index basebame (only for hisat2)
 index_prefix: "hg38"
 
 # Full path to a folder where output files will be created.
-workdir: "/root/project_zhongshan"
+workdir: "/root/project_test"
 
 # extra scripts' dir for running. e.g preDEseq.py (StringTie)
 scripts: "/root/isomake/scripts"
@@ -39,14 +47,33 @@ stranded: False
 
 # if you have a fastq file named Sample1_R1.fastq.gz,
 # extract the sample pattern blow
-
-# fastq files prefix
+# information in `samples` is used for deseq2 and rMATS
 samples:
+    # fastq files prefix, seperate each sample by space
     name: "WGC096874R_combined WGC096875R_combined WGC096876R_combined WGC096877R_combined" # keep order for each sample
-    alias: "S74 S75 S76 S77" # short names for sample names.
-    group: "A B A B" #each lable should correspond to samples
-    time: "0 0 0 0" # optional, if your data is not time-series, ignore this. 
+    # short names for sample names
+    alias: "S74 S75 S76 S77" # optional
     
+    #Any lable name to indicate sample's group/condition where they belong to.
+    #keep the same order with `name`  
+    group: "Normal Control Normal Control" 
+    # optional, if your data is not time-series, ignore `time` attr.
+    time: "0 0 0 0"   
+
+    # deseq2 format input. But NOT supported yet!
+    # `dataframe` attribute works only if a file is given.
+    # each column names correspond to the samples' attributes of above.
+    dataframe: "path/to/sampletable.txt" #  
+    
+    # a sampleTable.txt look like this.
+      ## name                alias  group  time
+      ## WGC096874R_combined S74    Normal 0
+      ## WGC096875R_combined S75    Cancer 0
+      ## WGC096876R_combined S76    Normal 0
+      ## WGC096877R_combined S77    Cancer 0 
+
+
+
 # Before running with your samples,
 # please rename all your samples with the same suffix below.
 # for example, rename all your sample like this: "WGC096874R_combined_R1.fastq.gz"
@@ -55,7 +82,7 @@ read_pattern:
     r2: "{sample}_R2.fastq.gz" # don't change {sample}
 
 
-# Note: if you have a own running env for a specific rules of snakemake, you should
+# Note: if you have a specific running env for a specific rules of snakemake, you should
 # set tools dir and running evironment using conda.
 rmats:
     dir: "/root/program/rMATS.3.2.5/RNASeq-MATS.py"
@@ -63,6 +90,8 @@ rmats:
 
 
 # RSeQC bed file
+# this two files are optional, if you do not need to run RSeQC.
+# Download from https://sourceforge.net/projects/rseqc/files/BED/Human_Homo_sapiens/
 rseqc: 
     refseq: "/root/genome/hg38_RefSeq.bed"
     housekeep: "/root/genome/hg38.HouseKeepingGenes.bed"
