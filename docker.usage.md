@@ -15,7 +15,9 @@ wheezy-in-60-seconds.html
     sudo apt-get update  
     sudo apt-get install -y lxc-docker 
 
-**四行命令，Docker就安装好了**。下面创建一个ubuntu虚拟系统：
+### **四行命令，Docker就安装好了**。
+
+下面创建一个ubuntu虚拟系统：
 
     docker pull ubuntu #此处是从官网拉取名为ubuntu的image，也可手动在
 
@@ -61,7 +63,7 @@ ubuntu12.04、windows、macOS安装docker
 
 2.7 在另外的机器上导入镜像
 
-    docker load < debian02.tar #导入镜像  
+    docker load  debian02.tar #导入镜像  
     docker images #查看存在的镜像 
 
 2.8 启动容器
@@ -124,7 +126,7 @@ commit使用：
 
     docker commit <容器id> <新镜像名称> 
 
-Dockfile使用：
+## Dockfile使用：
 
     root@yangrong:/data# cat Dockerfile  
     FROMubuntu/testa #这是基础镜像  
@@ -144,17 +146,10 @@ startup-ssh-service-from-dockerfile/
     docker  
     useage of docker  
     -D 默认false 允许调试模式(debugmode)  
-    -H 默认是unix:///var/run/docker.sock tcp://[host[:port]]来绑定 或者
-
-unix://[/path/to/socket]来使用(二进制文件的时候)，当主机ip host=
-[0.0.0.0],(端口)port=[4243] 或者 path=[/var/run/docker.sock]是缺省值，做
-为默认值来使用  
-
+    -H 默认是unix:///var/run/docker.sock tcp://[host[:port]]来绑定或者unix://[/path/to/socket]来使用(二进制文件的时候)，当主机ip host=[0.0.0.0],(端口)port=[4243] 或者 path=[/var/run/docker.sock]是缺省值，做为默认值来使用  
     -api-enable-cors 默认flase 允许CORS header远程api  
-    -b 默认是空，附加在已存在的网桥上，如果是用'none'参数，就禁用了容器
-的网络  
-    -bip 默认是空，使用提供的CIDR（ClasslessInter-Domain Routing-无类型
-域间选路）标记地址动态创建网桥(dcoker0),和-b参数冲突  
+    -b 默认是空，附加在已存在的网桥上，如果是用'none'参数，就禁用了容器的网络  
+    -bip 默认是空，使用提供的CIDR（ClasslessInter-Domain Routing-无类型域间选路）标记地址动态创建网桥(dcoker0),和-b参数冲突  
     -d 默认false 允许进程模式(daemonmode)  
     -dns 默认是空，使docker使用指定的DNS服务器  
     -g 默认是"/var/lib/docker":作为docker使用的根路径  
@@ -219,7 +214,7 @@ unix://[/path/to/socket]来使用(二进制文件的时候)，当主机ip host=
     docker rmi <ID> #删除单个镜像  
     docker rmi$(docker images | grep none | awk '{print $3}' | sort -r) 
 
-#删除所有镜像 
+## 删除所有镜像 
 
 8.3启动停止容器
 
@@ -232,7 +227,7 @@ unix://[/path/to/socket]来使用(二进制文件的时候)，当主机ip host=
     docker export <CONTAINER ID> > /home/export.tar #导出  
     cat /home/export.tar | sudo docker import - busybox-1-export:latest 
 
-# 导入export.tar文件  
+## 导入export.tar文件  
     docker save debian> /home/save.tar #将debian容器打包  
     docker load< /home/save.tar #在另一台服务器上加载打包文件 
 
@@ -246,9 +241,7 @@ http://www.fanli7.net/a/bianchengyuyan/C__/20140423/452256.html
     docker run -h="redis-test" --name redis-test -d -p 51000:22 -p 51001:3306 -p 51003:6379 -p 51004:6381 -p 51005:80 -p 51006:8000 -p 51007:8888 debian02 /etc/rc.local  
      
     #从container中拷贝文件，当container已经关闭后，在里面的文件还可以拷贝出来。  
-    sudo docker cp 7bb0e258aefe:/etc/debian_version . #把容器中
-
-的/etc/debian_version拷贝到当前目录下。 
+    sudo docker cp 7bb0e258aefe:/etc/debian_version . #把容器中的/etc/debian_version拷贝到当前目录下。 
 
 8.6 docker Dockfile镜像制作
 
