@@ -1,12 +1,12 @@
 def gsea_enrichr(diff, log2fc, padj, go, threads):
     # python code
-    from pandas import read_table, read_excel, concat, ExcelWriter
+    from pandas import read_excel
     import gseapy as gp
 
-    writer = diff
-    sig_deg = read_excel(writer,sheet_name="sig-fc%s-padj%s"%(log2fc, padj))
-    sig_deg_up= read_excel(writer,sheet_name="sig-up",)
-    sig_deg_dw= read_excel(writer,sheet_name="sig-down",)
+    diff
+    sig_deg = read_excel(diff, sheet_name="sig-fc%s-padj%s"%(log2fc, padj))
+    sig_deg_up= read_excel(diff, sheet_name="sig-up",)
+    sig_deg_dw= read_excel(diff, sheet_name="sig-down",)
     
     degs_sig = [deg.gene_name.squeeze().tolist() for deg in[sig_deg, sig_deg_up,sig_deg_dw]]
 
@@ -17,8 +17,12 @@ def gsea_enrichr(diff, log2fc, padj, go, threads):
 
    
     for domain in go:
-        prerank = gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain, pheno_pos='', pheno_neg='', min_size=15, max_size=500, 
-                             outdir='differential_expression/GSEA_prerank_'+domain)
+        try:
+            prerank = gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain, pheno_pos='', pheno_neg='', min_size=15, max_size=500, 
+                                 outdir='differential_expression/GSEA_prerank_'+domain)
+        except:
+            pass
+
     for domain in go:
         for glist, gl_type in zip(degs_sig, ['all','up','down']):
             enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, 
