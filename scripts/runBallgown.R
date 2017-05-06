@@ -1,4 +1,4 @@
-ballgown <- function(ids, transx, genex, group) {
+BallGown <- function(ids, transx, genex, group) {
 	    # R code
 
           library("ballgown")
@@ -11,6 +11,6 @@ ballgown <- function(ids, transx, genex, group) {
 
 }
 
-ballgown(snakemake@params[['ids']], snakemake@output[['transx']], snakemake@output[['genex']], snakemake@threads)
+BallGown(snakemake@params[['ids']], snakemake@output[['transx']], snakemake@output[['genex']], snakemake@threads)
 
 
