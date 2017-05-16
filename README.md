@@ -7,6 +7,7 @@
   - numpy
   - pandas
   - snakemake
+  - matplotlib
 
 * hisat2, stringtie, ballgwon
 * salmon, tximport, deseq2
@@ -26,7 +27,7 @@
 
 #### Step1: Create a python 3.5 enviroment named ``snakeflow``. 
 
-    conda create -n snakflow python=3.5
+    conda create -n snakeflow python=3.5
 
 #### Step2: Install necessary packages using **pip**
 

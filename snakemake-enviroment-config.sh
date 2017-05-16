@@ -48,12 +48,6 @@ conda create -y -n $name  python=${PY_VERSION}
     
 source activate $name
 
-
-
-#log "copy index files for salmon"
-#cp -r /reference/Indices/Salmon/  $HOME/genome
-#cp -r /reference/gtf/             $HOME/genome
-
 log "install snakemake-env-packages"
 #python packages
 conda install ipython cython numpy scipy pandas matplotlib snakemake gseapy xlrd xlwt multiqc 
@@ -61,7 +55,7 @@ conda install ipython cython numpy scipy pandas matplotlib snakemake gseapy xlrd
 #other commandline tools
 conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz
 #R packages
-conda isntall bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon
+conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon
 
 #log "install salmon requirements"
 #wget http://bioconductor.org/biocLite.R
