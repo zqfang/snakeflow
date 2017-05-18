@@ -10,10 +10,10 @@ do_something <- function(tx2gene, out_tpm, out_counts, out_image, threads, sampl
   names(salmon.files) <- samples
   all(file.exists(salmon.files))
 
-  #aggregate transcripts to genes 
+  #aggregate transcripts to genes, and extract raw read counts  
   txi.salmon <- tximport(salmon.files, type = "salmon", 
                          tx2gene = tx2gene, reader = read_tsv,
-                         countsFromAbundance = "lengthScaledTPM")
+                         countsFromAbundance = "no")
 
   salmon.counts<- txi.salmon$counts
   salmon.counts<- as.data.frame(salmon.counts)

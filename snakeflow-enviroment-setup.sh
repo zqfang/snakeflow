@@ -2,7 +2,7 @@
 
 #this script used for initialize working directory and 
 #install requirements files for runing snakemake workflows.
-#all tools'indpendencies will be automatically installed by conda.
+#the indpendencies for the tools will be automatically installed by conda.
 set -e
 
 log () {
@@ -33,7 +33,7 @@ conda config --add channels bioconda
 log "install snakemake requirements"
 
 #python2 packages
-conda install rseqc
+conda install macs2 rseqc
 
 source deactivate
 name="snakeflow"
@@ -53,11 +53,11 @@ log "install snakemake-env-packages"
 conda install ipython cython numpy scipy pandas matplotlib snakemake gseapy xlrd xlwt multiqc 
 
 #other commandline tools
-conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz
+conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz 
 #R packages
 conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon
 
-#log "install salmon requirements"
+#log "install gene annotation requirements"
 #wget http://bioconductor.org/biocLite.R
 #Rscript -e "source('biocLite.R');options(BioC_mirror='http://mirrors.ustc.edu.cn/bioc/');biocLite();biocLite('EnsDb.Hsapiens.v86')"
 

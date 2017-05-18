@@ -1,6 +1,6 @@
 # snakeflow
 
-### RNA-Seq workflow based on snakemake
+### RNA-Seq and ChIP-seq workflow based on snakemake
 
 ## Dependency
 * python 3.5
@@ -8,10 +8,13 @@
   - pandas
   - snakemake
   - matplotlib
+  - gseapy
 
+* macs2
 * hisat2, stringtie, ballgwon
 * salmon, tximport, deseq2
-* samtools
+* samtools, deeptools
+* rMATS-turbo
 * fastqc, rseqc, multiqc
 * graphviz
 
@@ -20,23 +23,7 @@
 
 ### Set up running environment. This config file will create a python 3.5 env.
 
-    bash snakemake-enviroment-config.sh
-
-
-### Set up environment mannually if the internet connection to AWS is blocked
-
-#### Step1: Create a python 3.5 enviroment named ``snakeflow``. 
-
-    conda create -n snakeflow python=3.5
-
-#### Step2: Install necessary packages using **pip**
-
-    source activate snakeflow
-    pip install snakemake
-    pip install pandas
-
-#### Step3: install other required bioinfo softwares above... 
-
+    bash snakeflow-enviroment-setup.sh
     
 ## usage
     
@@ -52,14 +39,14 @@
     #Note: put config.yml in the same dir with your snakefile.
     vim  config.yml
 
-    #Step5: run snakemake with -np option. this test your workflow runs without errors.
-    snakemake -s isoRNA-salmon-tximport-deseq2-v0.1.snakefile -np
+    #Step5: run snakemake with -np option. this test your ``commands`` runs without any errors.
+    snakemake -s salmon-tximport-deseq2-v0.1.snakefile -np
 
     #Step6: export workflow charts
-    snakemake -s isoRNA-salmon-tximport-deseq2-v0.1.snakefile --dag | dot -Tpdf > dag.pdf
+    snakemake -s salmon-tximport-deseq2-v0.1.snakefile --dag | dot -Tpdf > dag.pdf
 
     #Step7: run your workflow dependent on an isolated py2 conda env for rmats with 8 threads.
-    snakemake -s isoRNA-hisat2-rmats-v0.1.snakefile --use-conda -p -j 8
+    snakemake -s hisat2-rmats-v0.1.snakefile --use-conda -p -j 8
 
     #Step7: or using the default snakemake environment you've created above.
-    snakemake -s isoRNA-salmon-tximport-deseq2-v0.1.snakefile -p -j 8
+    snakemake -s salmon-tximport-deseq2-v0.1.snakefile -p -j 8
