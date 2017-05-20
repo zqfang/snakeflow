@@ -60,10 +60,9 @@ samples:
     # optional, if your data is not time-series, ignore `time` attr.
     time: "0 0 0 0"   
 
-    # deseq2 format input. But NOT supported yet!
-    # `dataframe` attribute works only if a file is given.
+    # ``dataframe``attribute works only if a file is given.
     # each column names correspond to the samples' attributes of above.
-    dataframe: "path/to/sampletable.txt" #  
+    coldata: "path/to/sampletable.txt" #  
     
     # a sampleTable.txt look like this.
       ## name                alias  group  time

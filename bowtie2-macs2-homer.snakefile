@@ -117,20 +117,56 @@ rule bam2bw:
 rule macs_narrow:
         input: 
             treat="mapped/{sample}.highQuality.q25.sorted.bam",
+            ctrl="mapped/{sample}.highQuality.q25.sorted.bam"
         output: _MACS
         conda=MACS2_ENV,
-        log: ""
+        log: "logs/macs/{sample}.macs2.log"
         prams:
-            extra=" ",
+            extra=" -f BAM -g hs -B --call-summits",
+            extra2=" --SPMR --nomodel --extsize 200",
+            prefix="Sampe",
         shell:
-            " macs2 callpeak -t ./bowtie_out/SOX1-CT10-ChIP.highQuality.sorted.bam "
-             "-c ./bowtie_out/SOX1-CT10-Input.highQuality.sorted.bam -f BAM -g hs "
-             "--outdir macs_out2 -n SOX1_CT1.0_ChIP -B --SPMR --call-summits --nomodel --extsize 200 "
+            "macs2 callpeak -t {input.treat} -c {input.ctrl}"
+            " --outdir macs2_highQuality_results -n {params.prefix} "
+            " {params.extra} 2> {log}"
 
 rule macs_broad:
+        input: 
+            treat="mapped/{sample}.highQuality.q25.sorted.bam",
+            ctrl="mapped/{sample}.highQuality.q25.sorted.bam"
+        output: _MACS
+        conda=MACS2_ENV,
+        log: "logs/macs/{sample}.macs2.log"
+        params:
+            extra=" -f BAM -g hs -B --call-summits",
+            extra2=" --SPMR --nomodel --extsize 147",
+            prefix="Sampe",
+        shell:
+           "macs2 callpeak -t {input.treat} -c {input.ctrl} "
+           "--outdir macs2_highQuality_results -n {params.prefix}  --broad"
+           "{params.extra} 2> {log}"
 
-           "macs2 callpeak -t ./bowtie_out/KDme2ChIP.sam  -c ./bowtie_out/KDinput.sam"
-           "-f SAM -g mm --outdir macs_out -n KDme2ChIP -B --SPMR --nomodel --extsize 147 --broad"
+rule homer_annotatepeaks
+    input:
+        bed="{sample}.bed"
+    output:
+        "{sample}.peaksAnnotate.txt"
+    params:
+        go_outdir="",
+        genome = "hg19"
+    shell:
+        "annotatePeaks.pl {input.bed} {params.genome} -go {params.go_outdir} > {output}"
+
+rule homer_findmoitf:
+    input:
+        bed="{sample}.bed"
+    output:
+    params:
+        go_outdir="",
+        genome = "hg19"
+    shell:    
+        "awk '{print $4"\t"$1"\t"$2"\t"$3"\t+"}' {input.bed} | "
+        " findMotifsGenome.pl - hg19 ./findMotif/NANOG_motif -len 8,10,12 -size given "
 
 
 

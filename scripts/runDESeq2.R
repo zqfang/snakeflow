@@ -6,6 +6,9 @@ deseq2 <- function(txi_image, out_file, threads, group) {
      library("RColorBrewer")
      library("gplots")
      library("pheatmap")
+     
+     suppressMessages(library('BiocParallel'))
+     register(MulticoreParam(threads))
 
      load(txi_image)
      #assign each sample to differrent group.
@@ -13,6 +16,12 @@ deseq2 <- function(txi_image, out_file, threads, group) {
      sampleTable <- data.frame(condition = factor(group))
      rownames(sampleTable) <- colnames(txi.salmon$counts)
 
+     #ddsHTSeq <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable, directory=base_dir, design=~condition)
+     #rownames(ddsHTSeq) <- gsub('\\.[0-9]+', '', rownames(ddsHTSeq))
+     ## Filter genes with atleast 2 count
+     #ddsHTSeq <- ddsHTSeq[ rowSums(counts(ddsHTSeq)) > 1,  ]
+     #colData(ddsHTSeq)$condition<-factor(colData(ddsHTSeq)$condition, levels=c('control','knockdown'))   
+ 
      #run DESeq2
      dds <- DESeqDataSetFromTximport(txi.salmon, sampleTable, ~condition)
      dds <- DESeq(dds)

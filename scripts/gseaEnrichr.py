@@ -18,15 +18,15 @@ def gsea_enrichr(diff, log2fc, padj, go, threads):
    
     for domain in go:
         try:
-            prerank = gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain, pheno_pos='', pheno_neg='', min_size=15, max_size=500, 
+            prerank = gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain,
+                                 pheno_pos='', pheno_neg='', min_size=15, max_size=500, 
                                  outdir='differential_expression/GSEA_prerank_'+domain)
         except:
-            pass
+            print("Oops...skip GSEA plotting for %s, please adjust paramters for GSEA input."%domain)
 
     for domain in go:
         for glist, gl_type in zip(degs_sig, ['all','up','down']):
-            enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, 
-                                 no_plot=True,  description=gl_type,
+            enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, description=gl_type,
                                  outdir='differential_expression/Enrichr_%s_%s'%(domain, gl_type))
 
 gsea_enrichr(snakemake.input[0], snakemake.params['log2fc'], snakemake.params['padj'],
