@@ -107,12 +107,13 @@ rule salmon_index:
     output: SALMON_INDEX
     threads: 8
     params: 
-        outdir=SALMON_INDEX_DIR,
+        genome_dir=config['genome']
+        outdir=SALMON_INDEX_DIR.split("/")[-1],
         extra=" --gencode --type quasi -k 31"
     shell: 
         #"salmon index {params.extra} -t {input} -i {params.outdir}"
-        "docker run -v $HOME/genome:/data 435326e03520 salmon index  "
-        "-i /data/salmon.0.8.1 -t /data/Human_GRCh38/gencode.v25.transcripts.fa --gencode"
+        "docker run -v -v {index_dir}:/genome 435326e03520  "
+        "salmon index -i /genome/{params.outdir} -t /genome/Human_GRCh38/gencode.v25.transcripts.fa {params.extra}"
 ########## notes on salmon quant ###################################################################
 
 ###   <LIBTYPE> 
@@ -148,13 +149,12 @@ rule salmon_quant:
         r2=join(FASTQ_DIR, PATTERN_R2)
     output: 
         "salmon/{sample}/quant.sf",
-        "salmon/{sample}/quant.genes.sf"
     threads: 8
     params:
         r1=join(FASTQ_DIR.split("/")[-1], PATTERN_R1), 
         r2=join(FASTQ_DIR.split("/")[-1], PATTERN_R1),
-        workdir="${{HOME}}",
-        index_dir="genome/salmonIndexes_hg38",
+        workdir=config['workdir'],
+        index_dir=SALMON_INDEX_DIR.split("/")[-1],
         outdir="salmon/{sample}",
         extra_paried=" --incompatPrior 0  --numBootstraps 100 --seqBias --gcBias --writeUnmappedNames",
         #extra_single=" --fldMean 250 --fldSD 25 --incompatPrior 0  --numBootstraps 100 --writeUnmappedNames"
@@ -163,9 +163,9 @@ rule salmon_quant:
         #"salmon quant -i {params.index_dir} -l A -1 {input.r1} -2 {input.r2} "
         #"-g {input.gtf} -p {threads} -o {params.outdir} {params.extra_paried} &> {log} "
             
-        "docker run -v ${{HOME}}:/data 435326e03520  "
-        "salmon quant -i /data/{params.index_dir} -1 /data/{params.r1} -2 /data/{params.r2} "
-        "-l A -o /data/{params.outdir}"
+        "docker run -v {index_dir}:/index  -v {workdir}:/data 435326e03520 "
+        "salmon quant -i /index -1 /data/{params.r1} -2 /data/{params.r2} "
+        "-l A -o /data/{params.outdir} {params.extra_paried}"
 rule tximport:
     '''used for kallisto, Salmon, Sailfish, and RSEM. see: 
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html

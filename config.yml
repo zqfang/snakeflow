@@ -2,37 +2,37 @@
 # 2017-03-28
 
 # dir contains all indexes, genome sequences
-genome: "/root/genome" 
+genome: "/Users/bioninja/genome" 
 # Path to an uncompressed FASTA file with all choromsome genome sequences.
 # we use gencode archive, downlaod from here: 
 # http://www.gencodegenes.org/releases/current.html
-fasta: "/root/genome/GRCh38.p7.genome.fa"
+fasta: "/Users/bioninja/genome/Human_GRCh38/GRCh38.p10.genome.fa"
 
 # Path to an uncompressed FASTA file with all transcript sequences.
 # we use gencode archive, downlaod from here: 
 # http://www.gencodegenes.org/releases/current.html
-cdna: "/root/genome/gencode.v25.transcripts.fa"
+cdna: "/Users/bioninja/genome/Human_GRCh38/gencode.v26.transcripts.fa"
 
 # GTF file path
 # we use gencode archive, downlaod from here: 
 # http://www.gencodegenes.org/releases/current.html
-gtf: "/root/genome/gencode.v25.annotation.gtf"
+gtf: "/Users/bioninja/genome/gencode.v26.annotation.gtf"
 
 # Index dir
-index_dir: "/root/genome/hisat2Indices_hg38"
+index_dir: "/Users/bioninja/genome/hisat2Indices_hg38"
 #index_dir:"/root/genome/salmonIndices_gencode.v25.hg38"
 
 # Index basebame (only for hisat2)
 index_prefix: "hg38"
 
 # Full path to a folder where output files will be created.
-workdir: "/root/project_test"
+workdir: "/Users/bioninja/project_test"
 
 # extra scripts' dir for running. e.g preDEseq.py (StringTie)
-scripts: "/root/isomake/scripts"
+scripts: "/Users/bioninja/snakeflow/scripts"
 
 # Full path to a folder that holds all of your FASTQ files
-fastq_dir: "/root/fastq"
+fastq_dir: "/Users/bioninja/genome/fastq"
 
 
 
@@ -62,7 +62,7 @@ samples:
 
     # ``dataframe``attribute works only if a file is given.
     # each column names correspond to the samples' attributes of above.
-    coldata: "path/to/sampletable.txt" #  
+    coldata: "/Users/bioninja/snakeflow/sampletable.txt" #  
     
     # a sampleTable.txt look like this.
       ## name                alias  group  time
@@ -81,16 +81,9 @@ read_pattern:
     r2: "{sample}_R2.fastq.gz" # don't change {sample}
 
 
-# Note: if you have a specific running env for a specific rules of snakemake, you should
-# set tools dir and running evironment using conda.
-rmats:
-    dir: "/root/program/rMATS.3.2.5/RNASeq-MATS.py"
-    conda_env: "/root/isomake/envs/rmats.yml" 
-
-
 # RSeQC bed file
 # this two files are optional, if you do not need to run RSeQC.
 # Download from https://sourceforge.net/projects/rseqc/files/BED/Human_Homo_sapiens/
 rseqc: 
-    refseq: "/root/genome/hg38_RefSeq.bed"
-    housekeep: "/root/genome/hg38.HouseKeepingGenes.bed"
+    refseq: "/Users/bioninja/genome/rseqc_ann/hg38_RefSeq.bed"
+    housekeep: "/Users/bioninja/genome/rseqc_ann/hg38.HouseKeepingGenes.bed"
