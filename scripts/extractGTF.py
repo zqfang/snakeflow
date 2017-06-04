@@ -5,13 +5,13 @@ def extract_gtf(gtf, gene_anno, tx2gene, threads):
 
     out1 = open(gene_anno, 'w') 
     out2 = open(tx2gene, 'w')
-    out1.write("gene_id\tgene_name\tgene_type\tgene_status\n")
+    out1.write("gene_id\tgene_name\tgene_type\n")
     out2.write("tx_id\tgene_id\n")
     for line in open(gtf):
         if line.startswith('#'): continue
         attr = dict(item.strip().split(' ')  for item in line.split('\t')[8].strip('\n').split(';') if item)
         line_1st = attr['gene_id'].strip('\"')+'\t'+ attr['gene_name'].strip('\"')+'\t'
-        line_2nd = attr['gene_type'].strip('\"')+'\t'+attr['gene_status'].strip('\"')+'\n'
+        line_2nd = attr['gene_type'].strip('\"')+'\n'
         line_out = line_1st + line_2nd
 
         if line_out not in lines_seen:

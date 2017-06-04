@@ -3,7 +3,6 @@ def gsea_enrichr(diff, log2fc, padj, go, threads):
     from pandas import read_excel
     import gseapy as gp
 
-    diff
     sig_deg = read_excel(diff, sheet_name="sig-fc%s-padj%s"%(log2fc, padj))
     sig_deg_up= read_excel(diff, sheet_name="sig-up",)
     sig_deg_dw= read_excel(diff, sheet_name="sig-down",)
@@ -15,19 +14,27 @@ def gsea_enrichr(diff, log2fc, padj, go, threads):
     sig_deg_gsea_sort = sig_deg_gsea_sort.reset_index(drop=True)
 
 
-   
+    outGSEAname = diff.split("/")[-1].lstrip("diff_").rstrip("_results.annotated.xls")
+    treat, ctrl =outGSEAname.split("_vs_")
+    
+    for domain in go:
+        for glist, gl_type in zip(degs_sig, ['all','up','down']):
+            try:
+                outdir='GO/Enrichr_%s/%s_%s'%(outGSEAname, domain, gl_type)
+                gp.enrichr(gene_list=glist, gene_sets=domain, description=gl_type,
+                            outdir=outdir)
+            except:
+                print("connetion to the Enrichr Server is interupted by the host, retry again.")
+    #run gseapy
     for domain in go:
         try:
-            prerank = gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain,
-                                 pheno_pos='', pheno_neg='', min_size=15, max_size=500, 
-                                 outdir='differential_expression/GSEA_prerank_'+domain)
+            outdir="GO/GSEA_%s/%s"%(outGSEAname, domain)
+            gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain, processes=threads,
+                        pheno_pos=treat, pheno_neg=ctrl, min_size=15, max_size=500, 
+                        outdir=outdir)
         except:
             print("Oops...skip GSEA plotting for %s, please adjust paramters for GSEA input."%domain)
 
-    for domain in go:
-        for glist, gl_type in zip(degs_sig, ['all','up','down']):
-            enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, description=gl_type,
-                                 outdir='differential_expression/Enrichr_%s_%s'%(domain, gl_type))
 
 gsea_enrichr(snakemake.input[0], snakemake.params['log2fc'], snakemake.params['padj'],
             snakemake.params['go'], snakemake.threads)

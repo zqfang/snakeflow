@@ -1,4 +1,4 @@
-#!bin/bash
+o#!bin/bash
 
 #this script used for initialize working directory and 
 #install requirements files for runing snakemake workflows.
@@ -11,16 +11,16 @@ log () {
     echo
 }
 
-PY_VERSION=2.7
+PY_VERSION=3.5
 
-if [[ "$PY_VERSION" == "2.7" ]]; then
-        wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-else
-        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-fi
+#if [[ "$PY_VERSION" == "2.7" ]]; then
+#        wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
+#else
+#        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+#fi
 
-bash miniconda.sh -b -p /miniconda
-export PATH="/miniconda/bin:$PATH"
+#bash miniconda.sh -b -p /miniconda
+#export PATH="/miniconda/bin:$PATH"
 
 #setup bioconda channel.
 conda config --set always_yes yes 
@@ -33,9 +33,10 @@ conda config --add channels bioconda
 log "install snakemake requirements"
 
 #python2 packages
-conda install macs2 rseqc
+#conda install macs2 rseqc
 
 source deactivate
+conda install macs2 rseqc
 name="snakeflow"
 #clone a environment
 #conda list --export > snakemake-env-packages.txt
@@ -55,10 +56,10 @@ conda install ipython cython numpy scipy pandas matplotlib snakemake gseapy xlrd
 #other commandline tools
 conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz 
 #R packages
-conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon
+#conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon r-pheatmap
 
 #log "install gene annotation requirements"
-#wget http://bioconductor.org/biocLite.R
-#Rscript -e "source('biocLite.R');options(BioC_mirror='http://mirrors.ustc.edu.cn/bioc/');biocLite();biocLite('EnsDb.Hsapiens.v86')"
+wget http://bioconductor.org/biocLite.R
+Rscript -e "source('biocLite.R');options(BioC_mirror='http://mirrors.ustc.edu.cn/bioc/');biocLite();biocLite(c('DESeq2','readr','pheatmap','tximport','ballgown'))"
 
 log "all files are ready. Proceed to next step now."

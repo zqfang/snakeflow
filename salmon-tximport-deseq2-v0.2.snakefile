@@ -4,6 +4,17 @@ configfile: 'config.yml'
 #Workding directory
 workdir: config['workdir']
 
+def unique(seq):
+    """Remove duplicates from a list in Python while preserving order.
+    :param seq: a python list object.
+    :return: a list without duplicates while preserving order.
+    """    
+    seen = set()
+    seen_add = seen.add
+
+    return [x for x in seq if x not in seen and not seen_add(x)]
+
+
 ################### globals #############################################
 
 # Full path to an uncompressed FASTA file with all chromosome sequences.
@@ -47,15 +58,15 @@ if isfile(config['samples']['coldata']):
         item = line.rstrip("\n").split(" ")
         SAMPLES.append(item[0])
         SAMPLES_ALIAS.append(item[1])
-        GROUP.append(item[3])
+        GROUP.append(item[2])
         TIME.append(item[3])
 else:
     SAMPLES = config['samples']['name'].split()
-    AMPLES_ALIAS = config['samples']['alias'].split()
+    SAMPLES_ALIAS = config['samples']['alias'].split()
     GROUP=config['samples']['group'].split()
     TIME=config['samples']['time'].split()
 
-
+uGroup=unique(GROUP)
 
 # Patterns for the 1st mate and the 2nd mate using the 'sample' wildcard.
 #PATTERN_R1 = '{sample}_R1.fastq.gz'
@@ -81,18 +92,20 @@ SALMON_QUANT_Trans = expand("salmon/{sample}/quant.sf", sample=SAMPLES)
 SALMON_QUANT_Genes = expand("salmon/{sample}/quant.genes.sf", sample=SAMPLES)
 
 RAW_COUNTS ="counts/sample.raw.counts.txt"
-SAMPLE_TPM ="gene_expression/gene_expression.TPM.txt",
+SAMPLE_TPM ="gene_expression/gene_expression.TPM.txt"
 SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
-SAMPLE_DIFF_ANNO = "differential_expression/differential_expression_annotated.xls"
 ROBJ_DESeq ="salmon/txi.salmon.RData"   
-DESEQ_RES = "differential_expression/deseq2.results.txt"
-GSEA_PRERANK = expand("differential_expression/GSEA_prerank_{domain}/gseapy.prerank.reports.csv", domain=GO_DOMAIN)
+DESEQ_RES = ["differential_expression/diff_%s_vs_%s_results.txt"%(uGroup[i], uGroup[i-1]) for i in range(1, len(uGroup))]
+DESEQ_ANNO = [res.replace(".txt", ".annotated.xls") for res in DESEQ_RES]
+GSEA_RES=["GO/GSEA_{treat}_vs_{ctrl}/%s/gseapy.prerank.gene_sets.report.csv"%domain for domain in GO_DOMAIN]
+#Enrichr = ["GO/Enrichr_{treat}_vs_{ctrl}/{domain}_{types}/{domain}_{type}_enrichr.reports.txt",type=["all","up","down"]
+#GSEA_OUT = [ GSEA_RES.format(treat=uGroup[i], ctrl=uGroup[i-1]) for i in range(1, len(uGroup))]
 ################## Rules #######################################
 
 
 rule target:
-    input: FASTQC, RAW_COUNTS, SAMPLE_TPM, SAMPLE_TPM_ANNO, ROBJ_DESeq,
-           DESEQ_RES, GSEA_PRERANK
+    input: FASTQC, RAW_COUNTS, ROBJ_DESeq, DESEQ_ANNO, SAMPLE_TPM_ANNO,
+           DESEQ_RES, "GO/GSEA_HDE_vs_Ctrl/KEGG_2016/gseapy.prerank.gene_sets.report.csv"
 
 
 rule fastqc:
@@ -158,7 +171,7 @@ rule salmon_quant:
     threads: 8
     params:
         r1=join(FASTQ_DIR.split("/")[-1], PATTERN_R1), 
-        r2=join(FASTQ_DIR.split("/")[-1], PATTERN_R1),
+        r2=join(FASTQ_DIR.split("/")[-1], PATTERN_R2),
         workdir=config['workdir'],
         index_dir=SALMON_INDEX_DIR,
         outdir="salmon/{sample}",
@@ -195,10 +208,12 @@ rule deseq2:
     input: 
         image=ROBJ_DESeq,
     output: 
-        res=DESEQ_RES,
+        res=DESEQ_RES
     params:
-        group=GROUP,#used for grouping each sample, to dectect degs.
-        time=TIME
+        group=" ".join(GROUP),#used for grouping each sample, to dectect degs.
+        time=" ".join(TIME),
+        alias=" ".join(SAMPLES_ALIAS)
+    threads: 8
     script:
         "scripts/runDESeq2.R"
 
@@ -210,26 +225,55 @@ rule gtf_extract:
     script:
         "scripts/extractGTF.py"
 
-
-
-rule annotate_genes:
-    input: GTF_Genes, SAMPLE_TPM, DESEQ_RES
+rule annotate_diGenes:
+    input: 
+        "differential_expression/diff_{treat}_vs_{ctrl}_results.txt"
     output: 
-        sample_anno=SAMPLE_TPM_ANNO,
-        diff_anno=SAMPLE_DIFF_ANNO,
+        "differential_expression/diff_{treat}_vs_{ctrl}_results.annotated.xls"
+
     params:
+        gene_anno=GTF_Genes,
+        tpm=SAMPLE_TPM,
+        alias=SAMPLES_ALIAS,
+        samples=SAMPLES,
+        group=GROUP,
         log2fc=1,
         padj=0.05
     script:
-        "scripts/annotateGenes.py"
+        "scripts/annotateDEGs.py"
+
+
+rule annotate_samples:
+    input: SAMPLE_TPM
+    output: SAMPLE_TPM_ANNO
+    params:
+        gene_anno=GTF_Genes,
+        group=GROUP,
+        alias=SAMPLES_ALIAS,
+        samples=SAMPLES,
+    run:
+        from pandas import read_table, concat
+
+        anno = read_table(params.gene_anno, index_col='gene_id')
+        tpm = read_table(input[0], index_col=0)
+        tpm = tpm[params.samples]
+        tpm.columns = ["TPM.%s.%s"%(g,a) for a, g, s in zip(params.alias, params.group, params.samples)]
+
+        merge = concat([anno, tpm], axis=1, join='inner')
+        merge.index.name ='gene_id'
+        merge.to_csv(output[0])
 
 
 rule GSEA_Enrichr:
-    input: SAMPLE_DIFF_ANNO
+    input: 
+        "differential_expression/diff_{treat}_vs_{ctrl}_results.annotated.xls"
+
     output:
-        gsea=GSEA_PRERANK,
-        enrichr=expand("differential_expression/Enrichr_{domain}_{types}/enrichr.reports.{types}.txt",
-                       domain=GO_DOMAIN, types=['all','up','down'])
+        #gsea="GO/GSEA_{treat}_vs_{ctrl}/KEGG_2016/gseapy.prerank.gene_sets.report.csv"
+        enrichr=
+        #gsea=GSEA_RES 
+        GSEA_RES   
+    threads: 8
     params:
         log2fc=1,
         padj=0.05,
