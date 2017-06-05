@@ -22,8 +22,8 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, log2f
     sig_deg_dw = sig_deg[sig_deg['up_down'] == 'down'] 
 
     writer = pd.ExcelWriter(diff_anno)
-    merge.to_excel(writer, sheet_name="all_genes")
-    sig_deg.to_excel(writer, sheet_name="sig-log2fc%s-padj%s"%(log2fc, padj))
+    merge.to_excel(writer, sheet_name="gene_exp_deseq2")
+    sig_deg.to_excel(writer, sheet_name="sig-all-log2fc%s-padj%s"%(log2fc, padj))
     sig_deg_up.to_excel(writer, sheet_name="sig-up",)
     sig_deg_dw.to_excel(writer, sheet_name="sig-down",)
     writer.save()
