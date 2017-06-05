@@ -24,11 +24,21 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
  
      #run DESeq2
      dds <- DESeqDataSetFromTximport(txi.salmon, sampleTable, ~condition)
+
+     #set level 
+     dds$condition <- relevel(dds$condition, ref=ugr[1])
      dds <- DESeq(dds)
 
      ugr <- unique(group)
      group_num <- length(ugr)
-     dds$condition <- relevel(dds$condition, ref=ugr[1])
+
+     rld <- rlog(dds)
+     vsd <- varianceStabilizingTransformation(dds)
+     rlogMat <- assay(rld)
+     vstMat <- assay(vsd)
+
+     colnames(rld) = alias
+
      for (i in 2:group_num)
      {
          #res <- results(dds, contrast=c("condition","treated","control"))
@@ -45,34 +55,29 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
           dev.off()
 
           #TopGenes
-          betas <- coef(dds)
+          #betas <- coef(dds)
           topGenes <- head(order(res$padj),20)
-          mat <- betas[topGenes, -c(1,2)]
-          thr <- 3 
-          mat[mat < -thr] <- -thr
-          mat[mat > thr] <- thr
-
+          df = data.frame(conditoin=group,row.names=colnames(rlogMat))
           outGenes = paste("differential_expression/diff", ugr[i], "vs", ugr[i-1],"top20genes.pdf",sep="_")
-          pdf(outGenes, width = 4,height = 3)
-          pheatmap(mat, breaks=seq(from=-thr, to=thr, length=101), cluster_col=FALSE)
+          pdf(outGenes, width = 4,height = 4)
+          pheatmap(rlogMat[topGenes,], cluster_rows=T, show_rownames=T, cluster_cols=T, annotation_col = df)
           dev.off()
+          
+          #all Degs
+          degs <- which(res$padj < 0.05)
+          outDEGs = paste("differential_expression/diff", ugr[i], "vs", ugr[i-1],"all.degs.pdf",sep="_")
+          pdf(outGenes, width = 5,height = 5)
+          pheatmap(rlogMat[degs,], cluster_rows=T, show_rownames=F, cluster_cols=T,)
+
 
      } 
 
-
-
-
-
-     rld <- rlog(dds)
-     vsd <- varianceStabilizingTransformation(dds)
-     rlogMat <- assay(rld)
-     vstMat <- assay(vsd)
 
      #clustering plot
      hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
      distsRL <- dist(t(assay(rld)))
      mat <- as.matrix(distsRL)
-     rownames(mat) <- colnames(mat) <- with(colData(dds), paste(rownames(colData(dds))))
+     rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias)))
     
 
      pdf("differential_expression/Samples.correlation.heatmap.pdf",width = 5, height = 5)
@@ -85,7 +90,10 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
      pdf("differential_expression/Samples.PCA.pdf",width = 4, height = 3)
      data <- plotPCA(rld, intgroup="condition", returnData=TRUE)
      percentVar <- round(100 * attr(data, "percentVar"))
-     ggplot(data, aes(PC1, PC2, color=condition)) + geom_point(size=3) + xlab(paste0("PC1: ",percentVar[1],"% variance")) + ylab(paste0("PC2: ",percentVar[2],"% variance"))
+     ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))+
+         geom_text(check_overlap = T,vjust = 0, nudge_y = 0.5) + geom_point(size=3) +
+         xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+         ylab(paste0("PC2: ",percentVar[2],"% variance"))
      dev.off()
 
 

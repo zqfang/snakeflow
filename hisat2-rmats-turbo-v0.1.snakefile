@@ -1,4 +1,4 @@
-from os.path import join
+from os.path import join,isfile
 from snakemake.shell import shell
 
 configfile: 'config.yml'
@@ -31,7 +31,7 @@ GENOME = config['genome']
 # genome sequence
 FASTA_REF =     config['fasta']
 # index_dir
-HISAT2_REFDIR= config['index_dir']
+HISAT2_REFDIR= config['hisat_index']
 # index basename
 INDEX_PREFIX = config['index_prefix']
 # gtf
@@ -47,28 +47,37 @@ GTF_Trans =      GTF_FILE.rstrip(".gtf")+".extracted.transx2gene.txt"
 #you must include this trailing comma, or else the code won’t work correctly.
 
 #SAMPLES, = glob_wildcards(join(FASTQ_DIR, '{sample, SRR[^/]+}_R1.fastq.gz'))
-SAMPLES = config['samples']['name'].split()
-GROUP=config['samples']['group'].split()
-TIME=config['samples']['time'].split()
+if isfile(config['samples']['coldata']):
+    SAMPLES=[]
+    SAMPLES_ALIAS=[]
+    GROUP=[]
+    TIME=[]
+    with open(config['samples']['coldata']) as f:
+        lines = f.readlines()
+    for line in lines:
+        item = line.rstrip("\n").split(" ")
+        SAMPLES.append(item[0])
+        SAMPLES_ALIAS.append(item[1])
+        GROUP.append(item[2])
+        TIME.append(item[3])
+else:
+    SAMPLES = config['samples']['name'].split()
+    SAMPLES_ALIAS = config['samples']['alias'].split()
+    GROUP=config['samples']['group'].split()
+    TIME=config['samples']['time'].split()
 
-group_unique = unique(GROUP)
-grpname1=group_unique[0]
-grpname2=group_unique[1]
-GROUP1 = [s for s, g in zip(SAMPLES, GROUP) if g == grpname1]
-GROUP2 = [s for s, g in zip(SAMPLES, GROUP) if g == grpname2]
+uGroup=unique(GROUP)
+RMATS_DICT = [[] for i in range(len(uGroup))]
+for i,g in enumerate(GROUP):
+    for j, u in enumerate(uGroup):
+        if g == u:
+            RMATS_DICT[j].append(SAMPLES[i])
+
 # Patterns for the 1st mate and the 2nd mate using the 'sample' wildcard.
 #PATTERN_R1 = '{sample}_R1.fastq.gz'
 #PATTERN_R2 = '{sample}_R2.fastq.gz'
 PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
-
-
-
-####### Tools dir#################
-RMATS_DIR=config['rmats']['dir']
-
-#rmats runing envs
-RMATS_ENV = config['rmats']['conda_env']
 
 # dirs 
 DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
@@ -76,9 +85,8 @@ DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
 
 
 ########### Target output files #################
-
-RMATS_TURBO =expand("alternative_splicing/rMATS.{sample1}_vs_{sample2}/{type}.MATS.JCEC.txt",
-                    sample1= grpname1, sample2= grpname2, type=['A3SS','A5SS','MXE','RI','SE'])
+RMATS_TEMP=["alternative_splicing/rMATS.%s_vs_%s/{type}.MATS.JCEC.txt"%(uGroup[i], uGroup[i-1]) for i in range(1, len(uGroup))]
+RMATS_TURBO =[temp.format(type=t) for temp in RMATS_TEMP for t in ['A3SS','A5SS','MXE','RI','SE']]
 
 ################## Rules #######################################
 
@@ -147,24 +155,28 @@ rule pre_rMATS:
         bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
         gtf=GTF_FILE
     output:
-        group1 = temp("temp/b1.txt"),
-        group2 = temp("temp/b2.txt"),
-        gtf_tmp = temp(join("temp", GTF_FILE.split("/")[-1]))
+        groups= ["temp/{treat}_vs_{ctrl}.rmats.txt".format(treat=uGroup[i], ctrl=uGroup[i-1]) for i in range(1, len(uGroup))],
+        gtf_tmp = join("temp", GTF_FILE.split("/")[-1])
     params:
-        b1=",".join(expand("/data/mapped/{sample}.sorted.bam", sample=GROUP1)),
-        b2=",".join(expand("/data/mapped/{sample}.sorted.bam", sample=GROUP2)),
+        ugsamples=RMATS_DICT,
+        ugroup=uGroup,
     run:
-        out1 = open(output.group1, 'w') 
-        out2 = open(output.group2, 'w')
-        out1.write(params.b1 )
-        out2.write(params.b2)
-        out1.close()
-        out2.close()
+        for u, g in zip(params.ugroup, params.ugsamples):
+            out = open("temp/b_%s.txt"%u, 'w')
+            temp = ["/data/mapped/%s.sorted.bam"%sample for sample in g]
+            line=",".join(temp)
+            out.write(line)
+            out.close()
+        for i in range(1, len(params.ugroup)):
+            outname = "temp/%s_vs_%s.rmats.txt"%(params.ugroup[i],params.ugroup[i-1])
+            out2 = open(outname,'w')
+            out2.write("temp/b_%s.txt\n"%params.ugroup[i])
+            out2.write("temp/b_%s.txt\n"%params.ugroup[i-1])
+            out.close()
         shell("cp {input.gtf} {output.gtf_tmp}")
 
-
+"""
 rule rMATS_turbo:
-    """run rMATS-turbo"""
     input:
         bam=expand("mapped/{sample}.sorted.bam", sample=SAMPLES),
         bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
@@ -174,9 +186,9 @@ rule rMATS_turbo:
         gtf_tmp = join("temp", GTF_FILE.split("/")[-1]) 
     output: RMATS_TURBO 
     threads: 8
-    log: "logs/rMATS-turbo/{sample1}_vs_{sample2}.rMATS.turbo.log".format(sample1=grpname1, sample2=grpname2),
+    log: "logs/rMATS-turbo/{treat}_vs_{ctrl}.rMATS.turbo.log".format(treat=uGroup[1], ctrl=uGroup[0]),
     params:
-        prefix="alternative_splicing/rMATS.{sample1}_vs_{sample2}".format(sample1=grpname1, sample2=grpname2),
+        prefix="alternative_splicing/rMATS.{treat}_vs_{ctrl}".format(treat=uGroup[1], ctrl=uGroup[0]),
         extra=" -t %s --readLength %s --anchorLength 1 "%(PAIRED, READ_LEN),
         wkdir= config['workdir'],
         gtf= join("temp", GTF_FILE.split("/")[-1]),
@@ -184,3 +196,30 @@ rule rMATS_turbo:
         "docker run -v {params.wkdir}:/data rmats:turbo01 "
         "--b1 /data/temp/b1.txt --b2 /data/temp/b2.txt --gtf /data/{params.gtf} "
         "--od /data/{params.prefix}  --nthread {threads} --tstat {threads} {params.extra} &> {log}"
+"""
+
+rule rMATS_turbo:
+    input:
+        bam=expand("mapped/{sample}.sorted.bam", sample=SAMPLES),
+        bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
+        gtf = join("temp", GTF_FILE.split("/")[-1]), 
+        "temp/{treat}_vs_{ctrl}.rmats.txt"
+    output: 
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/SE.MATS.JCEC.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A3SS.MATS.JCEC.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A5SS.MATS.JCEC.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/RI.MATS.JCEC.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/MXE.MATS.JCEC.txt"
+    threads: 8
+    log: "logs/rMATS-turbo/{treat}_vs_{ctrl}.rMATS.turbo.log",
+    params:
+        prefix="alternative_splicing/rMATS.{treat}_vs_{ctrl}",
+        extra=" -t %s --readLength %s --anchorLength 1 "%(PAIRED, READ_LEN),
+        wkdir= config['workdir'],
+        gtf = join("temp", GTF_FILE.split("/")[-1])
+    shell:
+        "docker run -v {params.wkdir}:/data rmats:turbo01 "
+        "--b1 /data/temp/b_{wildcards.treat}.txt --b2 /data/temp/b_{wildcards.ctrl}.txt "
+        "--gtf /data/{params.gtf} --od /data/{params.prefix} "
+        "--nthread {threads} --tstat {threads} {params.extra} &> {log}"
+
