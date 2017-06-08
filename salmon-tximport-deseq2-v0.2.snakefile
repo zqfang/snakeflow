@@ -93,6 +93,7 @@ SALMON_QUANT_Genes = expand("salmon/{sample}/quant.genes.sf", sample=SAMPLES)
 
 RAW_COUNTS ="counts/sample.raw.counts.txt"
 SAMPLE_TPM ="gene_expression/gene_expression.TPM.txt"
+SAMPLE_TXTPM ="gene_expression/transcripts_expression.TPM.txt"
 SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
 ROBJ_DESeq ="salmon/txi.salmon.RData"   
 DESEQ_RES = ["differential_expression/diff_%s_vs_%s_results.txt"%(uGroup[i], uGroup[i-1]) for i in range(1, len(uGroup))]
@@ -195,6 +196,7 @@ rule tximport:
         tx2gene=GTF_Trans
     output: 
         tpm=SAMPLE_TPM,
+        txtpm=SAMPLE_TXTPM,
         counts=RAW_COUNTS,
         image=ROBJ_DESeq       
     params:
