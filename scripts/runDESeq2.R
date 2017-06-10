@@ -6,8 +6,8 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
      suppressMessages(library("gplots"))
      suppressMessages(library("pheatmap"))
      suppressMessages(library("DESeq2"))
-     suppressMessages(library('BiocParallel'))
-     register(MulticoreParam(threads))
+     #suppressMessages(library('BiocParallel'))
+     #register(MulticoreParam(threads))
 
      load(txi_image)
      #assign each sample to differrent group.
@@ -77,7 +77,7 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
      hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
      distsRL <- dist(t(assay(rld)))
      mat <- as.matrix(distsRL)
-     rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias)))
+     rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias, group, sep=":"))
     
 
      pdf("differential_expression/Samples.correlation.heatmap.pdf",width = 5, height = 5)

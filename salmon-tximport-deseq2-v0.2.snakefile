@@ -84,7 +84,9 @@ GO_DOMAIN = ['GO_Cellular_Component_2015','GO_Molecular_Function_2015',
              'KEGG_2016']
 
 ########### Target output files #################
-
+#FASTQC = expand("qc/fastqc/{prefix}_fastqc.{suf}",
+#                 prefix=[PATTERN_R1.rstrip(".fastq.gz"), PATTERN_R2.rstrip(".fastq.gz")],
+#                 suf=['html','zip'])
 FASTQC = expand("qc/fastqc/{sample}_{read}_fastqc.{suf}", sample=SAMPLES,read=['R1','R2'],suf=['html','zip'])
 
 SALMON_INDEX = expand(SALMON_INDEX_DIR+"/{prefix}.bin", prefix=['hash','rsd','sa','txpInfo'])

@@ -14,7 +14,7 @@ def gsea_enrichr(diff, log2fc, padj, go, threads):
     sig_deg_gsea_sort = sig_deg_gsea_sort.reset_index(drop=True)
 
 
-    outGSEAname = diff.split("/")[-1].lstrip("diff_").rstrip("_results.annotated.xls")
+    outGSEAname = diff.split("/")[-1].lstrip("diff_").rpartition("_")[0]
     treat, ctrl =outGSEAname.split("_vs_")
     
     for domain in go:
