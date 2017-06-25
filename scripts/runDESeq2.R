@@ -8,6 +8,7 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
      suppressMessages(library("DESeq2"))
      #suppressMessages(library('BiocParallel'))
      #register(MulticoreParam(threads))
+     library(gtools)
 
      load(txi_image)
      #assign each sample to differrent group.
@@ -25,31 +26,32 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
      #run DESeq2
      dds <- DESeqDataSetFromTximport(txi.salmon, sampleTable, ~condition)
 
-     #set level 
+     #set level
+     ugr <- unique(group)
+     ugr_len <- length(ugr)
+
      dds$condition <- relevel(dds$condition, ref=ugr[1])
      dds <- DESeq(dds)
-
-     ugr <- unique(group)
-     group_num <- length(ugr)
 
      rld <- rlog(dds)
      vsd <- varianceStabilizingTransformation(dds)
      rlogMat <- assay(rld)
      vstMat <- assay(vsd)
 
-     colnames(rld) = alias
-
-     for (i in 2:group_num)
+     colnames(rld) <- alias
+     
+     comb <- combinations(ugr_len, 2, ugr)
+     for (i in 1:dim(comb)[0])
      {
          #res <- results(dds, contrast=c("condition","treated","control"))
-         res <- results(dds, contrast=c("condition", ugr[i], ugr[i-1]))
+         res <- results(dds, contrast=c("condition", comb[i,2], comb[i,1]))
          resOrdered <- res[order(res$padj),]
          resOrdered = as.data.frame(resOrdered)
-         outRES=paste("differential_expression/diff", ugr[i], "vs",ugr[i-1],"results.txt",sep="_")
+         outRES=paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
          write.table(resOrdered, file=outRES, quote=F, sep="\t")
 
           #MA plot
-          outMA = paste("differential_expression/diff", ugr[i], "vs", ugr[i-1],"MAplot.pdf",sep="_")
+          outMA = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
           pdf(outMA, width = 5, height = 5)     
           plotMA(res, ylim=c(-5,5))
           dev.off()
@@ -58,14 +60,14 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
           #betas <- coef(dds)
           topGenes <- head(order(res$padj),20)
           df = data.frame(conditoin=group,row.names=colnames(rlogMat))
-          outGenes = paste("differential_expression/diff", ugr[i], "vs", ugr[i-1],"top20genes.pdf",sep="_")
+          outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
           pdf(outGenes, width = 4,height = 4)
           pheatmap(rlogMat[topGenes,], cluster_rows=T, show_rownames=T, cluster_cols=T, annotation_col = df)
           dev.off()
           
           #all Degs
           degs <- which(res$padj < 0.05)
-          outDEGs = paste("differential_expression/diff", ugr[i], "vs", ugr[i-1],"all.degs.pdf",sep="_")
+          outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
           pdf(outGenes, width = 5,height = 5)
           pheatmap(rlogMat[degs,], cluster_rows=T, show_rownames=F, cluster_cols=T,)
 

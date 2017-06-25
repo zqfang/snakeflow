@@ -1,11 +1,12 @@
 source("https://bioconductor.org/biocLite.R")
-biocLite("EnsDb.Hsapiens.v75")
-
-tx2gene = "~/genome/Human_GRCh38/gencode.v26.annotation.extracted.transx2gene.txt"
+biocLite(c("EnsDb.Hsapiens.v86",'DESeq2','tximport'))
+biocLite(c('clusterProfiler','ChipSeeker'))
+install.packages(c('readr','ggplot2','pheatmap'))
+ntx2gene = "~/genome/Human_GRCh38/gencode.v26.annotation.extracted.transx2gene.txt"
 gene_anno="~/genome/Human_GRCh38/gencode.v26.annotation.extracted.genes.annotation.txt"
 
-library(EnsDb.Hsapiens.v75)
-txdb <- EnsDb.Hsapiens.v75
+library(EnsDb.Hsapiens.v86)
+txdb <- EnsDb.Hsapiens.v86
 k <- keys(txdb, keytype = "TXID")
 df_trans <- select(txdb, keys = k, keytype = "TXID", columns = c("TXID","TXNAME","GENEID","ENTREZID","GENENAME"))
 df_genes <- select(txdb, keys = row.names(), keytype = "TXID", columns = c("TXID","TXNAME","GENEID","ENTREZID","GENENAME"))
