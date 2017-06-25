@@ -41,7 +41,7 @@ deseq2 <- function(txi_image, out_file, group, alias, threads) {
      colnames(rld) <- alias
      
      comb <- combinations(ugr_len, 2, ugr)
-     for (i in 1:dim(comb)[0])
+     for (i in 1:dim(comb)[1])
      {
          #res <- results(dds, contrast=c("condition","treated","control"))
          res <- results(dds, contrast=c("condition", comb[i,2], comb[i,1]))
