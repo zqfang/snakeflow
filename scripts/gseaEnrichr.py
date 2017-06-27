@@ -1,9 +1,9 @@
-def gsea_enrichr(diff, log2fc, padj, go, threads):
+def gsea_enrichr(diff, log2fc, padj, go):
     # python code
     from pandas import read_excel
     import gseapy as gp
 
-    sig_deg = read_excel(diff, sheet_name="sig-fc%s-padj%s"%(log2fc, padj))
+    sig_deg = read_excel(diff, sheet_name="sig-all.log2fc%s-padj%s"%(log2fc, padj))
     sig_deg_up= read_excel(diff, sheet_name="sig-up",)
     sig_deg_dw= read_excel(diff, sheet_name="sig-down",)
     
@@ -29,7 +29,7 @@ def gsea_enrichr(diff, log2fc, padj, go, threads):
     for domain in go:
         try:
             outdir="GO/GSEA_%s/%s"%(outGSEAname, domain)
-            gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain, processes=threads,
+            gp.prerank(rnk=sig_deg_gsea_sort, gene_sets=domain,
                         pheno_pos=treat, pheno_neg=ctrl, min_size=15, max_size=500, 
                         outdir=outdir)
         except:
@@ -37,4 +37,4 @@ def gsea_enrichr(diff, log2fc, padj, go, threads):
 
 
 gsea_enrichr(snakemake.input[0], snakemake.params['log2fc'], snakemake.params['padj'],
-            snakemake.params['go'], snakemake.threads)
+            snakemake.params['go'])

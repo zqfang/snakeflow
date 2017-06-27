@@ -11,10 +11,10 @@ do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_counts, out_image, thr
   all(file.exists(salmon.files))
 
   #aggregate transcripts to genes, and extract raw read counts  
+  #add ignoreTxVersion to remove id versions
   txi.salmon <- tximport(salmon.files, type = "salmon", 
-                         tx2gene = tx2gene, reader = read_tsv,
-                         countsFromAbundance = "no")
-  txi.transcripts <- tximport(salmon.files, type = "salmon", txOut = TRUE, tx2gene = tx2gene)
+                         tx2gene = tx2gene, countsFromAbundance = "no")
+  txi.transcripts <- tximport(salmon.files, type = "salmon", txOut = TRUE, tx2gene = tx2gene,)
   salmon.counts<- txi.salmon$counts
   salmon.counts<- as.data.frame(salmon.counts)
   #salmon.counts$gene_name<- rownames(salmon.counts)

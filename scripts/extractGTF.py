@@ -6,7 +6,7 @@ def extract_gtf(gtf, gene_anno, tx2gene, threads):
     out1 = open(gene_anno, 'w') 
     out2 = open(tx2gene, 'w')
     out1.write("gene_id\tgene_name\tgene_type\n")
-    out2.write("tx_id\tgene_id\n")
+    out2.write("tx_id\tgene_id\tgene_name\n")
     for line in open(gtf):
         if line.startswith('#'): continue
         attr = dict(item.strip().split(' ')  for item in line.split('\t')[8].strip('\n').split(';') if item)
@@ -18,7 +18,7 @@ def extract_gtf(gtf, gene_anno, tx2gene, threads):
             out1.write(line_out)
             lines_seen.add(line_out)
         if 'transcript_id' in attr:
-            tx2gene_out = attr['transcript_id'].strip('\"')+'\t'+ attr['gene_id'].strip('\"')+'\n'
+            tx2gene_out = attr['transcript_id'].strip('\"')+'\t'+ attr['gene_id'].strip('\"')+'\t'+ attr['gene_name'].strip('\"')+'\n'
             if tx2gene_out not in tx2gene_seen:
                 out2.write(tx2gene_out)
                 tx2gene_seen.add(tx2gene_out)

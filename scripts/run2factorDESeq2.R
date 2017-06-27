@@ -8,23 +8,36 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      suppressMessages(library("DESeq2"))
 
      library(gtools)
-     library(ggrepel)
-     
+
      load(txi_image)
      #assign each sample to differrent group.
      group <- unlist(strsplit(group, " "))
      alias <- unlist(strsplit(alias, " "))
-     sampleTable <- data.frame(condition = factor(group))
-     rownames(sampleTable) <- colnames(txi.salmon$counts)
-
+     treat <- unlist(strsplit(treat, " "))
+     
+    if (length(unique(treat))==1) 
+    {
+      #single factor design
+      sampleTable <- data.frame(condition = factor(group), row.names=alias)
+      dds <- DESeqDataSetFromTximport(txi.salmon, sampleTable, ~condition)
+    } else
+      {
+      # two factor design
+      sampleTable <- data.frame(condition = factor(group), treatment=factor(treat), row.names=alias)
+      dds <- DESeqDataSetFromTximport(txi.salmon, sampleTable, ~condition+treatment+condition:treatment)
+    }
+     
+     #rownames(sampleTable) <- colnames(txi.salmon$counts)
+     
      #ddsHTSeq <- DESeqDataSetFromHTSeqCount(sampleTable=sampleTable, directory=base_dir, design=~condition)
      #rownames(ddsHTSeq) <- gsub('\\.[0-9]+', '', rownames(ddsHTSeq))
      ## Filter genes with atleast 2 count
      #ddsHTSeq <- ddsHTSeq[ rowSums(counts(ddsHTSeq)) > 1,  ]
      #colData(ddsHTSeq)$condition<-factor(colData(ddsHTSeq)$condition, levels=c('control','knockdown'))   
  
+     #rownames(sampleTable) <- alias
      #run DESeq2
-     dds <- DESeqDataSetFromTximport(txi.salmon, sampleTable, ~condition)
+     
 
      #set level
      ugr <- unique(group)
@@ -34,16 +47,11 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      dds <- DESeq(dds)
 
      rld <- rlog(dds)
-     colnames(rld) <- alias
-
      vsd <- varianceStabilizingTransformation(dds)
      rlogMat <- assay(rld)
      vstMat <- assay(vsd)
 
-     # this gives log2(n + 1)
-     ntd <- normTransform(dds)
-     ntd2 <- t(scale(t(as.matrix(assay(ntd)))))
-     
+     colnames(rld) <- alias
      
      comb <- combinations(ugr_len, 2, ugr)
      for (i in 1:dim(comb)[1])
@@ -63,20 +71,19 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
 
           #TopGenes
           #betas <- coef(dds)
-
           topGenes <- head(order(res$padj),20)
-          df = data.frame(conditoin=group, row.names=colnames(rlogMat))
+          df = data.frame(conditoin=group,row.names=colnames(rlogMat))
           outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
-          pdf(outGenes)
-          pheatmap(ntd2[topGenes,], cluster_rows=T, show_rownames=T, cluster_cols=T, annotation_col = df)
+          pdf(outGenes, width = 4,height = 4)
+          pheatmap(rlogMat[topGenes,], cluster_rows=T, show_rownames=T, cluster_cols=T, annotation_col = df)
           dev.off()
           
           #all Degs
           degs <- which(res$padj < 0.05)
           outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
           pdf(outGenes, width = 5,height = 5)
-          pheatmap(ntd2[degs,], cluster_rows=T, show_rownames=F, cluster_cols=T,)
-          dev.off()
+          pheatmap(rlogMat[degs,], cluster_rows=T, show_rownames=F, cluster_cols=T,)
+
 
      } 
 
@@ -95,17 +102,14 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      dev.off()
 
      #PCA plot.
-     pdf("differential_expression/Samples.PCA.pdf")
+     pdf("differential_expression/Samples.PCA.pdf",width = 4, height = 3)
      data <- plotPCA(rld, intgroup="condition", returnData=TRUE)
      percentVar <- round(100 * attr(data, "percentVar"))
-     #add geom_text(check_overlap = T, to remove overlap text)
      ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))+
-            geom_text_repel(fontface = "bold")+ 
-            geom_point(size=3) +
-            xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-            ylab(paste0("PC2: ",percentVar[2],"% variance"))
-    dev.off()
-
+         geom_text(check_overlap = T,vjust = 0, nudge_y = 0.5) + geom_point(size=3) +
+         xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+         ylab(paste0("PC2: ",percentVar[2],"% variance"))
+     dev.off()
 
 
      #save dds for further processing
@@ -113,7 +117,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
 
 }
 
-deseq2(snakemake@input[['image']], snakemake@output[['image']], 
+deseq2(snakemake@input[['image']], snakemake@output[['res']], 
        snakemake@params[['group']],snakemake@params[['time']],
        snakemake@params[['alias']])
 

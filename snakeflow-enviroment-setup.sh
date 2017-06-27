@@ -11,7 +11,8 @@ log () {
     echo
 }
 
-PY_VERSION=3.5
+PY_VERSION=3.6
+
 
 #if [[ "$PY_VERSION" == "2.7" ]]; then
 #        wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -26,7 +27,6 @@ PY_VERSION=3.5
 conda config --set always_yes yes 
 conda config --add channels conda-forge
 conda config --add channels defaults
-conda config --add channels r
 conda config --add channels bioconda
 
 
@@ -56,10 +56,10 @@ conda install ipython cython numpy scipy pandas matplotlib snakemake gseapy xlrd
 #other commandline tools
 conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz 
 #R packages
-#conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon r-pheatmap
+#conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon r-pheatmap r-ggrepel
 
 #log "install gene annotation requirements"
 wget http://bioconductor.org/biocLite.R
-Rscript -e "source('biocLite.R');options(BioC_mirror='http://mirrors.ustc.edu.cn/bioc/');biocLite();biocLite(c('DESeq2','readr','pheatmap','tximport','ballgown'))"
+Rscript -e "source('biocLite.R');options(BioC_mirror='http://mirrors.ustc.edu.cn/bioc/');biocLite();biocLite(c('DESeq2','readr','pheatmap','tximport','ballgown','ggrepel'))"
 
 log "all files are ready. Proceed to next step now."

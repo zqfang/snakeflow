@@ -161,6 +161,7 @@ rule pre_rMATS:
         ugsamples=RMATS_DICT,
         ugroup=uGroup,
     run:
+        from itertools import combinations
         for u, g in zip(params.ugroup, params.ugsamples):
             out = open("temp/b_%s.txt"%u, 'w')
             temp = ["/data/mapped/%s.sorted.bam"%sample for sample in g]
@@ -168,10 +169,11 @@ rule pre_rMATS:
             out.write(line)
             out.close()
         for i in range(1, len(params.ugroup)):
-            outname = "temp/%s_vs_%s.rmats.txt"%(params.ugroup[i],params.ugroup[i-1])
+        for i, j in combinations(params.ugroup, 2):
+            outname = "temp/%s_vs_%s.rmats.txt"%(j,i)
             out2 = open(outname,'w')
-            out2.write("temp/b_%s.txt\n"%params.ugroup[i])
-            out2.write("temp/b_%s.txt\n"%params.ugroup[i-1])
+            out2.write("temp/b_%s.txt\n"%j)
+            out2.write("temp/b_%s.txt\n"%i)
             out.close()
         shell("cp {input.gtf} {output.gtf_tmp}")
 
