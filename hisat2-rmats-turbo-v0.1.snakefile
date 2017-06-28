@@ -223,7 +223,7 @@ rule rMATS_anno:
         indir="alternative_splicing/rMATS.{treat}_vs_{ctrl}",
         outdir="alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig",
         go=config['enrichr_library'],
-        sample_info=config['sample']['coldata'],
+        sample_info=config['samples']['coldata'],
         rbps=config['rbps']
     script:
         "scripts/annotateRMATS.py"
