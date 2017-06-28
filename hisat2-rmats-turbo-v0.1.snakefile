@@ -1,4 +1,5 @@
-from os.path import join,isfile
+from os.path import join, isfile
+from itertools import combinations
 from snakemake.shell import shell
 
 configfile: 'config.yml'
@@ -55,6 +56,7 @@ if isfile(config['samples']['coldata']):
     with open(config['samples']['coldata']) as f:
         lines = f.readlines()
     for line in lines:
+        if line.startswith("#"): continue
         item = line.rstrip("\n").split(" ")
         SAMPLES.append(item[0])
         SAMPLES_ALIAS.append(item[1])
@@ -85,7 +87,7 @@ DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
 
 
 ########### Target output files #################
-RMATS_TEMP=["alternative_splicing/rMATS.%s_vs_%s/{type}.MATS.JCEC.txt"%(uGroup[i], uGroup[i-1]) for i in range(1, len(uGroup))]
+RMATS_TEMP=["alternative_splicing/rMATS.%s_vs_%s/{type}.MATS.JCEC.txt"%(j, i) for i, j in combinations(uGroup, 2)]
 RMATS_TURBO =[temp.format(type=t) for temp in RMATS_TEMP for t in ['A3SS','A5SS','MXE','RI','SE']]
 
 ################## Rules #######################################
@@ -155,7 +157,7 @@ rule pre_rMATS:
         bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
         gtf=GTF_FILE
     output:
-        groups= ["temp/{treat}_vs_{ctrl}.rmats.txt".format(treat=uGroup[i], ctrl=uGroup[i-1]) for i in range(1, len(uGroup))],
+        groups= ["temp/%s_vs_%s.rmats.txt"%(j, i) for i, j in combinations(uGroup, 2)],
         gtf_tmp = join("temp", GTF_FILE.split("/")[-1])
     params:
         ugsamples=RMATS_DICT,
@@ -168,7 +170,7 @@ rule pre_rMATS:
             line=",".join(temp)
             out.write(line)
             out.close()
-        for i in range(1, len(params.ugroup)):
+
         for i, j in combinations(params.ugroup, 2):
             outname = "temp/%s_vs_%s.rmats.txt"%(j,i)
             out2 = open(outname,'w')
@@ -177,35 +179,12 @@ rule pre_rMATS:
             out.close()
         shell("cp {input.gtf} {output.gtf_tmp}")
 
-"""
-rule rMATS_turbo:
-    input:
-        bam=expand("mapped/{sample}.sorted.bam", sample=SAMPLES),
-        bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
-        gtf=GTF_FILE,
-        group1 = "temp/b1.txt",
-        group2 = "temp/b2.txt",
-        gtf_tmp = join("temp", GTF_FILE.split("/")[-1]) 
-    output: RMATS_TURBO 
-    threads: 8
-    log: "logs/rMATS-turbo/{treat}_vs_{ctrl}.rMATS.turbo.log".format(treat=uGroup[1], ctrl=uGroup[0]),
-    params:
-        prefix="alternative_splicing/rMATS.{treat}_vs_{ctrl}".format(treat=uGroup[1], ctrl=uGroup[0]),
-        extra=" -t %s --readLength %s --anchorLength 1 "%(PAIRED, READ_LEN),
-        wkdir= config['workdir'],
-        gtf= join("temp", GTF_FILE.split("/")[-1]),
-    shell:
-        "docker run -v {params.wkdir}:/data rmats:turbo01 "
-        "--b1 /data/temp/b1.txt --b2 /data/temp/b2.txt --gtf /data/{params.gtf} "
-        "--od /data/{params.prefix}  --nthread {threads} --tstat {threads} {params.extra} &> {log}"
-"""
-
 rule rMATS_turbo:
     input:
         bam=expand("mapped/{sample}.sorted.bam", sample=SAMPLES),
         bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
         gtf = join("temp", GTF_FILE.split("/")[-1]), 
-        "temp/{treat}_vs_{ctrl}.rmats.txt"
+        rmats="temp/{treat}_vs_{ctrl}.rmats.txt"
     output: 
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/SE.MATS.JCEC.txt",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A3SS.MATS.JCEC.txt",

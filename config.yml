@@ -16,11 +16,11 @@ cdna: "/Users/bioninja/genome/Human_GRCh38/gencode.v26.transcripts.fa"
 # GTF file path
 # we use gencode archive, downlaod from here: 
 # http://www.gencodegenes.org/releases/current.html
-gtf: "/Users/bioninja/genome//Human_GRCh38/gencode.v26.annotation.gtf"
+gtf: "/Users/bioninja/genome/Human_GRCh38/gencode.v26.annotation.gtf"
 
 # Index dir
-hisat_index: "/Users/bioninja/genome//Human_GRCh38/hisat2Indices_hg38"
-salmon_index: "/Users/bioninja/genome//Human_GRCh38/salmonIndices_hg38"
+hisat_index: "/Users/bioninja/genome/Human_GRCh38/hisat2Indices_hg38"
+salmon_index: "/Users/bioninja/genome/Human_GRCh38/salmonIndices_hg38"
 
 # Index basebame (only for hisat2)
 index_prefix: "hg38"
