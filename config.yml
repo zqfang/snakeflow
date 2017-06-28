@@ -70,7 +70,10 @@ samples:
       ## WGC096875R_combined S75    Cancer 0
       ## WGC096876R_combined S76    Normal 0
       ## WGC096877R_combined S77    Cancer 0 
-
+enrichr_library: ['GO_Cellular_Component_2015','GO_Molecular_Function_2015',
+                  'GO_Biological_Process_2015','Human_Phenotype_Ontology',
+                   'MSigDB_Oncogenic_Signatures','WikiPathways_2016',
+                   'KEGG_2016']
 
 
 # Before running with your samples,

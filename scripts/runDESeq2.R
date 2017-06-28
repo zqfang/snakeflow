@@ -9,7 +9,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
 
      library(gtools)
      library(ggrepel)
-     
+
      load(txi_image)
      #assign each sample to differrent group.
      group <- unlist(strsplit(group, " "))
@@ -43,7 +43,10 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      # this gives log2(n + 1)
      ntd <- normTransform(dds)
      ntd2 <- t(scale(t(as.matrix(assay(ntd)))))
-     
+     colnames(ntd2) = colnames(rld)
+     df = data.frame(treatment=group, row.names=colnames(ntd2))
+
+
      
      comb <- combinations(ugr_len, 2, ugr)
      for (i in 1:dim(comb)[1])
@@ -65,7 +68,8 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           #betas <- coef(dds)
 
           topGenes <- head(order(res$padj),20)
-          df = data.frame(conditoin=group, row.names=colnames(rlogMat))
+          #df <- data.frame(conditoin=group, row.names=colnames(rlogMat))
+
           outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
           pdf(outGenes)
           pheatmap(ntd2[topGenes,], cluster_rows=T, show_rownames=T, cluster_cols=T, annotation_col = df)
@@ -74,8 +78,8 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           #all Degs
           degs <- which(res$padj < 0.05)
           outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
-          pdf(outGenes, width = 5,height = 5)
-          pheatmap(ntd2[degs,], cluster_rows=T, show_rownames=F, cluster_cols=T,)
+          pdf(outDEGs)
+          pheatmap(ntd2[degs,], cluster_rows=T, show_rownames=F, cluster_cols=T,annotation_col = df)
           dev.off()
 
      } 
@@ -99,11 +103,12 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      data <- plotPCA(rld, intgroup="condition", returnData=TRUE)
      percentVar <- round(100 * attr(data, "percentVar"))
      #add geom_text(check_overlap = T, to remove overlap text)
-     ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))+
-            geom_text_repel(fontface = "bold")+ 
-            geom_point(size=3) +
-            xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-            ylab(paste0("PC2: ",percentVar[2],"% variance"))
+     p <- ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))
+     p+ geom_text_repel(fontface = "bold")+ 
+             geom_point(size=3) +
+             xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+             ylab(paste0("PC2: ",percentVar[2],"% variance"))
+
     dev.off()
 
 

@@ -80,10 +80,7 @@ PATTERN_R2 = config['read_pattern']['r2']
 DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
         'differential_expression','logs','temp']
 # go domain
-GO_DOMAIN = ['GO_Cellular_Component_2015','GO_Molecular_Function_2015',
-             'GO_Biological_Process_2015','Human_Phenotype_Ontology',
-             'MSigDB_Oncogenic_Signatures','WikiPathways_2016',
-             'KEGG_2016']
+GO_DOMAIN = config['enrichr_library']
 
 ########### Target output files #################
 
@@ -104,8 +101,8 @@ ROBJ_DESeq="differential_expression/deseq2.dds.RData"
 DESEQ_RES = ["differential_expression/diff_%s_vs_%s_results.txt"%(j, i) for i, j in combinations(uGroup, 2)]
 DESEQ_ANNO = [res.replace(".txt", ".annotated.xls") for res in DESEQ_RES]
 
-GSEA_RES=["GO/GSEA_{treat}_vs_{ctrl}/%s/gseapy.prerank.gene_sets.report.csv"%domain for domain in GO_DOMAIN]
-GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.prerank.gene_sets.report.csv"%(j, i) for i, j in combinations(uGroup, 2)]
+GSEA_RES=["GO/GSEA_{treat}_vs_{ctrl}/%s/gseapy.gsea.gene_sets.report.csv"%domain for domain in GO_DOMAIN]
+GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene_sets.report.csv"%(j, i) for i, j in combinations(uGroup, 2)]
 #Enrichr = ["GO/Enrichr_{treat}_vs_{ctrl}/{domain}_{types}/{domain}_{type}_enrichr.reports.txt",type=["all","up","down"]
 #GSEA_OUT = [ GSEA_RES.format(treat=uGroup[i], ctrl=uGroup[i-1]) for i in range(1, len(uGroup))]
 ################## Rules #######################################
