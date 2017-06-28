@@ -204,3 +204,18 @@ rule rMATS_turbo:
         "--gtf /data/{params.gtf} --od /data/{params.prefix} "
         "--nthread {threads} --tstat {threads} {params.extra} &> {log}"
 
+
+rule rMATS_anno:
+    input:
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/SE.MATS.JCEC.txt",
+        "differential_expression/diff_{treat}_vs_{ctrl}_results.annotated.xls"
+    output:
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/SE.MATS.JCEC.sig.csv"
+    params:
+        indir="alternative_splicing/rMATS.{treat}_vs_{ctrl}",
+        outdir="alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig",
+        go=config['enrichr_library'],
+        sample_info=config['sample']['coldata'],
+        rbps=config['rbps']
+    script:
+        "scripts/annotateRMATS.py"
