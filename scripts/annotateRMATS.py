@@ -1,17 +1,25 @@
-def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
+def rmats_anno(indir, outdir, rbps, diff_exp, go):
 
     import glob, os
+    import matplotlib 
+    matplotlib.use('agg')
+
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
     import seaborn as sns
     import gseapy as gp
 
-    sample_table=sample_info
+    #gene_expression_table
+    gene_exp=pd.read_excel(diff_exp, index_col='gene_id')
+    #remove .versions of each id
+    gene_exp.index = gene_exp.index.str.split(".").str[0]
+
+
     # Significant events are based on FDR < 5% and | deltaPSI | > 10%
     as_rmats = glob.glob(os.path.join(indir, "*.MATS.JCEC.txt"))
 
-    treat, ctrl = indir.split("/")[-1].lstrip("rMATS_")..split("_vs_")
+    treat, ctrl = indir.split("/")[-1].lstrip("rMATS.").split("_vs_")
 
     as_type =[]
     as_total = []
@@ -20,7 +28,7 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
     for f in as_rmats:
         temp = f.split("/")
         ast =temp[-1].split(".")[0]
-        outname= outdir+temp[-1].replace(".txt", ".sig.csv")
+        outname= os.path.join(outdir, "%s.MATS.JCEC.sig.csv"%(ast))
         s = pd.read_table(f)
         ss =  s[(s['IncLevelDifference'].abs() > 0.1) & (s['FDR'] < 0.05) ]
         ss.to_csv(outname,index=False)
@@ -30,11 +38,12 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
         as_sig.append(len(ss))
 
     SE_sig = pd.read_csv(os.path.join(outdir, "SE.MATS.JCEC.sig.csv"), index_col='ID')
-    sampleInfo = pd.read_table(sample_table, sep=" ")
-    sampleInfo.columns="sample_name alias group time".split()
 
-    group_b1=sampleInfo.loc[sampleInfo.group==treat, 'alias']
-    group_b2=sampleInfo.loc[sampleInfo.group==ctrl, 'alias']
+    cols_ = [col for col in gene_exp.columns if col.startswith("TPM")]   
+    cols_group = [col.split(".")[1] for col in cols_ ]
+
+    group_b1  = [col for col, group in zip(cols_, cols_group) if treat == group] 
+    group_b2  = [col for col, group in zip(cols_, cols_group) if ctrl == group]
 
     #split psi values for each sample
     data = []
@@ -48,8 +57,9 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
         sample2.name="psi."+ row
         data.append(sample2)
     dat = pd.concat(data,axis=1,)
-
-
+    dat = dat.dropna()
+    
+    
     outdir = outdir+"/Skip_Exons"
     #gsea data
     data_ann = pd.concat([SE_sig[['GeneID','geneSymbol']],dat],axis=1)
@@ -60,16 +70,14 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
 
     #plotting
     sns.set(font_scale=1.5, context='talk')
+    dat = dat[dat.std(axis=1) != 0 ]
     sg = sns.clustermap(dat,yticklabels=False,figsize=(6,6), z_score=0)
+
     sg.fig.suptitle("differentially_skipped_exons")
     sg.savefig(outdir+"/differentially_skipped_exons.pdf")
     sg.savefig(outdir+"/differentially_skipped_exons.png",dpi=300)
 
 
-    #gene_expression_table
-    gene_exp=pd.read_excel(diff_exp, index_col='gene_id')
-    #remove .versions of each id
-    gene_exp.index = gene_exp.index.str.split(".").str[0]
 
     #load RNA binding protein list
     rbp = pd.read_csv(rbps)
@@ -106,15 +114,20 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
     cbar.ax.tick_params(right='off',left='off',labelsize=14)
     cbar.ax.set_title('log$_{10}$ baseMean',loc='left',fontsize=14)
     #sns.despine()
-    fig.savefig(outdir+"RBP_vacano.png",bbox_inches='tight')
-    fig.savefig(outdir+"RBP_vacano.pdf",bbox_inches='tight')
+    fig.savefig(outdir+"/RBP_vacano.png",bbox_inches='tight')
+    fig.savefig(outdir+"/RBP_vacano.pdf",bbox_inches='tight')
 
+
+
+    #select columns for gsea
+    #b1_treat  = [col for col, group in zip(cols_, cols_group) if treat == group] 
+    #b2_treat  = [col for col, group in zip(cols_, cols_group) if ctrl == group]
 
     #extract expression
-    b1_treat = [col for col in rbp_exp.columns if col.startswith("TPM."+treat)]
-    b2_treat = [col for col in rbp_exp.columns if col.startswith("TPM."+ctrl)]
-    g_b1_meanTPM = rbp_exp[b1_treat].mean(axis=1)
-    g_b2_meanTPM = rbp_exp[b2_treat].mean(axis=1)
+    #b1_treat = [col for col in rbp_exp.columns if col.startswith("TPM."+treat)]
+    #b2_treat = [col for col in rbp_exp.columns if col.startswith("TPM."+ctrl)]
+    g_b1_meanTPM = rbp_exp[group_b1].mean(axis=1)
+    g_b2_meanTPM = rbp_exp[group_b2].mean(axis=1)
 
     #scatter plot
     fig, ax = plt.subplots(figsize=(6,6))
@@ -134,31 +147,31 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
     ax.set_xlabel("log$_2$(avgTPM %s)"%treat)
     ax.set_ylabel("log$_2$(avgTPM %s)"%ctrl)
     #sns.despine()
-    plt.show()
     fig.savefig(os.path.join(outdir,"RBP_scatter.png"),bbox_inches='tight')
     fig.savefig(os.path.join(outdir,"RBP_scatter.pdf"),bbox_inches='tight')
 
 
 
+
+
     #bar plot of sig RBPs
-    rbp_sig = rbp_sig.sort_values('log2FoldChange',)
+    if len(rbp_sig) >= 1:
+        rbp_sig = rbp_sig.sort_values('log2FoldChange',)
 
-    # the y coords of this transformation are data, and the
-    # x coord are axes
-    t = trans.blended_transform_factory(ax.transAxes, ax.transData)
+        fig, ax = plt.subplots(figsize=(6,4))
+        # the y coords of this transformation are data, and the
+        # x coord are axes
+        t = trans.blended_transform_factory(ax.transAxes, ax.transData)
 
-    fig, ax = plt.subplots(figsize=(6,4))
-    #ax.bar(left=np.arange(len(rbp_top18)),height=rbp_top18.log2FoldChange,color='#4C72B0', align='center',
-    #       tick_label=rbp_top18.geneSymbol)
-    bar = sns.barplot(x='gene_name',y='log2FoldChange',data=rbp_sig, ax=ax,palette="BuGn_d",edgecolor='none')
-    ax.set_xticklabels(rbp_sig.gene_name,rotation=90)
-    ax.set_ylabel("log$_2$(%s/%s)"%(treat, ctrl))
-    ax.set_title("Differential_RNA_Binding_Protein_Expression")
-    #ax.hlines(xmin=[0,0],xmax=[17,17],y=[1,-1], linestyles='dashed',linewidths=1,colors='k')
-    ax.set_xlabel("")
-    sns.despine()
-    fig.savefig(os.path.join(outdir,"RBP_Expression_sig.png"),bbox_inches='tight')
-    fig.savefig(os.path.join(outdir,"RBP_Expression_sig.pdf"),bbox_inches='tight')
+        bar = sns.barplot(x='gene_name',y='log2FoldChange',data=rbp_sig, ax=ax, palette="BuGn_d",edgecolor='none')
+        ax.set_xticklabels(rbp_sig.gene_name,rotation=90)
+        ax.set_ylabel("log$_2$(%s/%s)"%(treat, ctrl))
+        ax.set_title("Differential_RNA_Binding_Protein_Expression")
+        #ax.hlines(xmin=[0,0],xmax=[17,17],y=[1,-1], linestyles='dashed',linewidths=1,colors='k')
+        ax.set_xlabel("")
+        sns.despine()
+        fig.savefig(os.path.join(outdir,"RBP_Expression_sig.png"),bbox_inches='tight')
+        fig.savefig(os.path.join(outdir,"RBP_Expression_sig.pdf"),bbox_inches='tight')
 
 
     # ## GO
@@ -182,7 +195,7 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
     plt.style.use('classic')
 
     for domain in GO_DOMAIN:
-        outname = os.path.join(outdir, "GSEA_AS_%S_vs_%s"%(treat, ctrl), domain)
+        outname = os.path.join(outdir, "GSEA_AS_%s_vs_%s"%(treat, ctrl), domain)
         try:
             prerank = gp.prerank(rnk=rank_list, gene_sets=domain, min_size=15, max_size=500,
                              pheno_pos=treat,pheno_neg=ctrl, outdir=outname)
@@ -194,13 +207,15 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
         for glist, gl_type in zip([rank_list.geneSymbol.squeeze().tolist(),
                                    rank_list_up.geneSymbol.squeeze().tolist(), 
                                    rank_list_down.geneSymbol.squeeze().tolist()],['all','up','down']):
+            
+            outname = os.path.join(outdir, "Enrichr_SkipExons_%s_vs_%s"%(treat, ctrl))  
+            try:     
+                enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, description=domain, cutoff=0.2,
+                                     outdir=outname+'/%s_%s'%(domain, gl_type))
+            except Exception:
+                print("Enrichr Server No Response. Try again later!!!")
 
-            outname = os.path.join(outdir, "Enrichr_SkipExons_%S_vs_%s"%(treat, ctrl))       
-            enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, description=domain, 
-                                 outdir=outname+'/%s_%s'%(domain, gl_type))
 
-
-
-rmats_anno(snakemake.params['indir'], snakemake.params['outdir'], snakemake.params['sample_info'],
+rmats_anno(snakemake.params['indir'], snakemake.params['outdir'],
             snakemake.params['rbps'], snakemake.input[0], snakemake.params['go'])
 

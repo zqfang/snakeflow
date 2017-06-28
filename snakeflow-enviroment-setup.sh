@@ -36,7 +36,7 @@ log "install snakemake requirements"
 #conda install macs2 rseqc
 
 source deactivate
-conda install macs2 rseqc
+conda install rseqc
 name="snakeflow"
 #clone a environment
 #conda list --export > snakemake-env-packages.txt
@@ -51,10 +51,11 @@ source activate $name
 
 log "install snakemake-env-packages"
 #python packages
-conda install ipython cython numpy scipy pandas matplotlib snakemake gseapy xlrd xlwt multiqc 
+conda install ipython cython numpy scipy pandas matplotlib seaborn snakemake  xlrd xlwt 
+conda install -c bioninja gseapy
 
 #other commandline tools
-conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz 
+conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz multiqc
 #R packages
 #conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon r-pheatmap r-ggrepel
 

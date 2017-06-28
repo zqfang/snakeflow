@@ -219,11 +219,11 @@ rule rMATS_anno:
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/A5SS.MATS.JCEC.sig.csv",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/RI.MATS.JCEC.sig.csv",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/MXE.MATS.JCEC.sig.csv",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/Skip_Exons/Diff_skip_exons_table_for_gsea.txt",
     params:
         indir="alternative_splicing/rMATS.{treat}_vs_{ctrl}",
         outdir="alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig",
         go=config['enrichr_library'],
-        sample_info=config['samples']['coldata'],
         rbps=config['rbps']
     script:
         "scripts/annotateRMATS.py"
