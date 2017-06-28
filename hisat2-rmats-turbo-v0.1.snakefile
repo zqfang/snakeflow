@@ -87,7 +87,7 @@ DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
 
 
 ########### Target output files #################
-RMATS_TEMP=["alternative_splicing/rMATS.%s_vs_%s/{type}.MATS.JCEC.txt"%(j, i) for i, j in combinations(uGroup, 2)]
+RMATS_TEMP=["alternative_splicing/rMATS.%s_vs_%s_sig/{type}.MATS.JCEC.sig.csv"%(j, i) for i, j in combinations(uGroup, 2)]
 RMATS_TURBO =[temp.format(type=t) for temp in RMATS_TEMP for t in ['A3SS','A5SS','MXE','RI','SE']]
 
 ################## Rules #######################################
@@ -150,7 +150,7 @@ rule bam_index:
     shell: "samtools index {input}"
 
 
-rule pre_rMATS:
+rule rMATS_pre:
     """prepared bam and gtf files for rmats docker image"""
     input:
         bam=expand("mapped/{sample}.sorted.bam", sample=SAMPLES),
@@ -207,10 +207,18 @@ rule rMATS_turbo:
 
 rule rMATS_anno:
     input:
+        "differential_expression/diff_{treat}_vs_{ctrl}_results.annotated.xls",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/SE.MATS.JCEC.txt",
-        "differential_expression/diff_{treat}_vs_{ctrl}_results.annotated.xls"
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A3SS.MATS.JCEC.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A5SS.MATS.JCEC.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/RI.MATS.JCEC.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}/MXE.MATS.JCEC.txt"
     output:
-        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/SE.MATS.JCEC.sig.csv"
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/SE.MATS.JCEC.sig.csv",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/A3SS.MATS.JCEC.sig.csv",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/A5SS.MATS.JCEC.sig.csv",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/RI.MATS.JCEC.sig.csv",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/MXE.MATS.JCEC.sig.csv",
     params:
         indir="alternative_splicing/rMATS.{treat}_vs_{ctrl}",
         outdir="alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig",

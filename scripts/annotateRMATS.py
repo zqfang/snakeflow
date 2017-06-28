@@ -202,5 +202,5 @@ def rmats_anno(indir, outdir,sample_info, rbps, diff_exp, go):
 
 
 rmats_anno(snakemake.params['indir'], snakemake.params['outdir'], snakemake.params['sample_info'],
-            snakemake.params['rbps'], snakemake.input[1], snakemake.params['go'])
+            snakemake.params['rbps'], snakemake.input[0], snakemake.params['go'])
 

@@ -75,7 +75,8 @@ enrichr_library: ['GO_Cellular_Component_2015','GO_Molecular_Function_2015',
                    'MSigDB_Oncogenic_Signatures','WikiPathways_2016',
                    'KEGG_2016']
 
-
+# RNA Binding Protein list                   
+rbps: "/Users/bioninja/public-seq/H170013-P001/snakeflow/221RBPs.csv"
 # Before running with your samples,
 # please rename all your samples with the same suffix below.
 # for example, rename all your sample like this: "WGC096874R_combined_R1.fastq.gz"
