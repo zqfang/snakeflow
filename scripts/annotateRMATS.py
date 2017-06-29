@@ -47,16 +47,17 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
 
     #split psi values for each sample
     data = []
-
-    for i, row in enumerate(group_b1):
+    _b1 = [g.strip("TPM.") for g in group_b1] 
+    _b2 = [g.strip("TPM.") for g in group_b2] 
+    for i, row in enumerate(_b1):
         sample1 = SE_sig['IncLevel1'].str.split(",").str[i].astype('float')
-        sample1.name="psi."+ row
+        sample1.name="PSI."+ row
         data.append(sample1)
-    for i, row in enumerate(group_b2):
+    for i, row in enumerate(_b2):
         sample2 = SE_sig['IncLevel2'].str.split(",").str[i].astype('float')
-        sample2.name="psi."+ row
+        sample2.name="PSI."+ row
         data.append(sample2)
-    dat = pd.concat(data,axis=1,)
+    dat = pd.concat(data, axis=1,)
     dat = dat.dropna()
     
     
@@ -124,8 +125,6 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     #b2_treat  = [col for col, group in zip(cols_, cols_group) if ctrl == group]
 
     #extract expression
-    #b1_treat = [col for col in rbp_exp.columns if col.startswith("TPM."+treat)]
-    #b2_treat = [col for col in rbp_exp.columns if col.startswith("TPM."+ctrl)]
     g_b1_meanTPM = rbp_exp[group_b1].mean(axis=1)
     g_b2_meanTPM = rbp_exp[group_b2].mean(axis=1)
 
@@ -134,7 +133,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     sc = ax.scatter(x = np.log2(g_b1_meanTPM),
                     y= np.log2(g_b2_meanTPM),
                     c= rbp_exp.log2FoldChange,
-                    cmap=plt.cm.viridis_r, edgecolors='face',s=90)
+                    cmap=plt.cm.viridis_r, edgecolors='face', s=90)
     #ax.plot(x=[-10,15],y=[-10,15],)
     #colorbar
     cax=fig.add_axes([1.02,0.25,0.03,0.25])

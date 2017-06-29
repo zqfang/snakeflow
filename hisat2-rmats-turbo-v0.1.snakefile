@@ -219,7 +219,7 @@ rule rMATS_anno:
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/A5SS.MATS.JCEC.sig.csv",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/RI.MATS.JCEC.sig.csv",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/MXE.MATS.JCEC.sig.csv",
-        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/Skip_Exons/Diff_skip_exons_table_for_gsea.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/Skip_Exons/SE.MATS.JCEC.sig.annotated.csv",
     params:
         indir="alternative_splicing/rMATS.{treat}_vs_{ctrl}",
         outdir="alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig",
