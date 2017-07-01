@@ -7,3 +7,5 @@ dependencies:
     - scipy
     - numpy
     - pysam
+    - macs2
+    - reseqc
