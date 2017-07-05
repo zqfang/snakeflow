@@ -61,6 +61,6 @@ conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz mul
 
 #log "install gene annotation requirements"
 wget http://bioconductor.org/biocLite.R
-Rscript -e "source('biocLite.R');options(BioC_mirror='http://mirrors.ustc.edu.cn/bioc/');biocLite();biocLite(c('DESeq2','readr','pheatmap','tximport','ballgown','ggrepel'))"
+Rscript -e "source('biocLite.R');options(BioC_mirror='http://mirrors.ustc.edu.cn/bioc/');biocLite();biocLite(c('DESeq2','readr','pheatmap','tximport','ballgown','ggrepel','topGO','clusterProfiler','org.Hs.eg.db','Rgraphviz','EnsDb.Hsapiens.v86'))"
 
 log "all files are ready. Proceed to next step now."

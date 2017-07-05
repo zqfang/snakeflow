@@ -6,6 +6,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      suppressMessages(library("gplots"))
      suppressMessages(library("pheatmap"))
      suppressMessages(library("DESeq2"))
+     suppressMessages(library('EnsDb.Hsapiens.v86'))
 
      library(gtools)
      library(ggrepel)
@@ -21,8 +22,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      #rownames(ddsHTSeq) <- gsub('\\.[0-9]+', '', rownames(ddsHTSeq))
      ## Filter genes with atleast 2 count
      #ddsHTSeq <- ddsHTSeq[ rowSums(counts(ddsHTSeq)) > 1,  ]
-     #colData(ddsHTSeq)$condition<-factor(colData(ddsHTSeq)$condition, levels=c('control','knockdown'))   
- 
+  
      #run DESeq2
      dds <- DESeqDataSetFromTximport(txi.salmon, sampleTable, ~condition)
 
@@ -42,12 +42,23 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
 
      # this gives log2(n + 1)
      ntd <- normTransform(dds)
-     ntd2 <- t(scale(t(as.matrix(assay(ntd)))))
-     colnames(ntd2) = colnames(rld)
-     df = data.frame(treatment=group, row.names=colnames(ntd2))
+     #ntd2 <- t(scale(t(as.matrix(assay(ntd)))))
+     colnames(ntd) = colnames(rld)
+     #colnames(ntd2) = colnames(rld)
 
-
+     #remove tails(versions) of gene id
+     rownames(ntd) <- gsub('\\.[0-9]+', '', rownames(ntd))
      
+     #change the ensemble gene_id to gene_name for plotting
+     edb <- EnsDb.Hsapiens.v86
+     maps_names <- mapIds(edb, keys = rownames(ntd), column="GENENAME",
+                          keytype =  "GENEID", multiVals = "first") 
+     rownames(ntd) <- maps_names
+
+     #annotate columns of heatmap
+     df = data.frame(treatment=group, row.names=colnames(ntd))
+
+     #save results for each group     
      comb <- combinations(ugr_len, 2, ugr)
      for (i in 1:dim(comb)[1])
      {
@@ -71,16 +82,21 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           #df <- data.frame(conditoin=group, row.names=colnames(rlogMat))
 
           outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
-          pdf(outGenes)
-          pheatmap(ntd2[topGenes,], cluster_rows=T, show_rownames=T, cluster_cols=T, annotation_col = df)
-          dev.off()
+          #pdf(outGenes)
+          pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
+                   cluster_cols=T, annotation_col = df, cellwidth = 15, cellheight = 12, fontsize = 8,
+                    filename = outGenes))
+          #dev.off()
           
           #all Degs
           degs <- which(res$padj < 0.05)
-          outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
-          pdf(outDEGs)
-          pheatmap(ntd2[degs,], cluster_rows=T, show_rownames=F, cluster_cols=T,annotation_col = df)
-          dev.off()
+          #outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
+          #pdf(outDEGs)
+          pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
+                    cluster_cols=T, annotation_col = df, 
+                    cellwidth = 15, cellheight = 12, fontsize = 8,
+                    filename = outDEGs)
+          #dev.off()
 
      } 
 
@@ -104,11 +120,12 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      percentVar <- round(100 * attr(data, "percentVar"))
      #add geom_text(check_overlap = T, to remove overlap text)
      p <- ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))
-     p+ geom_text_repel(fontface = "bold")+ 
+     p <- p+ geom_text_repel(fontface = "bold")+ 
              geom_point(size=3) +
              xlab(paste0("PC1: ",percentVar[1],"% variance")) +
              ylab(paste0("PC2: ",percentVar[2],"% variance"))
-
+    #you have to use print() when calling ggplot and save to pdf
+    print(p)
     dev.off()
 
 
