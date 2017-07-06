@@ -2,6 +2,12 @@ do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_counts, out_image, thr
   # R code
   library(tximport)
   library(readr)
+  suppressMessages(library('EnsDb.Hsapiens.v86'))
+
+  #txdb <- EnsDb.Hsapiens.v86
+  #k <- keys(txdb, keytype = "GENEID")
+  #df <- select(txdb, keys = k, keytype = "GENEID", columns = c("TXID","GENEID"))
+  #tx2gene <- df[, 2:1]  # tx ID, then gene ID
 
   tx2gene <- read.table(tx2gene, header= T, sep="\t", stringsAsFactors = F)
   samples <- unlist(strsplit(sample_ids,","))
@@ -12,24 +18,26 @@ do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_counts, out_image, thr
 
   #aggregate transcripts to genes, and extract raw read counts  
   #add ignoreTxVersion to remove id versions
-  txi.salmon <- tximport(salmon.files, type = "salmon", 
-                         tx2gene = tx2gene, countsFromAbundance = "no")
+  #txi.salmon <- tximport(salmon.files, type = "salmon", 
+  #                       tx2gene = tx2gene, countsFromAbundance = "no")
   txi.transcripts <- tximport(salmon.files, type = "salmon", txOut = TRUE, tx2gene = tx2gene,)
+
+  txi.salmon <- summarizeToGene(txi.transcripts, tx2gene)
+
+  #save raw counts 
   salmon.counts<- txi.salmon$counts
   salmon.counts<- as.data.frame(salmon.counts)
-  #salmon.counts$gene_name<- rownames(salmon.counts)
   write.table(salmon.counts, out_counts, sep="\t", quote=F)
   
+  #save gene tpms
   salmon.TPM<- txi.salmon$abundance
   salmon.TPM<- as.data.frame(salmon.TPM)
-  #salmon.TPM$gene_name<- rownames(salmon.TPM)
   write.table(salmon.TPM, out_tpm, sep="\t", quote=F)
-
+  #save transcripts tpms
   salmon.trans.TPM<- txi.transcripts$abundance
   salmon.trans.TPM<- as.data.frame(salmon.trans.TPM)
-  #salmon.TPM$gene_name<- rownames(salmon.TPM)
   write.table(salmon.trans.TPM, outTrans_tpm, sep="\t", quote=F)
-
+   
   save(txi.salmon, file=out_image)
 }
 

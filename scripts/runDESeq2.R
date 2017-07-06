@@ -37,8 +37,8 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      colnames(rld) <- alias
 
      vsd <- varianceStabilizingTransformation(dds)
-     rlogMat <- assay(rld)
-     vstMat <- assay(vsd)
+     #rlogMat <- assay(rld)
+     #vstMat <- assay(vsd)
 
      # this gives log2(n + 1)
      ntd <- normTransform(dds)
@@ -76,11 +76,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           dev.off()
 
           #TopGenes
-          #betas <- coef(dds)
-
           topGenes <- head(order(res$padj),20)
-          #df <- data.frame(conditoin=group, row.names=colnames(rlogMat))
-
           outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
           #pdf(outGenes)
           pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
@@ -134,7 +130,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
 
 
      #save dds for further processing
-     save(dds,df,rlogMat,ntd, file=out_file)
+     save(dds, df,rld, ntd, file=out_file)
 
 }
 
