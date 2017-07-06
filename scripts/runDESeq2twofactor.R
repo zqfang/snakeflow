@@ -139,11 +139,13 @@ degs <- which(res$padj < 0.05)
 
 
 pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F,
-         cluster_cols=T, annotation_col = df,cellwidth = 15, fontsize = 8, 
+         cluster_cols=T, annotation_col = df,cellwidth = 15, fontsize = 12, 
+         main ="RKA_vs_RK",
          filename = paste0(outname,"all.degs.pdf"))
 
 
 topGenes <- head(order(res$padj),20)
 pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
-         cluster_cols=T, annotation_col = df,cellwidth = 15, fontsize = 8, 
+         cluster_cols=T, annotation_col = df,cellwidth = 15, fontsize = 12,
+         main ="RKA_vs_RK",
          filename = paste0(outname,"top20genes.pdf"))

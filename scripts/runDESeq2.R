@@ -84,8 +84,9 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
           #pdf(outGenes)
           pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
-                   cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 8,
-                    filename = outGenes)
+                   cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
+                   main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
+                   filename = outGenes)
           #dev.off()
           
           #all Degs
@@ -94,7 +95,8 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           #pdf(outDEGs)
           pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
                     cluster_cols=T, annotation_col = df, 
-                    cellwidth = 15, fontsize = 8,
+                    cellwidth = 15, fontsize = 12,
+                    main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
                     filename = outDEGs)
           #dev.off()
 
@@ -111,7 +113,8 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      pdf("differential_expression/Samples.correlation.heatmap.pdf",width = 5, height = 5)
      hc <- hclust(distsRL)
      heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
-               col = rev(hmcol), margin=c(13, 13))
+               col = rev(hmcol), margin=c(13, 13),
+               main="Sample Correlation")
      dev.off()
 
      #PCA plot.
