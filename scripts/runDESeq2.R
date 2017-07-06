@@ -43,8 +43,8 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      # this gives log2(n + 1)
      ntd <- normTransform(dds)
      #ntd2 <- t(scale(t(as.matrix(assay(ntd)))))
-     colnames(ntd) = colnames(rld)
-     #colnames(ntd2) = colnames(rld)
+     colnames(ntd) <- alias
+     ntd <- assay(ntd)
 
      #remove tails(versions) of gene id
      rownames(ntd) <- gsub('\\.[0-9]+', '', rownames(ntd))
@@ -84,17 +84,17 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
           #pdf(outGenes)
           pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
-                   cluster_cols=T, annotation_col = df, cellwidth = 15, cellheight = 12, fontsize = 8,
-                    filename = outGenes))
+                   cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 8,
+                    filename = outGenes)
           #dev.off()
           
           #all Degs
           degs <- which(res$padj < 0.05)
-          #outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
+          outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
           #pdf(outDEGs)
           pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
                     cluster_cols=T, annotation_col = df, 
-                    cellwidth = 15, cellheight = 12, fontsize = 8,
+                    cellwidth = 15, fontsize = 8,
                     filename = outDEGs)
           #dev.off()
 
@@ -131,7 +131,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
 
 
      #save dds for further processing
-     save(dds, file=out_file)
+     save(dds,df,rlogMat,ntd, file=out_file)
 
 }
 

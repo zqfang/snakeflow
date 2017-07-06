@@ -116,3 +116,34 @@ clusterProfiler::plotGOgraph(ekk)
 cnetplot(ego, categorySize="pvalue", foldChange=sort_uniq[sort_uniq$log2FoldChange < 0 ,'log2FoldChange'])
 
 enrichMap(ego)
+
+
+rld <- rlog(dds)
+# this gives log2(n + 1)
+ntd <- normTransform(dds)
+#ntd2 <- t(scale(t(as.matrix(assay(ntd)))))
+colnames(ntd) = colnames(rld)
+ntd = assay(ntd)
+rownames(ntd) <- gsub('\\.[0-9]+', '', rownames(ntd))
+#colnames(ntd2) = colnames(rld)
+edb <- EnsDb.Hsapiens.v86
+maps_names <- mapIds(edb, keys = rownames(ntd), column="GENENAME",
+                     keytype =  "GENEID", multiVals = "first") 
+rownames(ntd) <- maps_names
+
+
+
+#heatmap
+df = data.frame(condition=condition, treatment=treatment, row.names=colnames(ntd))
+degs <- which(res$padj < 0.05)
+
+
+pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F,
+         cluster_cols=T, annotation_col = df,cellwidth = 15, fontsize = 8, 
+         filename = paste0(outname,"all.degs.pdf"))
+
+
+topGenes <- head(order(res$padj),20)
+pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
+         cluster_cols=T, annotation_col = df,cellwidth = 15, fontsize = 8, 
+         filename = paste0(outname,"top20genes.pdf"))
