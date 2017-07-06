@@ -37,6 +37,21 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
         as_total.append(len(s))
         as_sig.append(len(ss))
 
+    #pie chart
+    explode = (0, 0, 0, 0, 0.1)  # only "explode" the 2nd slice (i.e. SE)
+    fig, ax=plt.subplots(ncols=2,nrows=1, figsize=(6,3))
+    ax[0].pie(as_sig, explode=explode, labels=as_type, autopct='%1.1f%%',
+              shadow=True, startangle=90)
+    ax[0].axis('equal') # Equal aspect ratio ensures that pie is drawn as a circle.
+    ax[0].set_title("Significant AS Events: %s vs %s"%(treat, ctrl))
+    ax[1].pie(as_total, explode=explode, labels=as_type, autopct='%1.1f%%',
+              shadow=True, startangle=90)
+    ax[1].axis('equal')
+    ax[1].set_title("Total AS Events: %s vs %s"%(treat, ctrl))
+    fig.savefig(outdir+"/differential_AS_events.piechart.pdf",bbox_inches='tight')
+    fig.savefig(outdir+"/differential_AS_events.piechart.png",bbox_inches='tight', dpi=300)
+
+
     SE_sig = pd.read_csv(os.path.join(outdir, "SE.MATS.JCEC.sig.csv"), index_col='ID')
 
     cols_ = [col for col in gene_exp.columns if col.startswith("TPM")]   
@@ -75,8 +90,8 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     sg = sns.clustermap(dat,yticklabels=False,figsize=(6,6), z_score=0)
 
     sg.fig.suptitle("differentially_skipped_exons")
-    sg.savefig(outdir+"/differentially_skipped_exons.pdf")
-    sg.savefig(outdir+"/differentially_skipped_exons.png",dpi=300)
+    sg.savefig(outdir+"/differentially_skipped_exons.pdf",bbox_inches='tight')
+    sg.savefig(outdir+"/differentially_skipped_exons.png",bbox_inches='tight', dpi=300)
 
 
 
