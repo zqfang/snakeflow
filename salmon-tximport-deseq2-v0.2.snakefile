@@ -96,8 +96,8 @@ SAMPLE_TXTPM ="gene_expression/transcripts_expression.TPM.txt"
 SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
 SAMPLE_TXTPM_ANNO ="gene_expression/transcripts_expression.TPM.annotated.csv"
 
-ROBJ_SALMON ="salmon/txi.salmon.RData"  
-ROBJ_DESeq="differential_expression/deseq2.dds.RData" 
+ROBJ_SALMON ="temp/txi.salmon.RData"  
+ROBJ_DESeq="temp/deseq2.dds.RData" 
 DESEQ_RES = ["differential_expression/diff_%s_vs_%s_results.txt"%(j, i) for i, j in combinations(uGroup, 2)]
 DESEQ_ANNO = [res.replace(".txt", ".annotated.xls") for res in DESEQ_RES]
 
@@ -109,7 +109,7 @@ GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene_sets.report.csv"%(j, i)
 
 
 rule target:
-    input: FASTQC, RAW_COUNTS, ROBJ_DESeq, DESEQ_ANNO, SAMPLE_TPM_ANNO, DESEQ_RES, GSEA_FINAL,
+    input: RAW_COUNTS, ROBJ_DESeq, DESEQ_ANNO, SAMPLE_TPM_ANNO, DESEQ_RES, GSEA_FINAL,
            #"GO/GSEA_HDE_vs_Ctrl/KEGG_2016/gseapy.prerank.gene_sets.report.csv",
            "gene_expression/gene_expression.TPM.annotated.csv",
            "gene_expression/transcripts_expression.TPM.annotated.txt"
