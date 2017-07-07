@@ -9,7 +9,7 @@ rownames(test) = paste("Gene", 1:20, sep = "")
 pheatmap(test)
 pheatmap(test, kmeans_k = 2)
 pheatmap(test, scale = "row", clustering_distance_rows = "correlation")
-pheatmap(test, color = colorRampPalette(c("navy", "white", "firebrick3"))(50) )
+pheatmap(test, color = colorRampPalette(c("navy", "white", "firebrick3"))(50) )#royalblue4, red3
 pheatmap(test, cluster_row = FALSE)
 pheatmap(test, legend = FALSE)
 # Show text within cells
@@ -69,3 +69,5 @@ library(dendsort)
 callback = function(hc, ...){dendsort(hc)}
 pheatmap(test, clustering_callback = callback)
 ## End(Not run)
+
+heatcols=colorRampPalette(brewer.pal(10, "RdBu"))(50)

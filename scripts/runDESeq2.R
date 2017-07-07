@@ -56,7 +56,11 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      rownames(ntd) <- maps_names
 
      #annotate columns of heatmap
-     df = data.frame(treatment=group, row.names=colnames(ntd))
+     df <- data.frame(treatment=group, row.names=colnames(ntd))
+
+     #color palete for heatmap
+     heatcols <- colorRampPalette(brewer.pal(10, "RdBu"))(100)
+     #heatcols=colorRampPalette(c("royalblue4", "white", "red3"))(50)
 
      #save results for each group     
      comb <- combinations(ugr_len, 2, ugr)
@@ -81,6 +85,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           #pdf(outGenes)
           pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
                    cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
+                   color=heatcols,
                    main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
                    filename = outGenes)
           #dev.off()
@@ -91,13 +96,12 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           #pdf(outDEGs)
           pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
                     cluster_cols=T, annotation_col = df, 
-                    cellwidth = 15, fontsize = 12,
+                    cellwidth = 15, fontsize = 12, color=heatcols,
                     main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
                     filename = outDEGs)
           #dev.off()
 
      } 
-
 
      #clustering plot
      hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
@@ -105,7 +109,6 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      mat <- as.matrix(distsRL)
      rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias, group, sep=":"))
     
-
      pdf("differential_expression/Samples.correlation.heatmap.pdf",width = 5, height = 5)
      hc <- hclust(distsRL)
      heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
@@ -127,10 +130,8 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
     print(p)
     dev.off()
 
-
-
      #save dds for further processing
-     save(dds, df,rld, ntd, file=out_file)
+     save(dds, df,rld, ntd, maps_names, file=out_file)
 
 }
 
