@@ -7,10 +7,23 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, log2f
     tpm = tpm[samples]
     tpm.columns = ["TPM.%s.%s"%(g,a) for a, g, s in zip(alias, group, samples)]
 
+    #parse treat and ctrl
+    diff_group = deseqs.split("/")[-1].lstrip("diff_").rpartition("_")[0]
+    treat, ctrl = diff_group.split("_vs_")
+
+    #select columns for treat and ctrl group 
+    cols_ = [col for col in tpm.columns if col.startswith("TPM.")]
+    
+    cols_group = [col.split(".")[1] for col in cols_ ]
+    cols  = [col for col, group in zip(cols_, cols_group) if treat == group] +\
+            [col for col, group in zip(cols_, cols_group) if ctrl == group]
+    tpm_diffs = tpm[cols]
+
+    
     deseq = pd.read_table(deseqs, index_col=0)
 
     #merge results
-    merge = pd.concat([anno, deseq, tpm], axis=1, join='inner')
+    merge = pd.concat([anno, deseq, tpm_diffs], axis=1, join='inner')
     merge.index.name ='gene_id'
    
     sig_deg = merge[(merge['log2FoldChange'].abs()> log2fc) & (merge['padj'] < padj) ]
