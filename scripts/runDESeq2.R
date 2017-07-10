@@ -7,8 +7,6 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      suppressMessages(library("pheatmap"))
      suppressMessages(library("DESeq2"))
      suppressMessages(library('EnsDb.Hsapiens.v86'))
-
-     library(gtools)
      library(ggrepel)
 
      load(txi_image)
