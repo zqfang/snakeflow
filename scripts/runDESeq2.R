@@ -63,7 +63,7 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      #heatcols=colorRampPalette(c("royalblue4", "white", "red3"))(50)
 
      #save results for each group     
-     comb <- combinations(ugr_len, 2, ugr)
+     comb <- t(combn(ugr,2))
      for (i in 1:dim(comb)[1])
      {
          #res <- results(dds, contrast=c("condition","treated","control"))
