@@ -3,25 +3,35 @@
 ### RNA-Seq and ChIP-seq workflow based on snakemake
 
 ## Dependency
-* python 3.5
+* python 3
   - numpy
   - pandas
   - snakemake
   - matplotlib
+  - seaborn
   - gseapy
 
-* macs2
-* hisat2, stringtie, ballgwon
-* salmon, tximport, deseq2
-* samtools, deeptools
-* rMATS-turbo
+* macs2, homer, ngs.plot.r 
+* hisat2, stringtie, salmon
+* samtools, deeptools, bedtools
+* rMATS-turbo, rmats2sashimiplot
 * fastqc, rseqc, multiqc
 * graphviz
-
+* R
+  - DESeq2
+  - ballgown
+  - tximport
+  - readr
+  - pheatmap
+  - ggplot2
+  - ggrepel
+  - clusterProfiler
+  - ChIPSeeker
+  - EnsDb.Hsapiens.v86
 
 ## Installation
 
-### Set up running environment. This config file will create a python 3.5 env.
+### Set up running environment. This config file will create a python 3.x env.
 
     bash snakeflow-enviroment-setup.sh
     
@@ -40,13 +50,10 @@
     vim  config.yml
 
     #Step5: run snakemake with -np option. this test your ``commands`` runs without any errors.
-    snakemake -s salmon-tximport-deseq2-v0.1.snakefile -np
+    snakemake -s salmon-tximport-deseq2-v0.2.snakefile -np
 
     #Step6: export workflow charts
-    snakemake -s salmon-tximport-deseq2-v0.1.snakefile --dag | dot -Tpdf > dag.pdf
-
-    #Step7: run your workflow dependent on an isolated py2 conda env for rmats with 8 threads.
-    snakemake -s hisat2-rmats-v0.1.snakefile --use-conda -p -j 8
+    snakemake -s salmon-tximport-deseq2-v0.2.snakefile --dag | dot -Tpdf > dag.pdf
 
     #Step7: or using the default snakemake environment you've created above.
     snakemake -s salmon-tximport-deseq2-v0.1.snakefile -p -j 8

@@ -44,25 +44,26 @@ for transcript in transcripts:
    transcript_end = transcripts[transcript][6][len(transcripts[transcript][6]) - 1][1]
    exon_sizes = ""
    exon_starts = ""
-   for exon in transcripts[transcript][6]:
-       exon_size = exon[1] - exon[0] + 1
-       exon_start = exon[0] - transcript_start
-       exon_sizes = exon_sizes + str(exon_size) + ","
-       exon_starts = exon_starts + str(exon_start) + ","
-       BED = []
-       BED.append(transcripts[transcript][0])
-       BED.append(transcript_start - 1)
-       BED.append(transcript_end)
-       BED.append(transcripts[transcript][5])
-       BED.append(transcripts[transcript][3])
-       BED.append(transcripts[transcript][4])
-       BED.append(transcript_start - 1)
-       BED.append(transcript_end)
-       BED.append("0, 0, 0")
-       BED.append(len(transcripts[transcript][6]))
-       BED.append(exon_sizes)
-       BED.append(exon_starts)
-       BEDs.writerow(BED)
+   
+for exon in transcripts[transcript][6]:
+   exon_size = exon[1] - exon[0] + 1
+   exon_start = exon[0] - transcript_start
+   exon_sizes = exon_sizes + str(exon_size) + ","
+   exon_starts = exon_starts + str(exon_start) + ","
+   BED = []
+   BED.append(transcripts[transcript][0])
+   BED.append(transcript_start - 1)
+   BED.append(transcript_end)
+   BED.append(transcripts[transcript][5])
+   BED.append(transcripts[transcript][3])
+   BED.append(transcripts[transcript][4])
+   BED.append(transcript_start - 1)
+   BED.append(transcript_end)
+   BED.append("0, 0, 0")
+   BED.append(len(transcripts[transcript][6]))
+   BED.append(exon_sizes)
+   BED.append(exon_starts)
+   BEDs.writerow(BED)
 
 GTF_in_file.close()
 BED_out_file.close()
