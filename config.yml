@@ -50,7 +50,7 @@ stranded: False
 # information in `samples` is used for deseq2 and rMATS
 samples:
     # fastq files prefix, seperate each sample by space
-    name: "WGC096874R_combined WGC096875R_combined WGC096876R_combined WGC096877R_combined" # keep order for each sample
+    name: "WGC096874R WGC096875R WGC096876R WGC096877R" # keep order for each sample
     # short names for sample names
     alias: "S74 S75 S76 S77" # optional
     
@@ -65,11 +65,11 @@ samples:
     coldata: "/Users/bioninja/public-seq/H170013-P001/sample_info_single.txt" #  
     
     # a sampleTable.txt look like this.
-      ### name                alias  conditon  treatment
-      ## WGC096874R_combined S74    Normal 0
-      ## WGC096875R_combined S75    Cancer 0
-      ## WGC096876R_combined S76    Normal 0
-      ## WGC096877R_combined S77    Cancer 0 
+      ### name  alias  conditon  treatment
+      ## WGC096874R S74    Normal 0
+      ## WGC096875R S75    Cancer 0
+      ## WGC096876R S76    Normal 0
+      ## WGC096877R S77    Cancer 0 
 enrichr_library: ['GO_Cellular_Component_2015','GO_Molecular_Function_2015',
                   'GO_Biological_Process_2015','Human_Phenotype_Ontology',
                    'MSigDB_Oncogenic_Signatures','WikiPathways_2016',
