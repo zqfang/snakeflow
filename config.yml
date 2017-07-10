@@ -92,3 +92,7 @@ read_pattern:
 rseqc: 
     refseq: "/Users/bioninja/genome/rseqc_ann/hg38_RefSeq.bed"
     housekeep: "/Users/bioninja/genome/rseqc_ann/hg38.HouseKeepingGenes.bed"
+
+#trimmonatic adaptors 
+adaptors:
+    illumina: "/Users/bioninja/github/snakeflow/adaptors/TruSeq3-PE.fa"

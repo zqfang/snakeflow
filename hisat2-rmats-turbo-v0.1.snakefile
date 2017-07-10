@@ -17,6 +17,25 @@ def unique(seq):
 
     return [x for x in seq if x not in seen and not seen_add(x)]
 
+def parse_samples(tab=config['samples']['coldata']):
+    """parse samples """
+    SAMPLES=[]
+    SAMPLES_ALIAS=[]
+    GROUP=[]
+    TIME=[]
+    with open(tab, 'rU') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if not len(line) or line.startswith('#'): continue #skip blank line or comment linne
+        item = line.split(" ")
+        SAMPLES.append(item[0])
+        SAMPLES_ALIAS.append(item[1])
+        GROUP.append(item[2])
+        TIME.append(item[3])
+
+    return SAMPLES, SAMPLES_ALIAS, GROUP, TIME
+
 ################### globals #############################################
 
 # Full path to an uncompressed FASTA file with all chromosome sequences.
@@ -49,25 +68,14 @@ GTF_Trans =      GTF_FILE.rstrip(".gtf")+".extracted.transx2gene.txt"
 
 #SAMPLES, = glob_wildcards(join(FASTQ_DIR, '{sample, SRR[^/]+}_R1.fastq.gz'))
 if isfile(config['samples']['coldata']):
-    SAMPLES=[]
-    SAMPLES_ALIAS=[]
-    GROUP=[]
-    TIME=[]
-    with open(config['samples']['coldata']) as f:
-        lines = f.readlines()
-    for line in lines:
-        if line.startswith("#"): continue
-        item = line.rstrip("\n").split(" ")
-        SAMPLES.append(item[0])
-        SAMPLES_ALIAS.append(item[1])
-        GROUP.append(item[2])
-        TIME.append(item[3])
+    SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['samples']['coldata'])
 else:
     SAMPLES = config['samples']['name'].split()
     SAMPLES_ALIAS = config['samples']['alias'].split()
     GROUP=config['samples']['group'].split()
     TIME=config['samples']['time'].split()
 
+#rMATS 
 uGroup=unique(GROUP)
 RMATS_DICT = [[] for i in range(len(uGroup))]
 for i,g in enumerate(GROUP):
@@ -163,7 +171,6 @@ rule rMATS_pre:
         ugsamples=RMATS_DICT,
         ugroup=uGroup,
     run:
-        from itertools import combinations
         for u, g in zip(params.ugroup, params.ugsamples):
             out = open("temp/b_%s.txt"%u, 'w')
             temp = ["/data/mapped/%s.sorted.bam"%sample for sample in g]

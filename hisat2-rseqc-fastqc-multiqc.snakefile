@@ -17,6 +17,24 @@ def unique(seq):
 
     return [x for x in seq if x not in seen and not seen_add(x)]
 
+def parse_samples(tab=config['samples']['coldata']):
+    """parse samples """
+    SAMPLES=[]
+    SAMPLES_ALIAS=[]
+    GROUP=[]
+    TIME=[]
+    with open(tab, 'rU') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if not len(line) or line.startswith('#'): continue #skip blank line or comment linne
+        item = line.split(" ")
+        SAMPLES.append(item[0])
+        SAMPLES_ALIAS.append(item[1])
+        GROUP.append(item[2])
+        TIME.append(item[3])
+
+    return SAMPLES, SAMPLES_ALIAS, GROUP, TIME
 ################### globals #############################################
 
 # Full path to an uncompressed FASTA file with all chromosome sequences.
@@ -52,38 +70,24 @@ RSEQC_ANNO  = config['rseqc']
 
 #SAMPLES, = glob_wildcards(join(FASTQ_DIR, '{sample, SRR[^/]+}_R1.fastq.gz'))
 if isfile(config['samples']['coldata']):
-    SAMPLES=[]
-    SAMPLES_ALIAS=[]
-    GROUP=[]
-    TIME=[]
-    with open(config['samples']['coldata']) as f:
-        lines = f.readlines()
-    for line in lines:
-        if line.startswith("#"): continue
-        item = line.rstrip("\n").split(" ")
-        SAMPLES.append(item[0])
-        SAMPLES_ALIAS.append(item[1])
-        GROUP.append(item[2])
-        TIME.append(item[3])
+    SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['samples']['coldata'])
 else:
     SAMPLES = config['samples']['name'].split()
     SAMPLES_ALIAS = config['samples']['alias'].split()
     GROUP=config['samples']['group'].split()
     TIME=config['samples']['time'].split()
 
-uGroup=unique(GROUP)
-
-
 # Patterns for the 1st mate and the 2nd mate using the 'sample' wildcard.
 #PATTERN_R1 = '{sample}_R1.fastq.gz'
 #PATTERN_R2 = '{sample}_R2.fastq.gz'
 PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
+
+#read suffix
 for suf in ['.fastq.gz','.fq.gz','.fastq','.fq']:
     if PATTERN_R1.endswith(suf):
-        READ_SUFFIX = "fastq.gz"
-    else:
-        print("fastq file must end with: '.fastq.gz', '.fq.gz', '.fastq', '.fq'")
+        READ_SUFFIX = suf
+
 #PERRETY_SAMPLE = expand("mapped/{sample}.{replicate}.bam", sample=SAMPLES, replicate=[0, 1])
 #SAMPLES,GROUP,IDS,= glob_wildcards(join(FASTQ_DIR, '{sample}_{group}_{id}_R1.fastq.gz'))
 
@@ -96,19 +100,11 @@ DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
 
 ########### Target output files #################
 MULTIQC = 'qc/multiqc_report.html'
-DESEQ2_CNT = "counts/All.raw.counts.for.Deseq2.txt"
-STRTIEQ = ['gene_expression/'+f+'.tab' for f in SAMPLES]
-STRTIE_COUNTS = "counts/gene_count_matrix.csv"
-STRTIE_COMPILE = expand("gene_expression/gene_expression_table_annotated.{suf}.csv", suf=['full','tpm','fpkm'])
-BALLGOWN = ["gene_expression/ballgown_transcripts_expression_table.csv",
-            "gene_expression/ballgown_gene_expression_table.csv"]
 
-###
 ################## Rules #######################################
 
 rule target:
     input: MULTIQC,
-           #STRTIEQ, STRTIE_COMPILE, STRTIE_COUNTS, BALLGOWN 
 
 rule fastqc:
     input:
@@ -202,42 +198,6 @@ rule read_distribution:
     shell:
         "read_distribution.py -i {input.bam} -r {input.bed} > {output}"
 
-#quantification
-rule stringtie:
-    input:
-        gtf= GTF_FILE,
-        bam="mapped/{sample}.sorted.bam",
-        bai="mapped/{sample}.sorted.bam.bai",
-    output:
-        anno="gene_expression/{sample}/{sample}.gtf",
-        tab="gene_expression/{sample}.tab"
-    threads: 12
-    params:
-        extra="-e -B"
-    shell:
-        "stringtie {params.extra} -G {input.gtf} -p {threads} -A {output.tab} -o {output.anno}  {input.bam}"
-
-
-rule ballgown:
-    input: expand("gene_expression/{sample}/{sample}.gtf", sample=SAMPLES)
-    output:
-        transx="gene_expression/ballgown_transcripts_expression_table.csv",
-        genex="gene_expression/ballgown_gene_expression_table.csv",
-    params:
-        ids =",".join(expand("gene_expression/{sample}",sample=SAMPLES)),
-    script:
-        "scripts/runBallgown.R"
-
-##### Read Count #####
-rule stringtie_counts:
-    input:
-        source=join(SCRIPTS,"preDEseq.py"),
-        gtf=expand("gene_expression/{sample}/{sample}.gtf", sample=SAMPLES)
-    output: "counts/gene_count_matrix.csv"
-    params:
-        extra="-l %s"%READ_LEN
-    shell: "python {input.source} -i gene_expression {params.extra} -g {output}"
-
 rule htseq:
     input: 
         bam="mapped/{sample}.sorted.bam", 
@@ -247,45 +207,6 @@ rule htseq:
     log: "logs/htseq/{sample}.htseq-count.log"
     threads: 1
     shell: "htseq-count -r pos -s no -f bam {input.bam} {input.gtf}  > {output} 2> {log}"
-
-rule complie_htseq:
-    input: cnt=expand("counts/{sample}.htseq.tsv", sample=SAMPLES)
-    output: deseq="counts/All.raw.counts.for.Deseq2.txt"
-    run:
-        from pandas import read_table, concat
-        count_df=[]
-        for count in input.cnt:
-            cnt = read_table(count, index_col=0, header=None, skipfooter=5)
-            cnt.columns = [count.split("/")[-1].rstrip(".htseq.tsv")]
-            cnt = cnt.sort_index()
-            count_df.append(cnt)
-        merge_cnt = concat(count_df, axis=1)
-        merge_cnt.to_csv(output.deseq)
-
-
-rule gtf_extract:
-    input: GTF_FILE
-    output: 
-        gene_anno=GTF_Genes,
-        tx2gene = GTF_Trans
-    script:
-        "scripts/extractGTF.py"
-
-
-rule compile_stringtie:
-    """
-    Compile stringtie output for all samples.
-    """
-    input:
-        annotation = GTF_Genes,
-        filelist = expand("gene_expression/{sample}.tab", sample=SAMPLES)
-    output:
-        full = "gene_expression/gene_expression_table_annotated.full.csv",
-        tpm  = "gene_expression/gene_expression_table_annotated.tpm.csv",
-        fpkm = "gene_expression/gene_expression_table_annotated.fpkm.csv",
-    script:
-        "scripts/mergeStringTie.py"
-
 
 rule multiqc:
     """Aggreate QC """

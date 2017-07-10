@@ -15,6 +15,24 @@ def unique(seq):
 
     return [x for x in seq if x not in seen and not seen_add(x)]
 
+def parse_samples(tab=config['samples']['coldata']):
+    """parse samples """
+    SAMPLES=[]
+    SAMPLES_ALIAS=[]
+    GROUP=[]
+    TIME=[]
+    with open(tab, 'rU') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        if not len(line) or line.startswith('#'): continue #skip blank line or comment linne
+        item = line.split(" ")
+        SAMPLES.append(item[0])
+        SAMPLES_ALIAS.append(item[1])
+        GROUP.append(item[2])
+        TIME.append(item[3])
+
+    return SAMPLES, SAMPLES_ALIAS, GROUP, TIME
 
 ################### globals #############################################
 
@@ -49,19 +67,7 @@ GTF_Trans =      GTF_FILE.rstrip(".gtf")+".extracted.transx2gene.txt"
 #SAMPLES, = glob_wildcards(join(FASTQ_DIR, '{sample, SRR[^/]+}_R1.fastq.gz'))
 
 if isfile(config['samples']['coldata']):
-    SAMPLES=[]
-    SAMPLES_ALIAS=[]
-    GROUP=[]
-    TIME=[]
-    with open(config['samples']['coldata']) as f:
-        lines = f.readlines()
-    for line in lines:
-        if line.startswith("#"): continue
-        item = line.rstrip("\n").split(" ")
-        SAMPLES.append(item[0])
-        SAMPLES_ALIAS.append(item[1])
-        GROUP.append(item[2])
-        TIME.append(item[3])
+    SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['samples']['coldata'])
 else:
     SAMPLES = config['samples']['name'].split()
     SAMPLES_ALIAS = config['samples']['alias'].split()
@@ -83,9 +89,6 @@ DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
 GO_DOMAIN = config['enrichr_library']
 
 ########### Target output files #################
-
-FASTQC = expand(config['read_pattern']['fastqc'], sample=SAMPLES, suf=['html','zip'])
-
 SALMON_INDEX = expand(SALMON_INDEX_DIR+"/{prefix}.bin", prefix=['hash','rsd','sa','txpInfo'])
 SALMON_QUANT_Trans = expand("salmon/{sample}/quant.sf", sample=SAMPLES)
 SALMON_QUANT_Genes = expand("salmon/{sample}/quant.genes.sf", sample=SAMPLES)
@@ -114,18 +117,6 @@ rule target:
            "gene_expression/gene_expression.TPM.annotated.csv",
            "gene_expression/transcripts_expression.TPM.annotated.txt"
 
-
-rule fastqc:
-    input:
-        #lambda wildcards: join(FASTQ_DIR, wildcards.prefix +".fastq.gz")
-        join(FASTQ_DIR, "{prefix}.fq.gz")
-    output:
-        "qc/fastqc/{prefix}_fastqc.html",
-        "qc/fastqc/{prefix}_fastqc.zip",
-    params:
-        outdir="qc/fastqc"
-
-    shell: "fastqc -o {params.outdir} {input}"
 
 rule salmon_index:
     input: CDNA
