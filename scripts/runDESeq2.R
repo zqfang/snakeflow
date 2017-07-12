@@ -80,24 +80,33 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
           #TopGenes
           topGenes <- head(order(res$padj),20)
           outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
-          #pdf(outGenes)
+          #pdf
           pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
                    cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
-                   color=heatcols,
-                   main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
+                   color=heatcols, main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
                    filename = outGenes)
-          #dev.off()
+          #png
+          pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
+                   cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
+                   color=heatcols, main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
+                   filename = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.png",sep="_"))
           
           #all Degs
           degs <- which(res$padj < 0.05)
           outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
-          #pdf(outDEGs)
+          #pdf
           pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
                     cluster_cols=T, annotation_col = df, 
                     cellwidth = 15, fontsize = 12, color=heatcols,
                     main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
                     filename = outDEGs)
-          #dev.off()
+          #png
+          pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
+                    cluster_cols=T, annotation_col = df, 
+                    cellwidth = 15, fontsize = 12, color=heatcols,
+                    main = paste(comb[i,2], "vs", comb[i,1], sep="_"),
+                    filename = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.png",sep="_"))
+
 
      } 
 
@@ -107,15 +116,21 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      mat <- as.matrix(distsRL)
      rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias, group, sep=":"))
     
-     pdf("differential_expression/Samples.correlation.heatmap.pdf",width = 5, height = 5)
+     pdf("differential_expression/Samples.correlation.heatmap.pdf", width = 5, height = 5)
      hc <- hclust(distsRL)
      heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
-               col = rev(hmcol), margin=c(13, 13),
+               col = rev(hmcol), margin=c(5, 5),
+               main="Sample Correlation")
+     dev.off()
+     
+     png("differential_expression/Samples.correlation.heatmap.png", res=300)
+     heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
+               col = rev(hmcol), margin=c(5, 5),
                main="Sample Correlation")
      dev.off()
 
      #PCA plot.
-     pdf("differential_expression/Samples.PCA.pdf")
+     pdf("differential_expression/Samples.PCA.pdf", width = 5, height = 5)
      data <- plotPCA(rld, intgroup="condition", returnData=TRUE)
      percentVar <- round(100 * attr(data, "percentVar"))
      #add geom_text(check_overlap = T, to remove overlap text)
@@ -125,6 +140,10 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
              xlab(paste0("PC1: ",percentVar[1],"% variance")) +
              ylab(paste0("PC2: ",percentVar[2],"% variance"))
     #you have to use print() when calling ggplot and save to pdf
+    print(p)
+    dev.off()
+
+    png("differential_expression/Samples.PCA.png", res=300)
     print(p)
     dev.off()
 

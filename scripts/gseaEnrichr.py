@@ -25,7 +25,7 @@ def gsea_enrichr(diff, log2fc, padj, go):
                 gp.enrichr(gene_list=glist, gene_sets=domain, description=gl_type,
                            cutoff=0.2, outdir=outdir)
             except Exception:
-                print("Server No response. Try again later!")
+                print("Enrichr Server No response: %s vs %s, %s, %s"%(treat, ctrl, domain, gl_type,))
             #print("connetion to the Enrichr Server is interupted by the host, retry again.")
     #run prerank
     """
