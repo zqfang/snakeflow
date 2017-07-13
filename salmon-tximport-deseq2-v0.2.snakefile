@@ -129,7 +129,7 @@ rule salmon_index:
         extra=" --gencode --type quasi -k 31"
     shell: 
         #"salmon index {params.extra} -t {input} -i {params.outdir}"
-        "docker run  -v {params.genome_dir}:/genome 435326e03520  "
+        "docker run  -v {params.genome_dir}:/genome combinelab/salmon:latest  "
         "salmon index -i /genome/{params.outdir} -t /genome/{params.cdna} {params.extra}"
 ########## notes on salmon quant ###################################################################
 
@@ -177,9 +177,9 @@ rule salmon_quant:
         #extra_single=" --fldMean 250 --fldSD 25 --incompatPrior 0  --numBootstraps 100 --writeUnmappedNames"
     log: "logs/salmon/{sample}_salmons_quant.log"
     shell:        
-        "docker run -v {params.index_dir}:/index  -v {params.workdir}:/data 435326e03520 "
+        "docker run -v {params.index_dir}:/index  -v {params.workdir}:/data combinelab/salmon:latest "
         "salmon quant -i /index -1 /data/{params.r1} -2 /data/{params.r2} "
-        "-l A -o /data/{params.outdir} {params.extra_paried}"
+        "-l A -p {treads} -q -o /data/{params.outdir} {params.extra_paried}"
 rule tximport:
     '''used for kallisto, Salmon, Sailfish, and RSEM. see: 
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html
