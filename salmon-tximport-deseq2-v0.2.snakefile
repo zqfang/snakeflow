@@ -257,7 +257,7 @@ rule anno_samples:
         alias=SAMPLES_ALIAS,
         samples=SAMPLES,
     script:
-        "scripts/annotateSampleExpTable.py"
+        "scripts/annotateTPMs.py"
 
 
 rule GSEA_Enrichr:
