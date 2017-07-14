@@ -115,7 +115,7 @@ rule target:
     input: RAW_COUNTS, ROBJ_DESeq, DESEQ_ANNO, SAMPLE_TPM_ANNO, DESEQ_RES, GSEA_FINAL,
            #"GO/GSEA_HDE_vs_Ctrl/KEGG_2016/gseapy.prerank.gene_sets.report.csv",
            "gene_expression/gene_expression.TPM.annotated.csv",
-           "gene_expression/transcripts_expression.TPM.annotated.txt"
+           "gene_expression/transcripts_expression.TPM.annotated.csv"
 
 
 rule salmon_index:
@@ -251,7 +251,7 @@ rule anno_samples:
         "gene_expression/transcripts_expression.TPM.txt",
     output: 
         "gene_expression/gene_expression.TPM.annotated.csv",
-        "gene_expression/transcripts_expression.TPM.annotated.txt"
+        "gene_expression/transcripts_expression.TPM.annotated.csv"
     params:
         group=GROUP,
         alias=SAMPLES_ALIAS,
