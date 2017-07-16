@@ -59,56 +59,9 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
      #color palete for heatmap
      heatcols <- colorRampPalette(brewer.pal(10, "RdBu"))(100)
      #heatcols=colorRampPalette(c("royalblue4", "white", "red3"))(50)
+     #save dds for further processing
 
-     #save results for each group     
-     comb <- t(combn(ugr,2))
-     for (i in 1:dim(comb)[1])
-     {
-         #res <- results(dds, contrast=c("condition","treated","control"))
-         res <- results(dds, contrast=c("condition", comb[i,2], comb[i,1]))
-         resOrdered <- res[order(res$padj),]
-         resOrdered = as.data.frame(resOrdered)
-         outRES=paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
-         write.table(resOrdered, file=outRES, quote=F, sep="\t")
-
-          #MA plot
-          outMA = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
-          pdf(outMA, width = 5, height = 5)     
-          plotMA(res, ylim=c(-5,5))
-          dev.off()
-
-          #TopGenes
-          topGenes <- head(order(res$padj),20)
-          outGenes = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_")
-          #pdf
-          pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
-                   cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
-                   color=heatcols, main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
-                   filename = outGenes)
-          #png
-          pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
-                   cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
-                   color=heatcols, main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
-                   filename = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"top20genes.png",sep="_"))
-          
-          #all Degs
-          degs <- which(res$padj < 0.05)
-          outDEGs = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_")
-          #pdf
-          pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
-                    cluster_cols=T, annotation_col = df, 
-                    cellwidth = 15, fontsize = 12, color=heatcols,
-                    main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
-                    filename = outDEGs)
-          #png
-          pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
-                    cluster_cols=T, annotation_col = df, 
-                    cellwidth = 15, fontsize = 12, color=heatcols,
-                    main = paste(comb[i,2], "vs", comb[i,1], sep="_"),
-                    filename = paste("differential_expression/diff", comb[i,2], "vs", comb[i,1], "all.degs.png",sep="_"))
-
-
-     } 
+     save(dds, df,rld, ntd, maps_names, file=out_file)
 
      #clustering plot
      hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
@@ -147,8 +100,88 @@ deseq2 <- function(txi_image, out_file, group, treat, alias) {
     print(p)
     dev.off()
 
-     #save dds for further processing
-     save(dds, df,rld, ntd, maps_names, file=out_file)
+     #save results for each group     
+     comb <- t(combn(ugr,2))
+     for (i in 1:dim(comb)[1])
+     {
+         #res <- results(dds, contrast=c("condition","treated","control"))
+         res <- results(dds, contrast=c("condition", comb[i,2], comb[i,1]))
+         resOrdered <- res[order(res$padj),]
+         resOrdered = as.data.frame(resOrdered)
+         #save results to outdir
+         outDIR = paste0("differential_expression/diff", comb[i,2], "_vs_", comb[i,1], "/diff")
+
+         #select groups for plotting
+         ntd_cols = ifelse(group ==comb[i,2] | group == comb[i,1], TRUE, FALSE)
+         
+         #outRES=paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
+         outRES=paste(outDIR, comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
+         write.table(resOrdered, file=outRES, quote=F, sep="\t")
+
+          #MA plot
+          outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
+          pdf(outMA, width = 5, height = 5)     
+          plotMA(res, ylim=c(-5,5))
+          dev.off()
+
+          #TopGenes
+          topGenes <- head(order(res$padj),20)
+          #pdf
+          pheatmap(ntd[topGenes, ntd_cols], scale = "row", cluster_rows=T, show_rownames=T,
+                   cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
+                   color=heatcols, main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
+                   filename = paste(outDIR, comb[i,2], "vs", comb[i,1],"top20genes.pdf",sep="_"))
+          #png
+          pheatmap(ntd[topGenes,ntd_cols], scale = "row", cluster_rows=T, show_rownames=T,
+                   cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
+                   color=heatcols, main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
+                   filename = paste(outDIR, comb[i,2], "vs", comb[i,1],"top20genes.png",sep="_"))
+          
+          #all Degs
+          degs <- which(res$padj < 0.05)
+
+          #pdf
+          pheatmap(ntd[degs, ntd_cols], scale = "row", cluster_rows=T, show_rownames=F, 
+                    cluster_cols=T, annotation_col = df, 
+                    cellwidth = 15, fontsize = 12, color=heatcols,
+                    main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
+                    filename = paste(outDIR, comb[i,2], "vs", comb[i,1], "all.degs.pdf",sep="_"))
+          #png
+          pheatmap(ntd[degs, ntd_cols], scale = "row", cluster_rows=T, show_rownames=F, 
+                    cluster_cols=T, annotation_col = df, 
+                    cellwidth = 15, fontsize = 12, color=heatcols,
+                    main = paste(comb[i,2], "vs", comb[i,1], sep="_"),
+                    filename = paste(outDIR, comb[i,2], "vs", comb[i,1], "all.degs.png",sep="_"))
+
+          if (dim(comb)[1]) > 1)
+          {
+              #save results ammong groups comparasion.
+              #pdf
+              pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
+                       cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 8,
+                       color=heatcols, main = paste(comb[i,2], "vs", comb[i,1], sep="_"),
+                       filename = paste(outDIR, comb[i,2], "vs", comb[i,1],"groups.top20genes.pdf",sep="_"))
+              #png
+              pheatmap(ntd[topGenes,], scale = "row", cluster_rows=T, show_rownames=T,
+                       cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 8,
+                       color=heatcols, main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
+                       filename = paste(outDIR, comb[i,2], "vs", comb[i,1],"groups.top20genes.png",sep="_"))
+              #pdf
+              pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
+                        cluster_cols=T, annotation_col = df, 
+                        cellwidth = 15, fontsize = 8, color=heatcols,
+                        main = paste(comb[i,2], "vs", comb[i,1],sep="_"),
+                        filename = paste(outDIR, comb[i,2], "vs", comb[i,1], "groups.all.degs.pdf",sep="_"))
+              #png
+              pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
+                        cluster_cols=T, annotation_col = df, 
+                        cellwidth = 15, fontsize = 8, color=heatcols,
+                        main = paste(comb[i,2], "vs", comb[i,1], sep="_"),
+                        filename = paste(outDIR, comb[i,2], "vs", comb[i,1], "groups.all.degs.png",sep="_"))
+          }
+
+
+     } 
 
 }
 

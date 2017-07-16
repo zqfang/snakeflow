@@ -101,7 +101,8 @@ SAMPLE_TXTPM_ANNO ="gene_expression/transcripts_expression.TPM.annotated.csv"
 
 ROBJ_SALMON ="temp/txi.salmon.RData"  
 ROBJ_DESeq="temp/deseq2.dds.RData" 
-DESEQ_RES = ["differential_expression/diff_%s_vs_%s_results.txt"%(j, i) for i, j in combinations(uGroup, 2)]
+DESEQ_RES = ["differential_expression/diff_{t}_vs_{c}/diff_{t}_vs_{c}_results.txt".format(t=j, c=i) 
+             for i, j in combinations(uGroup, 2)]
 DESEQ_ANNO = [res.replace(".txt", ".annotated.xls") for res in DESEQ_RES]
 
 GSEA_RES=["GO/GSEA_{treat}_vs_{ctrl}/%s/gseapy.gsea.gene_sets.report.csv"%domain for domain in GO_DOMAIN]
@@ -130,7 +131,7 @@ rule salmon_index:
     shell: 
         #"salmon index {params.extra} -t {input} -i {params.outdir}"
         "docker run  -v {params.genome_dir}:/genome combinelab/salmon:latest  "
-        "salmon index -p {threads} -i /genome/{params.outdir} -t /genome/{params.cdna} {params.extra}"
+        "salmon index -i /genome/{params.outdir} -t /genome/{params.cdna} {params.extra}"
 ########## notes on salmon quant ###################################################################
 
 ###   <LIBTYPE> 
@@ -179,7 +180,7 @@ rule salmon_quant:
     shell:        
         "docker run -v {params.index_dir}:/index  -v {params.workdir}:/data combinelab/salmon:latest "
         "salmon quant -i /index -1 /data/{params.r1} -2 /data/{params.r2} "
-        "-l A -p {threads} -o /data/{params.outdir} {params.extra_paried}"
+        "-l A -p {threads}  -o /data/{params.outdir} {params.extra_paried}"
 rule tximport:
     '''used for kallisto, Salmon, Sailfish, and RSEM. see: 
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html
@@ -227,9 +228,9 @@ rule gtf_extract:
 
 rule anno_diffGenes:
     input: 
-        "differential_expression/diff_{treat}_vs_{ctrl}_results.txt"
+        "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.txt"
     output: 
-        "differential_expression/diff_{treat}_vs_{ctrl}_results.annotated.xls"
+        "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.annotated.xls"
 
     params:
         gene_anno=GTF_Genes,
@@ -257,12 +258,12 @@ rule anno_samples:
         alias=SAMPLES_ALIAS,
         samples=SAMPLES,
     script:
-        "scripts/annotateTPMs.py"
+        "scripts/annotateSampleExpTable.py"
 
 
 rule GSEA_Enrichr:
     input: 
-        "differential_expression/diff_{treat}_vs_{ctrl}_results.annotated.xls"
+        "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.annotated.xls"
     output:
         GSEA_RES   
     params:
