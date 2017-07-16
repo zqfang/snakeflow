@@ -81,8 +81,9 @@ deseq2 <- function(txi_image, outdds, outntd, group, treat, alias) {
      percentVar <- round(100 * attr(data, "percentVar"))
      #add geom_text(check_overlap = T, to remove overlap text)
      p <- ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))
-     p <- p+ geom_text_repel(fontface = "bold")+ 
-             geom_point(size=3) +
+     p <- p+ geom_point(size=3) +
+             geom_title("Sampls PCA") +
+             geom_text_repel(fontface = "bold")+ 
              xlab(paste0("PC1: ",percentVar[1],"% variance")) +
              ylab(paste0("PC2: ",percentVar[2],"% variance"))
     #you have to use print() when calling ggplot and save to pdf

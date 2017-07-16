@@ -177,11 +177,10 @@ rule salmon_quant:
         outdir="salmon/{sample}",
         extra_paried=" --incompatPrior 0  --numBootstraps 100 --seqBias --gcBias --writeUnmappedNames",
         #extra_single=" --fldMean 250 --fldSD 25 --incompatPrior 0  --numBootstraps 100 --writeUnmappedNames"
-    log: "logs/salmon/{sample}_salmons_quant.log"
     shell:        
         "docker run -v {params.index_dir}:/index  -v {params.workdir}:/data combinelab/salmon:latest "
         "salmon quant -i /index -1 /data/{params.r1} -2 /data/{params.r2} "
-        "-l A -p {threads}  -o /data/{params.outdir} {params.extra_paried} &> {log}"
+        "-l A -p {threads}  -o /data/{params.outdir} {params.extra_paried} > /dev/null"
 rule tximport:
     '''used for kallisto, Salmon, Sailfish, and RSEM. see: 
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html

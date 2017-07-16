@@ -1,7 +1,7 @@
 snake_heatmap <-  <- function(degstab, ntdimage, treat, ctrl, padj, top) 
 {
     suppressMessages(library("pheatmap"))
-    
+    suppressMessages(library("RColorBrewer"))
     #load ntd, group, df
     load(ntdimage)
 
