@@ -99,11 +99,14 @@ SAMPLE_TXTPM ="gene_expression/transcripts_expression.TPM.txt"
 SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
 SAMPLE_TXTPM_ANNO ="gene_expression/transcripts_expression.TPM.annotated.csv"
 
-ROBJ_SALMON ="temp/txi.salmon.RData"  
-ROBJ_DESeq="temp/deseq2.dds.RData" 
+SALMON_TPM = "temp/txi.salmon.RData"  
+DESEQ_DDS = "temp/deseq2.dds.RData"
+DESEQ_NTD = "temp/deseq2.ntd.Rdata"
 DESEQ_RES = ["differential_expression/diff_{t}_vs_{c}/diff_{t}_vs_{c}_results.txt".format(t=j, c=i) 
              for i, j in combinations(uGroup, 2)]
 DESEQ_ANNO = [res.replace(".txt", ".annotated.xls") for res in DESEQ_RES]
+DESEQ_HEATMAP = ["differential_expression/diff_{t}_vs_{c}/diff_{t}_vs_{c}_all.degs.pdf".format(t=j, c=i)
+               for i, j in combinations(uGroup, 2)]
 
 GSEA_RES=["GO/GSEA_{treat}_vs_{ctrl}/%s/gseapy.gsea.gene_sets.report.csv"%domain for domain in GO_DOMAIN]
 GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene_sets.report.csv"%(j, i) for i, j in combinations(uGroup, 2)]
@@ -113,11 +116,9 @@ GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene_sets.report.csv"%(j, i)
 
 
 rule target:
-    input: RAW_COUNTS, ROBJ_DESeq, DESEQ_ANNO, SAMPLE_TPM_ANNO, DESEQ_RES, GSEA_FINAL,
-           #"GO/GSEA_HDE_vs_Ctrl/KEGG_2016/gseapy.prerank.gene_sets.report.csv",
-           "gene_expression/gene_expression.TPM.annotated.csv",
-           "gene_expression/transcripts_expression.TPM.annotated.csv"
-
+    input: RAW_COUNTS, DESEQ_DDS, DESEQ_NTD, DESEQ_ANNO, 
+           SAMPLE_TPM_ANNO, SAMPLE_TXTPM_ANNO,
+           DESEQ_RES, DESEQ_HEATMAP, GSEA_FINAL
 
 rule salmon_index:
     input: CDNA
@@ -180,7 +181,7 @@ rule salmon_quant:
     shell:        
         "docker run -v {params.index_dir}:/index  -v {params.workdir}:/data combinelab/salmon:latest "
         "salmon quant -i /index -1 /data/{params.r1} -2 /data/{params.r2} "
-        "-l A -p {threads}  -o /data/{params.outdir} {params.extra_paried}"
+        "-l A -p {threads}  -o /data/{params.outdir} {params.extra_paried} &> {log}"
 rule tximport:
     '''used for kallisto, Salmon, Sailfish, and RSEM. see: 
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html
@@ -196,7 +197,7 @@ rule tximport:
         tpm=SAMPLE_TPM,
         txtpm=SAMPLE_TXTPM,
         counts=RAW_COUNTS,
-        image=ROBJ_SALMON       
+        image="temp/txi.salmon.RData" #SALMON_TPM       
     params:
         ids =",".join(SAMPLES)
     threads: 1
@@ -206,10 +207,11 @@ rule tximport:
 
 rule deseq2:
     input: 
-        image=ROBJ_SALMON,
+        image="temp/txi.salmon.RData",#SALMON_TPM
     output: 
         res=DESEQ_RES,
-        image=ROBJ_DESeq
+        ddsimage="temp/deseq2.dds.RData", #DESEQ_DDS
+        ntdimage="temp/deseq2.ntd.RData", #DESEQ_NTD
     params:
         group=" ".join(GROUP),#used for grouping each sample, to dectect degs.
         time=" ".join(TIME),
@@ -243,6 +245,20 @@ rule anno_diffGenes:
     script:
         "scripts/annotateDEGs.py"
 
+rule pheatmap_degs:
+    input: 
+        degstab="differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.txt",
+        image="temp/deseq2.ntd.RData"
+    output:
+        "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_all.degs.pdf",
+        "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_top20genes.pdf"
+    params: 
+        treat="{treat}",
+        ctrl="{ctrl}",
+        padj=0.05.
+        topgene=20,
+    script:
+        "scripts/pheatmapDEGs.R"    
 
 rule anno_samples:
     input: 
