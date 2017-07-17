@@ -56,27 +56,33 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      #annotate columns of heatmap
      df <- data.frame(treatment=group, row.names=colnames(ntd))
 
+     #save dds for further processing
+     save(dds, df,rld, vsd, ntd, maps_names, file=outdds)
+
+     #save ntd
+     save(ntd, df, group, file=outntd)  
+
      #clustering plot
-     hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+     hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(255)
      distsRL <- dist(t(assay(rld)))
      mat <- as.matrix(distsRL)
-     rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias, group, sep=":"))
+     rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias, sep="")) #paste(alias, group, sep=":")
     
-     pdf("differential_expression/Samples.correlation.heatmap.pdf", width = 5, height = 5)
+     pdf("differential_expression/Samples.correlation.heatmap.pdf", width = 8, height = 8)
      hc <- hclust(distsRL)
      heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
-               col = rev(hmcol), margin=c(5, 5),
+               col = rev(hmcol), margins=c(5, 5),
                main="Sample Correlation")
      dev.off()
      
-     png("differential_expression/Samples.correlation.heatmap.png", res=300)
+     png("differential_expression/Samples.correlation.heatmap.png",)
      heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
-               col = rev(hmcol), margin=c(5, 5),
+               col = rev(hmcol), margins=c(5, 5),
                main="Sample Correlation")
      dev.off()
 
      #PCA plot.
-     pdf("differential_expression/Samples.PCA.pdf", width = 5, height = 5)
+     pdf("differential_expression/Samples.PCA.pdf", width = 8, height = 8)
      data <- plotPCA(rld, intgroup="condition", returnData=TRUE)
      percentVar <- round(100 * attr(data, "percentVar"))
      #add geom_text(check_overlap = T, to remove overlap text)
@@ -90,15 +96,9 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
     print(p)
     dev.off()
 
-    png("differential_expression/Samples.PCA.png", res=300)
+    png("differential_expression/Samples.PCA.png")
     print(p)
     dev.off()
-
-     #save dds for further processing
-     save(dds, df,rld, ntd, maps_names, file=outdds)
-
-     #save ntd
-     save(ntd, df, group, file=outntd)  
 
      #save results for each group     
      comb <- t(combn(ugr,2))
@@ -115,12 +115,17 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
          outRES=paste(outDIR, comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
          write.table(resOrdered, file=outRES, quote=F, sep="\t")
          
-         #MAplot
+         #MAplot pdf
          outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
          pdf(outMA, width = 5, height = 5)     
          plotMA(res, ylim=c(-5,5))
          dev.off()
 
+         #MAplot png
+         outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.png",sep="_")
+         png(outMA)     
+         plotMA(res, ylim=c(-5,5))
+         dev.off()
 
      } 
 
