@@ -75,7 +75,8 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
                main="Sample Correlation")
      dev.off()
      
-     png("differential_expression/Samples.correlation.heatmap.png",)
+     #You may need to load the grid package to get the units argument to work.
+     png("differential_expression/Samples.correlation.heatmap.png",width = 8, height = 8, units = 'in', res = 600)
      heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
                col = rev(hmcol), margins=c(5, 5),
                main="Sample Correlation")
@@ -96,7 +97,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
     print(p)
     dev.off()
 
-    png("differential_expression/Samples.PCA.png")
+    png("differential_expression/Samples.PCA.png",width = 8, height = 8, units = 'in', res = 600)
     print(p)
     dev.off()
 
@@ -110,7 +111,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
          resOrdered = as.data.frame(resOrdered)
 
          #save results to outdir
-         outDIR = paste0("differential_expression/diff", comb[i,2], "_vs_", comb[i,1], "/diff")       
+         outDIR = paste0("differential_expression/diff_", comb[i,2], "_vs_", comb[i,1], "/diff")       
          #outRES=paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
          outRES=paste(outDIR, comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
          write.table(resOrdered, file=outRES, quote=F, sep="\t")
@@ -123,7 +124,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
 
          #MAplot png
          outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.png",sep="_")
-         png(outMA)     
+         png(outMA, width = 5, height = 5, units = 'in', res = 600)     
          plotMA(res, ylim=c(-5,5))
          dev.off()
 

@@ -9,7 +9,7 @@ snake_heatmap <-  <- function(degstab, ntdimage, treat, ctrl, padj, top)
     heatcols <- colorRampPalette(brewer.pal(10, "RdBu"))(100)
     #heatcols=colorRampPalette(c("royalblue4", "white", "red3"))(50)
 
-    outDIR = paste0("differential_expression/diff", treat, "_vs_", ctrl, "/diff")
+    outDIR = paste0("differential_expression/diff_", treat, "_vs_", ctrl, "/diff")
     #select groups for plotting
     ntd_cols = ifelse(group ==treat | group == ctrl, TRUE, FALSE)
 
