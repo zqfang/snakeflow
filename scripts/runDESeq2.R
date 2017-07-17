@@ -1,4 +1,4 @@
-deseq2 <- function(txi_image, outdds, outntd, group, treat, alias) {
+deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      # R code
 
      suppressMessages(library("ggplot2"))
@@ -126,7 +126,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, treat, alias) {
 
 }
 
-deseq2(snakemake@input[['image']], snakemake@output[['ddsimage']], snakemake@output[['ntdimage']] 
+deseq2(snakemake@input[['image']], snakemake@output[['ddsimage']], snakemake@output[['ntdimage']],
        snakemake@params[['group']],snakemake@params[['time']],
        snakemake@params[['alias']])
 

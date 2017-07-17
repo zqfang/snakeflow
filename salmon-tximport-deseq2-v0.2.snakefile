@@ -116,7 +116,7 @@ GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene_sets.report.csv"%(j, i)
 
 
 rule target:
-    input: RAW_COUNTS, DESEQ_DDS, DESEQ_NTD, DESEQ_ANNO, 
+    input: RAW_COUNTS, DESEQ_DDS,  DESEQ_ANNO, 
            SAMPLE_TPM_ANNO, SAMPLE_TXTPM_ANNO,
            DESEQ_RES, DESEQ_HEATMAP, GSEA_FINAL
 
@@ -177,10 +177,11 @@ rule salmon_quant:
         outdir="salmon/{sample}",
         extra_paried=" --incompatPrior 0  --numBootstraps 100 --seqBias --gcBias --writeUnmappedNames",
         #extra_single=" --fldMean 250 --fldSD 25 --incompatPrior 0  --numBootstraps 100 --writeUnmappedNames"
+    log: "logs/salmon/{sample}_salmons_quant.log"
     shell:        
         "docker run -v {params.index_dir}:/index  -v {params.workdir}:/data combinelab/salmon:latest "
         "salmon quant -i /index -1 /data/{params.r1} -2 /data/{params.r2} "
-        "-l A -p {threads}  -o /data/{params.outdir} {params.extra_paried} > /dev/null"
+        "-l A -p {threads}  -o /data/{params.outdir} {params.extra_paried} &> {log}"
 rule tximport:
     '''used for kallisto, Salmon, Sailfish, and RSEM. see: 
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html
@@ -254,7 +255,7 @@ rule pheatmap_degs:
     params: 
         treat="{treat}",
         ctrl="{ctrl}",
-        padj=0.05.
+        padj=0.05,
         topgene=20,
     script:
         "scripts/pheatmapDEGs.R"    
