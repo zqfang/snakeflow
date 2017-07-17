@@ -1,8 +1,29 @@
 def gsea_enrichr(diff, log2fc, padj, go):
     # python code
-    import errno
+    import os, errno
     from pandas import read_excel
     import gseapy as gp
+
+    #outputfile name
+    outGSEAname = diff.split("/")[-1].lstrip("diff_").rpartition("_")[0]
+    treat, ctrl =outGSEAname.split("_vs_")    
+
+    #parse blacklist and skip no significant results
+    if os.path.isfile("temp/blacklist.txt"):
+        with open("temp/blacklist.txt") as black:
+            blacklist = [ bla.strip('\n') for bla in black]
+            # handle files with no significant genes
+        if diff in blacklist:
+            print("No significant degs in this comparasion group.")
+            for domain in go:
+                outfile1="GO/GSEA_%s/%s/gseapy.gsea.gene_sets.report.csv"%(outGSEAname, domain)
+                os.system("touch %s"%outfile1)
+                for gl_type in ['all','up','down']:
+                    outfile2='GO/Enrichr_{n}/{d}_{t}/{d}.{t}.enrichr.reports.txt'.format(n=outGSEAname, d=domain, t=gl_type)
+                    os.system("touch %s"%outfile2)
+            return 
+
+    #start to parse significant results
     al_res = read_excel(diff, sheetname=None)
     sig_deg = al_res["sig-all.log2fc%s-padj%s"%(log2fc, padj)]
     sig_deg_up = al_res['sig-up']
@@ -14,9 +35,6 @@ def gsea_enrichr(diff, log2fc, padj, go):
     sig_deg_gsea_sort = sig_deg_gsea.sort_values('log2FoldChange',ascending=False)
     sig_deg_gsea_sort = sig_deg_gsea_sort.reset_index(drop=True)
 
-
-    outGSEAname = diff.split("/")[-1].lstrip("diff_").rpartition("_")[0]
-    treat, ctrl =outGSEAname.split("_vs_")
     
     for domain in go:
         for glist, gl_type in zip(degs_sig, ['all','up','down']):
@@ -26,7 +44,8 @@ def gsea_enrichr(diff, log2fc, padj, go):
                            cutoff=0.2, outdir=outdir)
             except Exception:
                 print("Enrichr Server No response: %s vs %s, %s, %s"%(treat, ctrl, domain, gl_type,))
-            #print("connetion to the Enrichr Server is interupted by the host, retry again.")
+                print("the lenght of input gene list = ",len(glist))
+            
     #run prerank
     """
     for domain in go:
@@ -57,6 +76,8 @@ def gsea_enrichr(diff, log2fc, padj, go):
                          min_size=10, max_size=500, outdir=outdir)
         except:
             print("Oops...%s_vs_%s: skip GSEA plotting for %s, please adjust paramters for GSEA input."%(treat, ctrl, domain))
+            print("the lenght of input degs = ", sig_deg[col2].shape[0])
+
         """
         # delete empty dirs
         try:

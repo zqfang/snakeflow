@@ -1,20 +1,21 @@
-snake_heatmap <-  <- function(degstab, ntdimage, treat, ctrl, padj, top) 
+snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top) 
 {
     suppressMessages(library("pheatmap"))
     suppressMessages(library("RColorBrewer"))
+    suppressMessages(library("DESeq2"))
     #load ntd, group, df
     load(ntdimage)
-
+    #load("temp/deseq2.dds.RData")
+    res <- results(dds, contrast=c("condition", treat, ctrl))
     #color palete for heatmap
-    heatcols <- colorRampPalette(brewer.pal(10, "RdBu"))(255)
+    heatcols <- colorRampPalette(rev(brewer.pal(10, "RdBu")))(255)
     #heatcols=colorRampPalette(c("royalblue4", "white", "red3"))(50)
 
-    outDIR = paste0("differential_expression/diff_", treat, "_vs_", ctrl, "/diff")
+    outDIR <- paste0("differential_expression/diff_", treat, "_vs_", ctrl, "/diff")
     #select groups for plotting
-    ntd_cols = ifelse(group ==treat | group == ctrl, TRUE, FALSE)
+    ntd_cols <- ifelse(group == treat | group == ctrl, TRUE, FALSE)
 
     #TopGenes
-    res = read.table(degstab, stringsAsFactors=F )
     topGenes <- head(order(res$padj), top)
     #all Degs
     degs <- which(res$padj < padj)
@@ -28,12 +29,12 @@ snake_heatmap <-  <- function(degstab, ntdimage, treat, ctrl, padj, top)
 
     #pdf
     pheatmap(ntd[topGenes, ntd_cols], scale = "row", cluster_rows=T, show_rownames=T,
-           cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
+           cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 8,
            color=heatcols, main = paste(treat, "vs", ctrl, sep="_"),
            filename = paste(outDIR, treat, "vs", ctrl,"top20genes.pdf",sep="_"))
     #png
     pheatmap(ntd[topGenes,ntd_cols], scale = "row", cluster_rows=T, show_rownames=T,
-           cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 12,
+           cluster_cols=T, annotation_col = df, cellwidth = 15, fontsize = 8,
            color=heatcols, main = paste(treat, "vs", ctrl, sep="_"),
            filename = paste(outDIR, treat, "vs", ctrl,"top20genes.png",sep="_"))
     #save results ammong groups comparasion.
@@ -54,36 +55,40 @@ snake_heatmap <-  <- function(degstab, ntdimage, treat, ctrl, padj, top)
           print(paste(treat, "vs", ctrl,"has no significant degs when padj =",padj, sep=" "))
           cmd1 <-paste(outDIR, treat, "vs", ctrl, "all.degs.pdf",sep="_")
           cmd2 <-paste(outDIR, treat, "vs", ctrl, "all.degs.png",sep="_")
-          cmd3 <-paste(outDIR, treat, "vs", ctrl, "groups.all.degs.pdf",sep="_"))
-          cmd4 <-paste(outDIR, treat, "vs", ctrl, "groups.all.degs.png",sep="_"))
+          cmd3 <-paste(outDIR, treat, "vs", ctrl, "groups.all.degs.pdf",sep="_")
+          cmd4 <-paste(outDIR, treat, "vs", ctrl, "groups.all.degs.png",sep="_")
 
-          system(paste("touch", cmd1, sep=" ")
-          system(paste("touch", cmd2, sep=" ")
-          system(paste("touch", cmd3, sep=" ")
-          system(paste("touch", cmd4, sep=" ")
+          system(paste("touch", cmd1, sep=" "))
+          system(paste("touch", cmd2, sep=" "))
+          system(paste("touch", cmd3, sep=" "))
+          system(paste("touch", cmd4, sep=" "))
 
      } else {
+          dat1 <- ntd[degs, ntd_cols]
+          dat2 <- ntd[degs,]
+          
           #pdf
-          pheatmap(ntd[degs, ntd_cols], scale = "row", cluster_rows=T, show_rownames=F, 
+          #add scale = "row"
+          pheatmap(dat1, scale = "row", cluster_rows=T, show_rownames=F, 
               cluster_cols=T, annotation_col = df, 
-              cellwidth = 15, fontsize = 12, color=heatcols,
+              cellwidth = 15, fontsize = 8, color=heatcols,
               main = paste(treat, "vs", ctrl, sep="_"),
               filename = paste(outDIR, treat, "vs", ctrl, "all.degs.pdf",sep="_"))
           #png
-          pheatmap(ntd[degs, ntd_cols], scale = "row", cluster_rows=T, show_rownames=F, 
+          pheatmap(dat1, scale = "row", cluster_rows=T, show_rownames=F, 
               cluster_cols=T, annotation_col = df, 
-              cellwidth = 15, fontsize = 12, color=heatcols,
+              cellwidth = 15, fontsize = 8, color=heatcols,
               main = paste(treat, "vs", ctrl, sep="_"),
               filename = paste(outDIR, treat, "vs", ctrl, "all.degs.png",sep="_"))
 
           #pdf
-          pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
+          pheatmap(dat2, scale = "row", cluster_rows=T, show_rownames=F, 
               cluster_cols=T, annotation_col = df, 
               cellwidth = 15, fontsize = 8, color=heatcols,
               main = paste(treat, "vs", ctrl, sep="_"),
               filename = paste(outDIR, treat, "vs", ctrl, "groups.all.degs.pdf",sep="_"))
           #png
-          pheatmap(ntd[degs,], scale = "row", cluster_rows=T, show_rownames=F, 
+          pheatmap(dat2, scale = "row", cluster_rows=T, show_rownames=F, 
               cluster_cols=T, annotation_col = df, 
               cellwidth = 15, fontsize = 8, color=heatcols,
               main = paste(treat, "vs", ctrl, sep="_"),

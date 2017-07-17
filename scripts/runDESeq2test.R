@@ -134,16 +134,15 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
   
 }
 
+load("temp/txi.salmon.RData")
+
 outdds="temp/deseq2.dds2.RData"
 outntd="temp/deseq2.ntd.RData"
 group=paste(sampleTab$V3,collapse=' ')
 time=paste(sampleTab$V4,collapse=' ')
 alias=paste(sampleTab$V2,collapse=' ')
-load("temp/txi.salmon.RData")
-library(ggplot2)
 
 
-colnames(sampleDistMatrix) <- NULL
 pheatmap(mat,
          clustering_distance_rows=distsRL,
          clustering_distance_cols=distsRL,

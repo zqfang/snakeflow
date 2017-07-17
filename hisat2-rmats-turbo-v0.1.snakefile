@@ -214,7 +214,7 @@ rule rMATS_turbo:
 
 rule rMATS_anno:
     input:
-        "differential_expression/diff_{treat}_vs_{ctrl}_results.annotated.xls",
+        "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.annotated.xls",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/SE.MATS.JCEC.txt",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A3SS.MATS.JCEC.txt",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A5SS.MATS.JCEC.txt",

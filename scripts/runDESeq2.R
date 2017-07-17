@@ -7,6 +7,9 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      suppressMessages(library("pheatmap"))
      suppressMessages(library("DESeq2"))
      suppressMessages(library('EnsDb.Hsapiens.v86'))
+     #library("BiocParallel")
+     #register(MulticoreParam(4))
+     # and set DESeq() et.al with parallel=TRUE
      library(ggrepel)
 
      load(txi_image)
@@ -57,10 +60,10 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      df <- data.frame(treatment=group, row.names=colnames(ntd))
 
      #save dds for further processing
-     save(dds, df,rld, vsd, ntd, maps_names, file=outdds)
+     save(dds, df,rld, vsd, ntd, group, file=outdds)
 
      #save ntd
-     save(ntd, df, group, file=outntd)  
+     save(dds, ntd, df, group, file=outntd)  
 
      #clustering plot
      hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(255)
@@ -71,14 +74,13 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      pdf("differential_expression/Samples.correlation.heatmap.pdf", width = 8, height = 8)
      hc <- hclust(distsRL)
      heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
-               col = rev(hmcol), margins=c(5, 5),
+               col = rev(hmcol), margins=c(10,10),
                main="Sample Correlation")
      dev.off()
      
-     #You may need to load the grid package to get the units argument to work.
-     png("differential_expression/Samples.correlation.heatmap.png",width = 8, height = 8, units = 'in', res = 600)
+     png("differential_expression/Samples.correlation.heatmap.png", width = 8, height = 8, units = 'in', res = 600)
      heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none", 
-               col = rev(hmcol), margins=c(5, 5),
+               col = rev(hmcol), margins=c(10,10),
                main="Sample Correlation")
      dev.off()
 
@@ -89,7 +91,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      #add geom_text(check_overlap = T, to remove overlap text)
      p <- ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))
      p <- p+ geom_point(size=3) +
-             geom_title("Sampls PCA") +
+             ggtitle("Sampls PCA") +
              geom_text_repel(fontface = "bold")+ 
              xlab(paste0("PC1: ",percentVar[1],"% variance")) +
              ylab(paste0("PC2: ",percentVar[2],"% variance"))
@@ -97,7 +99,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
     print(p)
     dev.off()
 
-    png("differential_expression/Samples.PCA.png",width = 8, height = 8, units = 'in', res = 600)
+    png("differential_expression/Samples.PCA.png", width = 8, height = 8, units = 'in', res = 600)
     print(p)
     dev.off()
 
@@ -105,28 +107,33 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      comb <- t(combn(ugr,2))
      for (i in 1:dim(comb)[1])
      {
-         #res <- results(dds, contrast=c("condition","treated","control"))
-         res <- results(dds, contrast=c("condition", comb[i,2], comb[i,1]))
-         resOrdered <- res[order(res$padj),]
-         resOrdered = as.data.frame(resOrdered)
 
          #save results to outdir
          outDIR = paste0("differential_expression/diff_", comb[i,2], "_vs_", comb[i,1], "/diff")       
          #outRES=paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
          outRES=paste(outDIR, comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
-         write.table(resOrdered, file=outRES, quote=F, sep="\t")
          
-         #MAplot pdf
-         outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
-         pdf(outMA, width = 5, height = 5)     
-         plotMA(res, ylim=c(-5,5))
-         dev.off()
+         # skip extraction if file already exists
+         if (!file.exists(outRES)) 
+         {
+             #res <- results(dds, contrast=c("condition","treated","control"))
+             res <- results(dds, contrast=c("condition", comb[i,2], comb[i,1]))
+             resOrdered <- res[order(res$padj),]
+             resOrdered = as.data.frame(resOrdered)
+             write.table(resOrdered, file=outRES, quote=F, sep="\t")
+             
+             #MAplot pdf
+             outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
+             pdf(outMA, width = 5, height = 5)     
+             plotMA(res, ylim=c(-5,5))
+             dev.off()
 
-         #MAplot png
-         outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.png",sep="_")
-         png(outMA, width = 5, height = 5, units = 'in', res = 600)     
-         plotMA(res, ylim=c(-5,5))
-         dev.off()
+             #MAplot png
+             outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.png",sep="_")
+             png(outMA, width = 5, height = 5, units = 'in', res = 600)     
+             plotMA(res, ylim=c(-5,5))
+             dev.off()
+         }
 
      } 
 
