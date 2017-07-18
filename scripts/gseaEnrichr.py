@@ -69,7 +69,7 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
     #select columns for gsea
     cols_ = [col for col in sig_deg.columns if col.startswith("TPM")]
     
-    cols_group = [col.lstrip("TPM.")[1] for col in cols_ ]
+    cols_group = [col.lstrip("TPM.") for col in cols_ ]
     cols  = [col for col, group in zip(cols_, cols_group) if group.startswith(treat)] +\
             [col for col, group in zip(cols_, cols_group) if group.startswith(ctrl)]
 
