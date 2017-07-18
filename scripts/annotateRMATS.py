@@ -212,7 +212,8 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     
     # go domain
     GO_DOMAIN = go
-
+    # dir for blacklist 
+    os.makedirs("temp/blacklist.GO", exist_ok=True)
     plt.style.use('classic')
 
     for domain in GO_DOMAIN:
@@ -228,7 +229,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
             log2="the lenght of input degs = %s \n"%sig_deg[col2].shape[0]  
             print(log1, log2)     
             os.system("touch %s/gseapy.gsea.gene_sets.report.csv"%outname)
-            with open("temp/blacklist.gsea.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
+            with open("temp/blacklist.GO/blacklist.gsea.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                 black.write(log1)
                 black.write(log2)
 
@@ -251,7 +252,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
                 print(log1, log2)
                 # touch file error exists
                 os.system("touch  %s"%outfile)
-                with open("temp/blacklist.enrichr.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
+                with open("temp/blacklist.GO/blacklist.enrichr.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                     black.write(log1)
                     black.write(log2)   
 
