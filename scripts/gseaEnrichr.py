@@ -38,14 +38,22 @@ def gsea_enrichr(diff, log2fc, padj, go):
     
     for domain in go:
         for glist, gl_type in zip(degs_sig, ['all','up','down']):
-            try:
-                outdir='GO/Enrichr_%s/%s_%s'%(outGSEAname, domain, gl_type)
+            outdir='GO/Enrichr_%s/%s_%s'%(outGSEAname, domain, gl_type)
+            outfile = "{o}/{d}.{t}.enrichr.reports.txt".format(o=outdir, d=domain, t=gl_type)
+            #skip plotting while file exists
+            if os.path.isfile(outfile): continue
+            try:                
                 gp.enrichr(gene_list=glist, gene_sets=domain, description=gl_type,
-                           cutoff=0.2, outdir=outdir)
-            except Exception:
-                print("Enrichr Server No response: %s vs %s, %s, %s"%(treat, ctrl, domain, gl_type,))
-                print("the lenght of input gene list = ",len(glist))
-            
+                           cutoff=0.1, outdir=outdir)
+            except Exception as e:
+                log1="Enrichr Server No response: %s vs %s, %s, %s \n"%(treat, ctrl, domain, gl_type,)
+                log2="the lenght of input gene list = %s \n"%(len(glist))
+                print(log1, log2)
+                # touch file error exists
+                os.system("touch  %s"%outfile)
+                with open("temp/Blacklist.degs.enrichr.%s_vs_%s"%(treat, ctrl),'a') as black:
+                    black.write(log1)
+                    black.write(log2)            
     #run prerank
     """
     for domain in go:
@@ -70,13 +78,22 @@ def gsea_enrichr(diff, log2fc, padj, go):
     
     # run gsea
     for domain in go:
+        outdir="GO/GSEA_%s/%s"%(outGSEAname, domain)
+        outfile = "%s/gseapy.gsea.gene_sets.report.csv"%outdir
+        #skip plotting while file exists
+        if os.path.isfile(outfile): continue
         try:
-            outdir="GO/GSEA_%s/%s"%(outGSEAname, domain)
             gs = gp.gsea(data=sig_deg[col2], gene_sets=domain, cls=cls_vec,
                          min_size=10, max_size=500, outdir=outdir)
         except:
-            print("Oops...%s_vs_%s: skip GSEA plotting for %s, please adjust paramters for GSEA input."%(treat, ctrl, domain))
-            print("the lenght of input degs = ", sig_deg[col2].shape[0])
+            log1="Oops...%s_vs_%s: skip GSEA plotting for %s, please adjust paramters for GSEA input.\n"%(treat, ctrl, domain)
+            log2="the lenght of input degs = %s \n"%sig_deg[col2].shape[0]  
+            print(log1, log2)     
+            os.system("touch %s/gseapy.gsea.gene_sets.report.csv"%outdir)
+            with open("temp/Blacklist.degs.gsea.%s_vs_%s"%(treat, ctrl),'a') as black:
+                black.write(log1)
+                black.write(log2)
+
 
         """
         # delete empty dirs

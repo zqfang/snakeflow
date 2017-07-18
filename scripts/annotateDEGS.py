@@ -30,25 +30,23 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, log2f
     #output a blacklist for group comparasion have not sinificant differential genes
 
     sig_deg = merge[(merge['log2FoldChange'].abs()> log2fc) & (merge['padj'] < padj) ]
- 
+
+    writer = pd.ExcelWriter(diff_anno)
+    merge.to_excel(writer, sheet_name="gene_exp")
+
     if sig_deg.shape[0] > 0:
         sig_deg = sig_deg.sort_values('padj', axis=0)
         sig_deg.loc[:,'up_down'] = sig_deg.log2FoldChange.apply(lambda x : 'up' if x > 0 else 'down' )
         sig_deg_up = sig_deg[sig_deg['up_down'] == 'up']
         sig_deg_dw = sig_deg[sig_deg['up_down'] == 'down'] 
-
-        writer = pd.ExcelWriter(diff_anno)
-        merge.to_excel(writer,sheet_name="gene_exp")
         sig_deg.to_excel(writer, sheet_name="sig-all.log2fc%s-padj%s"%(log2fc, padj))
         sig_deg_up.to_excel(writer, sheet_name="sig-up",)
         sig_deg_dw.to_excel(writer, sheet_name="sig-down",)
-        writer.save()
     else:
         with open("temp/blacklist.txt",'a') as black:
             black.write(diff_anno+'\n')
         os.system("touch %s"%diff_anno)
-
-
+    writer.save()
 
 anno_genes(snakemake.params['gene_anno'], snakemake.params['tpm'],
            snakemake.input[0], snakemake.output[0], 

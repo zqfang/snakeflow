@@ -10,15 +10,9 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     import seaborn as sns
     import gseapy as gp
 
-    #gene_expression_table
-    gene_exp=pd.read_excel(diff_exp, index_col='gene_id')
-    #remove .versions of each id
-    gene_exp.index = gene_exp.index.str.split(".").str[0]
-
 
     # Significant events are based on FDR < 5% and | deltaPSI | > 10%
     as_rmats = glob.glob(os.path.join(indir, "*.MATS.JCEC.txt"))
-
     treat, ctrl = indir.split("/")[-1].lstrip("rMATS.").split("_vs_")
 
     as_type =[]
@@ -51,8 +45,30 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     fig.savefig(outdir+"/differential_AS_events.piechart.pdf",bbox_inches='tight')
     fig.savefig(outdir+"/differential_AS_events.piechart.png",bbox_inches='tight', dpi=300)
 
+    #output as event numbbers for piechart
+    with open(outdir+"/summary.rmats.events.txt",'w') as r:
+        r.write("# this file summaries the total and significant evnets detecty by rMATS.\n")
+        r.write("# cut off threshold: with FDR=0.05, abs(Delta PSI) < 0.1.\n")
+        r.write("type\ttotal\tsignificant\n")
+        for ty, to, si in zip(as_type, as_type, as_sig):
+            r.write("%s\t%s\t%s\n"%(ty,to,si))
 
+    #skip exons analysis
     SE_sig = pd.read_csv(os.path.join(outdir, "SE.MATS.JCEC.sig.csv"), index_col='ID')
+    """
+    #parse blacklist and skip no significant results
+    if os.path.isfile("temp/blacklist.txt"):
+        with open("temp/blacklist.txt") as black:
+            blacklist = [ bla.strip('\n') for bla in black]
+            # handle files with no significant genes
+        if diff in blacklist:
+            print("No significant degs in this comparasion group.")
+            return 
+    """
+    #gene_expression_table
+    gene_exp=pd.read_excel(diff_exp, index_col='gene_id')
+    #remove .versions of each id
+    gene_exp.index = gene_exp.index.str.split(".").str[0]
 
     cols_ = [col for col in gene_exp.columns if col.startswith("TPM")]   
     cols_group = [col.split(".")[1] for col in cols_ ]
@@ -133,8 +149,6 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     fig.savefig(outdir+"/RBP_vacano.png",bbox_inches='tight')
     fig.savefig(outdir+"/RBP_vacano.pdf",bbox_inches='tight')
 
-
-
     #select columns for gsea
     #b1_treat  = [col for col, group in zip(cols_, cols_group) if treat == group] 
     #b2_treat  = [col for col, group in zip(cols_, cols_group) if ctrl == group]
@@ -168,7 +182,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
 
 
 
-    #bar plot of sig RBPs
+    #bar plot of sig RBPs, handle skip plotting when no sig rbs 
     if len(rbp_sig) >= 1:
         rbp_sig = rbp_sig.sort_values('log2FoldChange',)
 
@@ -191,17 +205,10 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     # ## GO
     SE_sig = SE_sig.sort_values(by='IncLevelDifference',ascending=False)
     rank_list = SE_sig[['geneSymbol','IncLevelDifference']]
-    rank_list.head()
-
-
-    # In[145]:
-
     rank_list = rank_list.reset_index()
     rank_list = rank_list.drop('ID',axis=1)
     rank_list_up = rank_list[rank_list.IncLevelDifference < 0]
     rank_list_down = rank_list[rank_list.IncLevelDifference > 0]
-
-
     
     # go domain
     GO_DOMAIN = go
@@ -210,11 +217,20 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
 
     for domain in GO_DOMAIN:
         outname = os.path.join(outdir, "GSEA_AS_%s_vs_%s"%(treat, ctrl), domain)
+        outfile = "%s/gseapy.gsea.gene_sets.report.csv"%outname
+        #skip plotting while file exists
+        if os.path.isfile(outfile): continue
         try:
             prerank = gp.prerank(rnk=rank_list, gene_sets=domain, min_size=15, max_size=500,
                              pheno_pos=treat,pheno_neg=ctrl, outdir=outname)
         except:
-            print("something wrong, %s"%domain)
+            log1="Oops...%s_vs_%s: skip GSEA plotting for %s, please adjust paramters for GSEA input.\n"%(treat, ctrl, domain)
+            log2="the lenght of input degs = %s \n"%sig_deg[col2].shape[0]  
+            print(log1, log2)     
+            os.system("touch %s/gseapy.gsea.gene_sets.report.csv"%outname)
+            with open("temp/Blacklist.gsea.rmats.%s_vs_%s"%(treat, ctrl),'a') as black:
+                black.write(log1)
+                black.write(log2)
 
     for domain in GO_DOMAIN:
 
@@ -223,11 +239,21 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
                                    rank_list_down.geneSymbol.squeeze().tolist()],['all','up','down']):
             
             outname = os.path.join(outdir, "Enrichr_SkipExons_%s_vs_%s"%(treat, ctrl))  
+            outfile = "{o}/{d}.{t}.enrichr.reports.txt".format(o=outname, d=domain, t=gl_type)
+            #skip plotting while file exists
+            if os.path.isfile(outfile): continue
             try:     
-                enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, description=domain, cutoff=0.2,
+                enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, description=domain, cutoff=0.1,
                                      outdir=outname+'/%s_%s'%(domain, gl_type))
             except Exception:
-                print("Enrichr Server No Response. Try again later!!!")
+                log1="Enrichr Server No response: %s vs %s, %s, %s \n"%(treat, ctrl, domain, gl_type,)
+                log2="the lenght of input gene list = %s \n"%(len(glist))
+                print(log1, log2)
+                # touch file error exists
+                os.system("touch  %s"%outfile)
+                with open("temp/Blacklist.enrichr.rmats.%s_vs_%s"%(treat, ctrl),'a') as black:
+                    black.write(log1)
+                    black.write(log2)   
 
 
 rmats_anno(snakemake.params['indir'], snakemake.params['outdir'],

@@ -91,7 +91,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      #add geom_text(check_overlap = T, to remove overlap text)
      p <- ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))
      p <- p+ geom_point(size=3) +
-             ggtitle("Princepal Component Analysis") +
+             ggtitle("Principal Component Analysis") +
              geom_text_repel(fontface = "bold")+ 
              xlab(paste0("PC1: ",percentVar[1],"% variance")) +
              ylab(paste0("PC2: ",percentVar[2],"% variance"))

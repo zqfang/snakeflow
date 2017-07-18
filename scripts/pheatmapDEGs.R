@@ -5,7 +5,7 @@ snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top)
     suppressMessages(library("DESeq2"))
     #load ntd, group, df
     load(ntdimage)
-    #load("temp/deseq2.dds.RData")
+    load("temp/deseq2.dds.RData")
     res <- results(dds, contrast=c("condition", treat, ctrl))
     #color palete for heatmap
     heatcols <- colorRampPalette(rev(brewer.pal(10, "RdBu")))(255)

@@ -165,24 +165,24 @@ rule rMATS_pre:
         bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
         gtf=GTF_FILE
     output:
-        groups= ["temp/%s_vs_%s.rmats.txt"%(j, i) for i, j in combinations(uGroup, 2)],
+        groups= ["temp/rmats/%s_vs_%s.rmats.txt"%(j, i) for i, j in combinations(uGroup, 2)],
         gtf_tmp = join("temp", GTF_FILE.split("/")[-1])
     params:
         ugsamples=RMATS_DICT,
         ugroup=uGroup,
     run:
         for u, g in zip(params.ugroup, params.ugsamples):
-            out = open("temp/b_%s.txt"%u, 'w')
+            out = open("temp/rmats/b_%s.txt"%u, 'w')
             temp = ["/data/mapped/%s.sorted.bam"%sample for sample in g]
             line=",".join(temp)
             out.write(line)
             out.close()
 
         for i, j in combinations(params.ugroup, 2):
-            outname = "temp/%s_vs_%s.rmats.txt"%(j,i)
+            outname = "temp/rmats/%s_vs_%s.rmats.txt"%(j,i)
             out2 = open(outname,'w')
-            out2.write("temp/b_%s.txt\n"%j)
-            out2.write("temp/b_%s.txt\n"%i)
+            out2.write("temp/rmats/b_%s.txt\n"%j)
+            out2.write("temp/rmats/b_%s.txt\n"%i)
             out.close()
         shell("cp {input.gtf} {output.gtf_tmp}")
 
@@ -191,7 +191,7 @@ rule rMATS_turbo:
         bam=expand("mapped/{sample}.sorted.bam", sample=SAMPLES),
         bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
         gtf = join("temp", GTF_FILE.split("/")[-1]), 
-        rmats="temp/{treat}_vs_{ctrl}.rmats.txt"
+        rmats="temp/rmats/{treat}_vs_{ctrl}.rmats.txt"
     output: 
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/SE.MATS.JCEC.txt",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A3SS.MATS.JCEC.txt",
@@ -207,7 +207,7 @@ rule rMATS_turbo:
         gtf = join("temp", GTF_FILE.split("/")[-1])
     shell:
         "docker run -v {params.wkdir}:/data rmats:turbo01 "
-        "--b1 /data/temp/b_{wildcards.treat}.txt --b2 /data/temp/b_{wildcards.ctrl}.txt "
+        "--b1 /data/temp/rmats/b_{wildcards.treat}.txt --b2 /data/temp/rmats/b_{wildcards.ctrl}.txt "
         "--gtf /data/{params.gtf} --od /data/{params.prefix} "
         "--nthread {threads} --tstat {threads} {params.extra} &> {log}"
 
