@@ -1,4 +1,4 @@
-def gsea_enrichr(diff, log2fc, padj, go):
+def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
     # python code
     import os, errno
     from pandas import read_excel
@@ -6,7 +6,7 @@ def gsea_enrichr(diff, log2fc, padj, go):
 
     #outputfile name
     outGSEAname = diff.split("/")[-1].lstrip("diff_").rpartition("_")[0]
-    treat, ctrl =outGSEAname.split("_vs_")    
+    #treat, ctrl =outGSEAname.split("_vs_")    
 
     #parse blacklist and skip no significant results
     if os.path.isfile("temp/blacklist.txt"):
@@ -69,9 +69,9 @@ def gsea_enrichr(diff, log2fc, padj, go):
     #select columns for gsea
     cols_ = [col for col in sig_deg.columns if col.startswith("TPM")]
     
-    cols_group = [col.split(".")[1] for col in cols_ ]
-    cols  = [col for col, group in zip(cols_, cols_group) if treat == group] +\
-            [col for col, group in zip(cols_, cols_group) if ctrl == group]
+    cols_group = [col.lstrip("TPM.")[1] for col in cols_ ]
+    cols  = [col for col, group in zip(cols_, cols_group) if group.startswith(treat)] +\
+            [col for col, group in zip(cols_, cols_group) if group.startswith(ctrl)]
 
     col2 = ['gene_name']+ cols
     cls_vec = [g.split(".")[1] for g in cols]
@@ -104,5 +104,5 @@ def gsea_enrichr(diff, log2fc, padj, go):
                 print("deleting empty directory."
         """
 
-gsea_enrichr(snakemake.input[0], snakemake.params['log2fc'], snakemake.params['padj'],
-            snakemake.params['go'])
+gsea_enrichr(snakemake.input[0], snakemake.params['treat'], snakemake.params['ctrl'],
+             snakemake.params['log2fc'], snakemake.params['padj'], snakemake.params['go'])

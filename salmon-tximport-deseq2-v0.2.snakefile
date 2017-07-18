@@ -233,13 +233,14 @@ rule anno_diffGenes:
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.txt"
     output: 
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.annotated.xls"
-
     params:
         gene_anno=GTF_Genes,
         tpm=SAMPLE_TPM,
         alias=SAMPLES_ALIAS,
         samples=SAMPLES,
         group=GROUP,
+        treat="{treat}",
+        ctrl="{ctrl}",
         log2fc=1,
         padj=0.05
     script:
@@ -283,6 +284,8 @@ rule GSEA_Enrichr:
     output:
         GSEA_RES   
     params:
+        treat="{treat}",
+        ctrl="{ctrl}",   
         log2fc=1,
         padj=0.05,
         go=GO_DOMAIN,

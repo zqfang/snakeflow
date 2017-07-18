@@ -1,4 +1,4 @@
-def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, log2fc, padj, threads):
+def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, treat, ctrl, log2fc, padj, threads):
     # python code
     import os
     import pandas as pd 
@@ -6,29 +6,25 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, log2f
     anno = pd.read_table(annotation, index_col='gene_id')
     tpm = pd.read_table(tpms, index_col=0)
     tpm = tpm[samples]
-    tpm.columns = ["TPM.%s.%s"%(g,a) for a, g, s in zip(alias, group, samples)]
-
+    cols_ = ["TPM.%s.%s"%(g, a) for a, g, s in zip(alias, group, samples)]
+    tpm.columns = cols_
     #parse treat and ctrl
-    diff_group = deseqs.split("/")[-1].lstrip("diff_").rpartition("_")[0]
-    treat, ctrl = diff_group.split("_vs_")
+    #diff_group = deseqs.split("/")[-1].lstrip("diff_").rpartition("_")[0]
+    #treat, ctrl = diff_group.split("_vs_")
 
     #select columns for treat and ctrl group 
-    cols_ = [col for col in tpm.columns if col.startswith("TPM.")]
-    
-    cols_group = [col.split(".")[1] for col in cols_ ]
-    cols  = [col for col, group in zip(cols_, cols_group) if treat == group] +\
-            [col for col, group in zip(cols_, cols_group) if ctrl == group]
+    #cols_ = [col for col in tpm.columns if col.startswith("TPM.")]    
+    #cols_group = [col.split(".")[1] for col in cols_ ]
+    cols  = [col for col, g in zip(cols_, group) if treat == g] +\
+            [col for col, g in zip(cols_, group) if ctrl == g]
     tpm_diffs = tpm[cols]
-
-    
+   
     deseq = pd.read_table(deseqs, index_col=0)
-
     #merge results
     merge = pd.concat([anno, deseq, tpm_diffs], axis=1, join='inner')
     merge.index.name ='gene_id'
     
     #output a blacklist for group comparasion have not sinificant differential genes
-
     sig_deg = merge[(merge['log2FoldChange'].abs()> log2fc) & (merge['padj'] < padj) ]
 
     writer = pd.ExcelWriter(diff_anno)
@@ -51,5 +47,6 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, log2f
 anno_genes(snakemake.params['gene_anno'], snakemake.params['tpm'],
            snakemake.input[0], snakemake.output[0], 
              snakemake.params['samples'],snakemake.params['alias'],
-             snakemake.params['group'], snakemake.params['log2fc'],
+             snakemake.params['group'], snakemake.params['treat'],
+             snakemake.params['ctrl'], snakemake.params['log2fc'],
              snakemake.params['padj'], snakemake.threads)

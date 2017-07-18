@@ -71,10 +71,10 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     gene_exp.index = gene_exp.index.str.split(".").str[0]
 
     cols_ = [col for col in gene_exp.columns if col.startswith("TPM")]   
-    cols_group = [col.split(".")[1] for col in cols_ ]
+    cols_group = [col.lstrip("TPM.")[1] for col in cols_ ]
 
-    group_b1  = [col for col, group in zip(cols_, cols_group) if treat == group] 
-    group_b2  = [col for col, group in zip(cols_, cols_group) if ctrl == group]
+    group_b1  = [col for col, group in zip(cols_, cols_group) if group.startswith(treat)] 
+    group_b2  = [col for col, group in zip(cols_, cols_group) if group.startswith(ctrl)]
 
     #split psi values for each sample
     data = []
