@@ -47,8 +47,8 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
 
     #output as event numbbers for piechart
     with open(outdir+"/summary.rmats.events.txt",'w') as r:
-        r.write("# this file summaries the total and significant evnets detecty by rMATS.\n")
-        r.write("# cut off threshold: with FDR=0.05, abs(Delta PSI) < 0.1.\n")
+        r.write("# this file summaries the total and significant evnets detected by rMATS.\n")
+        r.write("# cut-off: FDR=0.05, abs(Delta PSI) < 0.1.\n")
         r.write("type\ttotal\tsignificant\n")
         for ty, to, si in zip(as_type, as_type, as_sig):
             r.write("%s\t%s\t%s\n"%(ty,to,si))
@@ -228,7 +228,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
             log2="the lenght of input degs = %s \n"%sig_deg[col2].shape[0]  
             print(log1, log2)     
             os.system("touch %s/gseapy.gsea.gene_sets.report.csv"%outname)
-            with open("temp/Blacklist.gsea.rmats.%s_vs_%s"%(treat, ctrl),'a') as black:
+            with open("temp/blacklist.gsea.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                 black.write(log1)
                 black.write(log2)
 
@@ -251,7 +251,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
                 print(log1, log2)
                 # touch file error exists
                 os.system("touch  %s"%outfile)
-                with open("temp/Blacklist.enrichr.rmats.%s_vs_%s"%(treat, ctrl),'a') as black:
+                with open("temp/blacklist.enrichr.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                     black.write(log1)
                     black.write(log2)   
 

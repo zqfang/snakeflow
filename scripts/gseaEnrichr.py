@@ -51,7 +51,7 @@ def gsea_enrichr(diff, log2fc, padj, go):
                 print(log1, log2)
                 # touch file error exists
                 os.system("touch  %s"%outfile)
-                with open("temp/Blacklist.degs.enrichr.%s_vs_%s"%(treat, ctrl),'a') as black:
+                with open("temp/blacklist.enrichr.degs.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                     black.write(log1)
                     black.write(log2)            
     #run prerank
@@ -90,7 +90,7 @@ def gsea_enrichr(diff, log2fc, padj, go):
             log2="the lenght of input degs = %s \n"%sig_deg[col2].shape[0]  
             print(log1, log2)     
             os.system("touch %s/gseapy.gsea.gene_sets.report.csv"%outdir)
-            with open("temp/Blacklist.degs.gsea.%s_vs_%s"%(treat, ctrl),'a') as black:
+            with open("temp/blacklist.gsea.degs.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                 black.write(log1)
                 black.write(log2)
 
