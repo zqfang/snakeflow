@@ -11,15 +11,20 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
     #parse blacklist and skip no significant results
     if os.path.isfile("temp/blacklist.txt"):
         with open("temp/blacklist.txt") as black:
-            blacklist = [ bla.strip('\n') for bla in black]
+            blacklist = [ bla.strip() for bla in black]
             # handle files with no significant genes
         if diff in blacklist:
-            print("No significant degs in this comparasion group.")
+            print("Skip GSEA and Enrichr Procedure for %s vs %s."%(treat, ctrl))
             for domain in go:
+                #touch gsea output
                 outfile1="GO/GSEA_%s/%s/gseapy.gsea.gene_sets.report.csv"%(outGSEAname, domain)
+                os.makedirs("GO/GSEA_%s/%s".format(outGSEAname, domain), exist_ok=True)
                 os.system("touch %s"%outfile1)
+                #toutch Enrichr output
                 for gl_type in ['all','up','down']:
-                    outfile2='GO/Enrichr_{n}/{d}_{t}/{d}.{t}.enrichr.reports.txt'.format(n=outGSEAname, d=domain, t=gl_type)
+                    touchdirs = "GO/Enrichr_{n}/{d}_{t}".format(n=outGSEAname, d=domain, t=gl_type)
+                    os.makedirs(touchdirs, exist_ok=True)
+                    outfile2='{n}/{d}.{t}.enrichr.reports.txt'.format(n=touchdirs, d=domain, t=gl_type)
                     os.system("touch %s"%outfile2)
             return 
 
@@ -35,9 +40,7 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
     sig_deg_gsea_sort = sig_deg_gsea.sort_values('log2FoldChange',ascending=False)
     sig_deg_gsea_sort = sig_deg_gsea_sort.reset_index(drop=True)
 
-    #dir for blacklist
-    os.makedirs("temp/blacklist.GO", exist_ok=True)
-    # enrichr and gsea start   
+    
     for domain in go:
         for glist, gl_type in zip(degs_sig, ['all','up','down']):
             outdir='GO/Enrichr_%s/%s_%s'%(outGSEAname, domain, gl_type)
@@ -53,7 +56,7 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
                 print(log1, log2)
                 # touch file error exists
                 os.system("touch  %s"%outfile)
-                with open("temp/blacklist.GO/blacklist.enrichr.degs.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
+                with open("temp/blacklist.enrichr.degs.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                     black.write(log1)
                     black.write(log2)            
     #run prerank
@@ -76,6 +79,7 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
             [col for col, group in zip(cols_, cols_group) if group.startswith(ctrl)]
 
     col2 = ['gene_name']+ cols
+    #class vector
     cls_vec = [treat for group in cols_group if group.startswith(treat)] +\
               [ctrl for  group in cols_group if group.startswith(ctrl)]
     
@@ -93,19 +97,11 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
             log2="the lenght of input degs = %s \n"%sig_deg[col2].shape[0]  
             print(log1, log2)     
             os.system("touch %s/gseapy.gsea.gene_sets.report.csv"%outdir)
-            with open("temp/blacklist.GO/blacklist.gsea.degs.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
+            with open("temp/blacklist.gsea.degs.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                 black.write(log1)
                 black.write(log2)
 
-
-        """
-        # delete empty dirs
-        try:
-            os.rmdir(outdir)
-        except OSError as ex:
-            if ex.errno == errno.ENOTEMPTY:
-                print("deleting empty directory."
-        """
+    return
 
 gsea_enrichr(snakemake.input[0], snakemake.params['treat'], snakemake.params['ctrl'],
              snakemake.params['log2fc'], snakemake.params['padj'], snakemake.params['go'])
