@@ -33,11 +33,13 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
 
      dds$condition <- relevel(dds$condition, ref=ugr[1])
      dds <- DESeq(dds)
-
-     rld <- rlog(dds)
+     
+     # add blind=FALSE if the function DESeq has already been run, 
+     # because then it is not necessary to re-estimate the dispersion values. 
+     rld <- rlog(dds, blind=FALSE)
      colnames(rld) <- alias
 
-     vsd <- varianceStabilizingTransformation(dds)
+     vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
      #rlogMat <- assay(rld)
      #vstMat <- assay(vsd)
 

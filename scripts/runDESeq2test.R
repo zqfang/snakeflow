@@ -147,3 +147,9 @@ pheatmap(mat,
          clustering_distance_rows=distsRL,
          clustering_distance_cols=distsRL,
          col=rev(hmcol))
+
+if (!file.exists("a.txt"))
+{
+  print("NO")
+}
+
