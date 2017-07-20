@@ -11,9 +11,10 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
     #parse blacklist and skip no significant results
     if os.path.isfile("temp/blacklist.txt"):
         with open("temp/blacklist.txt") as black:
-            blacklist = [ bla.strip() for bla in black]
-            # handle files with no significant genes
-        if diff in blacklist:
+            blacklist = [ bla.strip().split("/")[-1] for bla in black]
+        # handle files with no significant genes
+        bk = diff.split("/")[-1]
+        if bk in blacklist:
             print("Skip GSEA and Enrichr Procedure for %s vs %s."%(treat, ctrl))
             for domain in go:
                 #touch gsea output
