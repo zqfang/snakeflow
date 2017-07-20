@@ -33,9 +33,10 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, treat
     if sig_deg.shape[0] > 0:
         sig_deg = sig_deg.sort_values('padj', axis=0)
         sig_deg.loc[:,'up_down'] = sig_deg.log2FoldChange.apply(lambda x : 'up' if x > 0 else 'down' )
-        sig_deg_up = sig_deg[sig_deg['up_down'] == 'up']
-        sig_deg_dw = sig_deg[sig_deg['up_down'] == 'down'] 
-        sig_deg.to_excel(writer, sheet_name="sig-all.log2fc%s-padj%s"%(log2fc, padj))
+        sig_deg_up = sig_deg[sig_deg.log2FoldChange>0]
+        sig_deg_dw = sig_deg[sig_deg.log2FoldChange<0] 
+        #write data to excel
+        sig_deg.to_excel(writer, sheet_name="sig-all.log2fc%s-padj%s"%(log2fc, padj))        
         sig_deg_up.to_excel(writer, sheet_name="sig-up",)
         sig_deg_dw.to_excel(writer, sheet_name="sig-down",)
     else:
