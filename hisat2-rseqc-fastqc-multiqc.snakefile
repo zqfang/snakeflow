@@ -152,7 +152,7 @@ rule hisat2_align:
     threads: 12
     params:
         ref = join(HISAT2_REFDIR, INDEX_PREFIX),
-        extra="--min-intronlen 1000 --dta -t"
+        extra="--min-intronlen 1000 --dta -t --new-summary"
     shell:
         "(hisat2 {params.extra} --threads {threads} -x {params.ref}"
         " -1 {input.r1} -2 {input.r2}  --known-splicesite-infile {input.site}"

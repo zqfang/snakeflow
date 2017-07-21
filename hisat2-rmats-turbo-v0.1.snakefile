@@ -140,7 +140,7 @@ rule hisat2_align:
     threads: 8
     params:
         ref = join(HISAT2_REFDIR, INDEX_PREFIX),
-        extra="--min-intronlen 1000 --dta -t"
+        extra="--min-intronlen 1000 --dta -t --new-summary"
     shell:
         "(hisat2 {params.extra} --threads {threads} -x {params.ref}"
         " -1 {input.r1} -2 {input.r2}  --known-splicesite-infile {input.site}"
@@ -177,8 +177,17 @@ rule rMATS_pre:
             line=",".join(temp)
             out.write(line)
             out.close()
-
+        # blacklist to skip
+        if isfile("temp/blacklist.txt"):
+            with open("temp/blacklist.txt") as black:
+                blacklist = [ bla.strip().split("/")[-1] for bla in black]
+        
         for i, j in combinations(params.ugroup, 2):
+            # groups you want to skip 
+            #bk = "diff_{t}_vs_{c}_results.annotated.xls".format(j,i)
+            #if isfile("temp/blacklist.txt"):
+            #    if bk in blacklist: continue
+            # groups you want to compare
             outname = "temp/rmats/%s_vs_%s.rmats.txt"%(j,i)
             out2 = open(outname,'w')
             out2.write("temp/rmats/b_%s.txt\n"%j)
