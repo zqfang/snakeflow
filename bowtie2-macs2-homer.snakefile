@@ -50,14 +50,6 @@ rule target:
     input: _MACS,_MACS, _HOMER, _MOTIF, _GO, _GREAT
 
 
-rule fastqc:
-    input:
-        join(FASTQ_DIR,"{prefix}.fastq.gz"),
-    output:
-        "qc/fastqc/{prefix}_fastqc.html",
-        "qc/fastqc/{prefix}_fastqc.zip",
-
-    shell: "fastqc -o qc/fastqc {input}"
 
 rule bowtie2_index:
     input:
@@ -94,7 +86,7 @@ rule bam_sort:
     output: protected("mapped/{sample}.highQuality.q25.sorted.bam")
     threads: 12
     shell: 
-        "samtools sort -T mapped/{wildcards.sample} -@ {threads} -O bam  {input} > {output}"
+        "samtools sort -@ {threads} {input} > {output}"
 
 
 rule bam_index:
@@ -114,6 +106,7 @@ rule bam2bw:
         extra=" --normalizeUsingRPKM",
     shell:
         "bamCoverage -b {input} -e {params.fragement_size} -o {output} &> {log}"
+
 rule macs_narrow:
         input: 
             treat="mapped/{sample}.highQuality.q25.sorted.bam",
@@ -152,7 +145,7 @@ rule homer_annotatepeaks
     output:
         "{sample}.peaksAnnotate.txt"
     params:
-        go_outdir="",
+        go_outdir=".",
         genome = "hg19"
     shell:
         "annotatePeaks.pl {input.bed} {params.genome} -go {params.go_outdir} > {output}"
