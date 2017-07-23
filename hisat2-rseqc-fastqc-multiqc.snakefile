@@ -173,8 +173,8 @@ rule bam_stats:
     input:
         bam="mapped/{sample}.sorted.bam",
         bai="mapped/{sample}.sorted.bam.bai"
-    output: "logs/bamstats/{sample}.bam.stats.txt"
-    shell: "samtools idxstats {input.bam} > {output}"
+    output: "logs/rseqc/{sample}.bamstats.txt"
+    shell: "bam_stat.py -i {input.bam} > {output}"
 
 rule geneBody_coverage:
     input:
