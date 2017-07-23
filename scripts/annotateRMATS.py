@@ -15,7 +15,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     treat, ctrl = indir.split("/")[-1].lstrip("rMATS.").split("_vs_")
 
     # blacklist to skip
-    if isfile("temp/blacklist.txt"):
+    if os.path.isfile("temp/blacklist.txt"):
         with open("temp/blacklist.txt") as black:
             blacklist = [ bla.strip().split("/")[-1] for bla in black]
         # groups you want to skip 
