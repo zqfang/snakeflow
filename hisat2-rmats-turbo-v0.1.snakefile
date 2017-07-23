@@ -177,17 +177,8 @@ rule rMATS_pre:
             line=",".join(temp)
             out.write(line)
             out.close()
-        # blacklist to skip
-        if isfile("temp/blacklist.txt"):
-            with open("temp/blacklist.txt") as black:
-                blacklist = [ bla.strip().split("/")[-1] for bla in black]
         
         for i, j in combinations(params.ugroup, 2):
-            # groups you want to skip 
-            #bk = "diff_{t}_vs_{c}_results.annotated.xls".format(j,i)
-            #if isfile("temp/blacklist.txt"):
-            #    if bk in blacklist: continue
-            # groups you want to compare
             outname = "temp/rmats/%s_vs_%s.rmats.txt"%(j,i)
             out2 = open(outname,'w')
             out2.write("temp/rmats/b_%s.txt\n"%j)
@@ -214,11 +205,22 @@ rule rMATS_turbo:
         extra=" -t %s --readLength %s --anchorLength 1 "%(PAIRED, READ_LEN),
         wkdir= config['workdir'],
         gtf = join("temp", GTF_FILE.split("/")[-1])
-    shell:
-        "docker run -v {params.wkdir}:/data rmats:turbo01 "
-        "--b1 /data/temp/rmats/b_{wildcards.treat}.txt --b2 /data/temp/rmats/b_{wildcards.ctrl}.txt "
-        "--gtf /data/{params.gtf} --od /data/{params.prefix} "
-        "--nthread {threads} --tstat {threads} {params.extra} &> {log}"
+    run:
+        # blacklist to skip
+        if isfile("temp/blacklist.txt"):
+            with open("temp/blacklist.txt") as black:
+                blacklist = [ bla.strip().split("/")[-1] for bla in black]
+            # groups you want to skip 
+            bk = "diff_%s_vs_%s_results.annotated.xls"%(wildcards.treat, wildcards.ctrl)
+            if bk in blacklist:
+                for ast in output:
+                    shell("touch %s"%ast)
+                return
+
+        shell("""docker run -v {params.wkdir}:/data rmats:turbo01 \
+                 --b1 /data/temp/rmats/b_{wildcards.treat}.txt --b2 /data/temp/rmats/b_{wildcards.ctrl}.txt \
+                 --gtf /data/{params.gtf} --od /data/{params.prefix} \
+                 --nthread {threads} --tstat {threads} {params.extra} &> {log}""")
 
 
 rule rMATS_anno:

@@ -10,11 +10,25 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     import seaborn as sns
     import gseapy as gp
 
-
     # Significant events are based on FDR < 5% and | deltaPSI | > 10%
     as_rmats = glob.glob(os.path.join(indir, "*.MATS.JCEC.txt"))
     treat, ctrl = indir.split("/")[-1].lstrip("rMATS.").split("_vs_")
 
+    # blacklist to skip
+    if isfile("temp/blacklist.txt"):
+        with open("temp/blacklist.txt") as black:
+            blacklist = [ bla.strip().split("/")[-1] for bla in black]
+        # groups you want to skip 
+        bk = "diff_%s_vs_%s_results.annotated.xls"%(treat, ctrl)
+        if bk in blacklist:
+            os.makedirs("alternative_splicing/rMATS.{t}_vs_{c}_sig".format(t=treat,c=ctrl), exist_ok=True)
+            os.system("touch alternative_splicing/rMATS.{t}_vs_{c}_sig/Skip_Exons/SE.MATS.JCEC.sig.annotated.csv".format(t=treat,c=ctrl))
+            for ast in ['SE','A3SS','A5SS','RI','MXE']:
+                os.system("touch alternative_splicing/rMATS.%s_vs_%s_sig/%s.MATS.JCEC.sig.csv"%(treat, ctrl, ast))
+
+            return
+
+    #files to parse
     as_type =[]
     as_total = []
     as_sig = []
@@ -55,16 +69,6 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
 
     #skip exons analysis
     SE_sig = pd.read_csv(os.path.join(outdir, "SE.MATS.JCEC.sig.csv"), index_col='ID')
-    """
-    #parse blacklist and skip no significant results
-    if os.path.isfile("temp/blacklist.txt"):
-        with open("temp/blacklist.txt") as black:
-            blacklist = [ bla.strip('\n') for bla in black]
-            # handle files with no significant genes
-        if diff in blacklist:
-            print("No significant degs in this comparasion group.")
-            return 
-    """
     #gene_expression_table
     gene_exp=pd.read_excel(diff_exp, index_col='gene_id')
     #remove .versions of each id
@@ -170,17 +174,11 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     cbar.ax.tick_params(right='off',left='off',labelsize=14)
     cbar.ax.set_title('log$_2$FoldChange',loc='left',fontsize=14)
 
-    #for idx in rbp_top18.index:
-    #    ax.annotate(s=rbp_top18.geneSymbol.loc[idx],xy=(np.log2(rbp_exp.avgFPKM_DMSO.loc[idx]), np.log2(rbp_exp.avgFPKM_YPA.loc[idx])))
     ax.set_xlabel("log$_2$(avgTPM %s)"%treat)
     ax.set_ylabel("log$_2$(avgTPM %s)"%ctrl)
     #sns.despine()
     fig.savefig(os.path.join(outdir,"RBP_scatter.png"),bbox_inches='tight')
     fig.savefig(os.path.join(outdir,"RBP_scatter.pdf"),bbox_inches='tight')
-
-
-
-
 
     #bar plot of sig RBPs, handle skip plotting when no sig rbs 
     if len(rbp_sig) >= 1:
