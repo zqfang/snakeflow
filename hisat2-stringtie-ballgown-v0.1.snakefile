@@ -107,17 +107,7 @@ BALLGOWN = ["gene_expression/ballgown_transcripts_expression_table.csv",
 ################## Rules #######################################
 
 rule target:
-    input: MULTIQC,
-           #STRTIEQ, STRTIE_COMPILE, STRTIE_COUNTS, BALLGOWN 
-
-rule fastqc:
-    input:
-        join(FASTQ_DIR,"{prefix}%s"%READ_SUFFIX),
-    output:
-        "qc/fastqc/{prefix}_fastqc.html",
-        "qc/fastqc/{prefix}_fastqc.zip",
-
-    shell: "fastqc -o qc/fastqc {input}"
+    input: STRTIEQ, STRTIE_COMPILE, STRTIE_COUNTS, BALLGOWN 
 
 rule hisat2_index:
     input:
@@ -166,41 +156,12 @@ rule bam_sort:
     input: "mapped/{sample}.bam"
     output: protected("mapped/{sample}.sorted.bam")
     threads: 12
-    shell: "samtools sort -T mapped/{wildcards.sample} -@ {threads} -O bam  {input} > {output}"
+    shell: "samtools sort -@ {threads} {input} > {output}"
 
 rule bam_index:
     input: "mapped/{sample}.sorted.bam"
     output: "mapped/{sample}.sorted.bam.bai"
     shell: "samtools index {input}"
-
-rule bam_stats:
-    input:
-        bam="mapped/{sample}.sorted.bam",
-        bai="mapped/{sample}.sorted.bam.bai"
-    output: "logs/bamstats/{sample}.bam.stats.txt"
-    shell: "samtools idxstats {input.bam} > {output}"
-
-rule geneBody_coverage:
-    input:
-        bam="mapped/{sample}.sorted.bam",
-        bai="mapped/{sample}.sorted.bam.bai",
-        anno=RSEQC_ANNO['housekeep']
-    output:
-        "qc/rseqc/{sample}.geneBodyCoverage.r",
-        "qc/rseqc/{sample}.geneBodyCoverage.txt"
-    log:"logs/rseqc/{sample}.geneBodyCoverage.log"
-    shell:
-        "geneBody_coverage.py -r {input.anno} -i {input.bam}  -o qc/rseqc/{wildcards.sample} &> {log}"
-
-rule read_distribution:
-    input:
-        bam="mapped/{sample}.sorted.bam",
-        bai="mapped/{sample}.sorted.bam.bai",
-        bed=RSEQC_ANNO['refseq']  
-    output:
-        "qc/rseqc/{sample}.readDistribution.txt"
-    shell:
-        "read_distribution.py -i {input.bam} -r {input.bed} > {output}"
 
 #quantification
 rule stringtie:
@@ -285,18 +246,3 @@ rule compile_stringtie:
         fpkm = "gene_expression/gene_expression_table_annotated.fpkm.csv",
     script:
         "scripts/mergeStringTie.py"
-
-
-rule multiqc:
-    """Aggreate QC """
-    input:
-        expand(config['read_pattern']['fastqc'], sample=SAMPLES, suf='html'),
-        expand("qc/rseqc/{sample}.geneBodyCoverage.txt", sample=SAMPLES,),
-        expand("qc/rseqc/{sample}.readDistribution.txt",sample=SAMPLES),
-        #expand("counts/{sample}.htseq.tsv",sample=SAMPLES)
-    output: html='qc/multiqc_report.html'
-    params:
-        analysis_dir=config['workdir'],
-        outdir="qc",
-        extra="--config multiqc_config.yaml"
-    shell: "multiqc --quiet --force -p -o {params.outdir} {params.analysis_dir}"
