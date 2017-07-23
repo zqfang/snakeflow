@@ -150,7 +150,7 @@ rule bam_sort:
     input: "mapped/{sample}.bam"
     output: protected("mapped/{sample}.sorted.bam")
     threads: 8
-    shell: "samtools sort -T mapped/{wildcards.sample} -@ {threads} -O bam  {input} > {output}"
+    shell: "samtools sort -@ {threads} {input} > {output}"
 
 rule bam_index:
     input: "mapped/{sample}.sorted.bam"
