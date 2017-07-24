@@ -224,7 +224,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
                              pheno_pos=treat,pheno_neg=ctrl, outdir=outname)
         except:
             log1="Oops...%s_vs_%s: skip GSEA plotting for %s, please adjust paramters for GSEA input.\n"%(treat, ctrl, domain)
-            log2="the lenght of input degs = %s \n"%sig_deg[col2].shape[0]  
+            log2="the lenght of input degs = %s \n"%(rank_list.shape[0])  
             print(log1, log2)     
             os.system("touch %s/gseapy.gsea.gene_sets.report.csv"%outname)
             with open("temp/blacklist.GO/blacklist.gsea.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:

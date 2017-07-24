@@ -93,7 +93,7 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
         if os.path.isfile(outfile): continue
         try:
             gs = gp.gsea(data=sig_deg[col2], gene_sets=domain, cls=cls_vec,
-                         min_size=10, max_size=500, outdir=outdir)
+                         min_size=15, max_size=500, outdir=outdir)
         except:
             log1="Oops...%s_vs_%s: skip GSEA plotting for %s, please adjust paramters for GSEA input.\n"%(treat, ctrl, domain)
             log2="the lenght of input degs = %s \n"%sig_deg[col2].shape[0]  
