@@ -10,8 +10,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     import seaborn as sns
     import gseapy as gp
 
-    # Significant events are based on FDR < 5% and | deltaPSI | > 10%
-    as_rmats = glob.glob(os.path.join(indir, "*.MATS.JCEC.txt"))
+
     treat, ctrl = indir.split("/")[-1].lstrip("rMATS.").split("_vs_")
 
     # blacklist to skip
@@ -29,6 +28,9 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
             return
 
     #files to parse
+    # Significant events are based on FDR < 5% and | deltaPSI | > 10%
+    as_rmats = glob.glob(os.path.join(indir, "*.MATS.JCEC.txt"))
+    
     as_type =[]
     as_total = []
     as_sig = []
