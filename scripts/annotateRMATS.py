@@ -66,7 +66,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
         r.write("# this file summaries the total and significant evnets detected by rMATS.\n")
         r.write("# cut-off: FDR=0.05, abs(Delta PSI) < 0.1.\n")
         r.write("type\ttotal\tsignificant\n")
-        for ty, to, si in zip(as_type, as_type, as_sig):
+        for ty, to, si in zip(as_type, as_total, as_sig):
             r.write("%s\t%s\t%s\n"%(ty,to,si))
 
     #skip exons analysis
@@ -85,15 +85,28 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     #split psi values for each sample
     data = []
     _b1 = [g.strip("TPM.") for g in group_b1] 
-    _b2 = [g.strip("TPM.") for g in group_b2] 
-    for i, row in enumerate(_b1):
-        sample1 = SE_sig['IncLevel1'].str.split(",").str[i].astype('float')
-        sample1.name="PSI."+ row
+    _b2 = [g.strip("TPM.") for g in group_b2]
+    # handle data without replicates
+    if len(_b1) > 1: 
+        for i, row in enumerate(_b1):
+            sample1 = SE_sig['IncLevel1'].str.split(",").str[i].astype('float')
+            sample1.name="PSI."+ row
+            data.append(sample1)
+    else:
+        sample1 = SE_sig['IncLevel1']
+        sample1.name="PSI."+ _b1[0]
         data.append(sample1)
-    for i, row in enumerate(_b2):
-        sample2 = SE_sig['IncLevel2'].str.split(",").str[i].astype('float')
-        sample2.name="PSI."+ row
-        data.append(sample2)
+    # handle data without replicates
+    if len(_b2) > 1: 
+        for i, row in enumerate(_b2):
+            sample2 = SE_sig['IncLevel2'].str.split(",").str[i].astype('float')
+            sample2.name="PSI."+ row
+            data.append(sample2)
+    else:
+        sample2 = SE_sig['IncLevel2']
+        sample2.name="PSI."+ _b2[0]
+        data.append(sample2)  
+
     dat = pd.concat(data, axis=1,)
     dat = dat.dropna()
     
@@ -109,7 +122,8 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     #plotting
     sns.set(font_scale=1.5, context='talk')
     dat = dat[dat.std(axis=1) != 0 ]
-    sg = sns.clustermap(dat,yticklabels=False,figsize=(6,6), z_score=0)
+    # to do: handle data with no replicates
+    sg = sns.clustermap(dat,yticklabels=False, col_cluster=False, figsize=(6,6), z_score=0)
 
     sg.fig.suptitle("differentially_skipped_exons")
     sg.savefig(outdir+"/differentially_skipped_exons.pdf",bbox_inches='tight')
