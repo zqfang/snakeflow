@@ -37,6 +37,7 @@ rownames(resOrdered) <- gsub('\\.[0-9]+', '', rownames(resOrdered))
 
 #annotate genes
 edb <- EnsDb.Hsapiens.v86
+org <- org.Hs.eg.db
 anno_cols=c( "TXBIOTYPE","ENTREZID","SYMBOL")
 
 resOrdered_new = resOrdered

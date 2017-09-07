@@ -269,13 +269,13 @@ rule anno_samples:
         "gene_expression/transcripts_expression.TPM.txt",
     output: 
         "gene_expression/gene_expression.TPM.annotated.csv",
-        "gene_expression/transcripts_expression.TPM.annotated.csv"
+        "gene_expression/transcripts_expression.TPM.annotated.csv",
     params:
         group=GROUP,
         alias=SAMPLES_ALIAS,
         samples=SAMPLES,
-    script:
-		"scripts/annotateTPMs.py"
+    script: 
+        "scripts/annotateTPMs.py"
 
 
 rule GSEA_Enrichr:
