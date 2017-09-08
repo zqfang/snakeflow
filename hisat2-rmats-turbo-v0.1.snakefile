@@ -97,11 +97,11 @@ DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
 ########### Target output files #################
 RMATS_TEMP=["alternative_splicing/rMATS.%s_vs_%s_sig/{type}.MATS.JCEC.sig.csv"%(j, i) for i, j in combinations(uGroup, 2)]
 RMATS_TURBO =[temp.format(type=t) for temp in RMATS_TEMP for t in ['A3SS','A5SS','MXE','RI','SE']]
-
+BIGWIG = expand("igv/{sample}.sorted.bw", sample=SAMPLES)
 ################## Rules #######################################
 
 rule target:
-    input: RMATS_TURBO
+    input: RMATS_TURBO,BIGWIG
 
 rule hisat2_index:
     input:
@@ -156,6 +156,15 @@ rule bam_index:
     input: "mapped/{sample}.sorted.bam"
     output: "mapped/{sample}.sorted.bam.bai"
     shell: "samtools index {input}"
+
+rule bam2bw:
+    input: 
+        bam="mapped/{sample}.sorted.bam",
+        bai="mapped/{sample}.sorted.bam.bai",
+    output: 
+        "igv/{sample}.sorted.bam.bai"
+    shell: 
+        "bamCoverage --normalizeUsingRPKM -b {input.bam} -o {output}"   
 
 
 rule rMATS_pre:
