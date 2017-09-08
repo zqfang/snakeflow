@@ -163,8 +163,9 @@ rule bam2bw:
         bai="mapped/{sample}.sorted.bam.bai",
     output: 
         "igv/{sample}.sorted.bam.bai"
+    threads: 8
     shell: 
-        "bamCoverage --normalizeUsingRPKM -b {input.bam} -o {output}"   
+        "bamCoverage --normalizeUsingRPKM -p {threads} -b {input.bam} -o {output}"   
 
 
 rule rMATS_pre:
