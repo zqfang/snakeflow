@@ -11,7 +11,7 @@ def unique(seq):
     """Remove duplicates from a list in Python while preserving order.
     :param seq: a python list object.
     :return: a list without duplicates while preserving order.
-    """    
+    """
     seen = set()
     seen_add = seen.add
 
@@ -75,7 +75,7 @@ else:
     GROUP=config['samples']['group'].split()
     TIME=config['samples']['time'].split()
 
-#rMATS 
+#rMATS
 uGroup=unique(GROUP)
 RMATS_DICT = [[] for i in range(len(uGroup))]
 for i,g in enumerate(GROUP):
@@ -89,13 +89,13 @@ for i,g in enumerate(GROUP):
 PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
 
-# dirs 
+# dirs
 DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
         'differential_expression','logs','temp']
 
 
 ########### Target output files #################
-RMATS_TEMP=["alternative_splicing/rMATS.%s_vs_%s_sig/{type}.MATS.JCEC.sig.csv"%(j, i) for i, j in combinations(uGroup, 2)]
+RMATS_TEMP=["alternative_splicing/rMATS.%s_vs_%s_sig/{type}.MATS.JCEC.sig.txt"%(j, i) for i, j in combinations(uGroup, 2)]
 RMATS_TURBO =[temp.format(type=t) for temp in RMATS_TEMP for t in ['A3SS','A5SS','MXE','RI','SE']]
 BIGWIG = expand("igv/{sample}.sorted.bw", sample=SAMPLES)
 ################## Rules #######################################
@@ -158,14 +158,14 @@ rule bam_index:
     shell: "samtools index {input}"
 
 rule bam2bw:
-    input: 
+    input:
         bam="mapped/{sample}.sorted.bam",
         bai="mapped/{sample}.sorted.bam.bai",
-    output: 
-        "igv/{sample}.sorted.bam.bai"
+    output:
+        "igv/{sample}.sorted.bw"
     threads: 8
-    shell: 
-        "bamCoverage --normalizeUsingRPKM -p {threads} -b {input.bam} -o {output}"   
+    shell:
+        "bamCoverage --normalizeUsingRPKM -p {threads} -b {input.bam} -o {output}"
 
 
 rule rMATS_pre:
@@ -187,7 +187,6 @@ rule rMATS_pre:
             line=",".join(temp)
             out.write(line)
             out.close()
-        
         for i, j in combinations(params.ugroup, 2):
             outname = "temp/rmats/%s_vs_%s.rmats.txt"%(j,i)
             out2 = open(outname,'w')
@@ -200,9 +199,9 @@ rule rMATS_turbo:
     input:
         bam=expand("mapped/{sample}.sorted.bam", sample=SAMPLES),
         bai=expand("mapped/{sample}.sorted.bam.bai", sample=SAMPLES),
-        gtf = join("temp", GTF_FILE.split("/")[-1]), 
+        gtf = join("temp", GTF_FILE.split("/")[-1]),
         rmats="temp/rmats/{treat}_vs_{ctrl}.rmats.txt"
-    output: 
+    output:
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/SE.MATS.JCEC.txt",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A3SS.MATS.JCEC.txt",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/A5SS.MATS.JCEC.txt",
@@ -220,7 +219,7 @@ rule rMATS_turbo:
         if isfile("temp/blacklist.txt"):
             with open("temp/blacklist.txt") as black:
                 blacklist = [ bla.strip().split("/")[-1] for bla in black]
-            # groups you want to skip 
+            # groups you want to skip
             bk = "diff_%s_vs_%s_results.annotated.xls"%(wildcards.treat, wildcards.ctrl)
             if bk in blacklist:
                 for ast in output:
@@ -242,11 +241,11 @@ rule rMATS_anno:
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/RI.MATS.JCEC.txt",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}/MXE.MATS.JCEC.txt"
     output:
-        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/SE.MATS.JCEC.sig.csv",
-        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/A3SS.MATS.JCEC.sig.csv",
-        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/A5SS.MATS.JCEC.sig.csv",
-        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/RI.MATS.JCEC.sig.csv",
-        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/MXE.MATS.JCEC.sig.csv",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/SE.MATS.JCEC.sig.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/A3SS.MATS.JCEC.sig.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/A5SS.MATS.JCEC.sig.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/RI.MATS.JCEC.sig.txt",
+        "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/MXE.MATS.JCEC.sig.txt",
         "alternative_splicing/rMATS.{treat}_vs_{ctrl}_sig/Skip_Exons/SE.MATS.JCEC.sig.annotated.csv",
     params:
         indir="alternative_splicing/rMATS.{treat}_vs_{ctrl}",

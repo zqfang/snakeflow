@@ -1,7 +1,7 @@
 def rmats_anno(indir, outdir, rbps, diff_exp, go):
 
     import glob, os
-    import matplotlib 
+    import matplotlib
     matplotlib.use('agg')
 
     import numpy as np
@@ -17,20 +17,20 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     if os.path.isfile("temp/blacklist.txt"):
         with open("temp/blacklist.txt") as black:
             blacklist = [ bla.strip().split("/")[-1] for bla in black]
-        # groups you want to skip 
+        # groups you want to skip
         bk = "diff_%s_vs_%s_results.annotated.xls"%(treat, ctrl)
         if bk in blacklist:
             os.makedirs("alternative_splicing/rMATS.{t}_vs_{c}_sig".format(t=treat,c=ctrl), exist_ok=True)
             os.system("touch alternative_splicing/rMATS.{t}_vs_{c}_sig/Skip_Exons/SE.MATS.JCEC.sig.annotated.csv".format(t=treat,c=ctrl))
             for ast in ['SE','A3SS','A5SS','RI','MXE']:
-                os.system("touch alternative_splicing/rMATS.%s_vs_%s_sig/%s.MATS.JCEC.sig.csv"%(treat, ctrl, ast))
+                os.system("touch alternative_splicing/rMATS.%s_vs_%s_sig/%s.MATS.JCEC.sig.txt"%(treat, ctrl, ast))
 
             return
 
     #files to parse
     # Significant events are based on FDR < 5% and | deltaPSI | > 10%
     as_rmats = glob.glob(os.path.join(indir, "*.MATS.JCEC.txt"))
-    
+
     as_type =[]
     as_total = []
     as_sig = []
@@ -38,11 +38,11 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     for f in as_rmats:
         temp = f.split("/")
         ast =temp[-1].split(".")[0]
-        outname= os.path.join(outdir, "%s.MATS.JCEC.sig.csv"%(ast))
+        outname= os.path.join(outdir, "%s.MATS.JCEC.sig.txt"%(ast))
         s = pd.read_table(f)
         ss =  s[(s['IncLevelDifference'].abs() > 0.1) & (s['FDR'] < 0.05) ]
-        ss.to_csv(outname,index=False)
-        
+        ss.to_csv(outname, index=False, sep="\t")
+
         as_type.append(ast)
         as_total.append(len(s))
         as_sig.append(len(ss))
@@ -70,24 +70,24 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
             r.write("%s\t%s\t%s\n"%(ty,to,si))
 
     #skip exons analysis
-    SE_sig = pd.read_csv(os.path.join(outdir, "SE.MATS.JCEC.sig.csv"), index_col='ID')
+    SE_sig = pd.read_table(os.path.join(outdir, "SE.MATS.JCEC.sig.txt"), index_col='ID')
     #gene_expression_table
     gene_exp=pd.read_excel(diff_exp, index_col='gene_id')
     #remove .versions of each id
     gene_exp.index = gene_exp.index.str.split(".").str[0]
 
-    cols_ = [col for col in gene_exp.columns if col.startswith("TPM")]   
+    cols_ = [col for col in gene_exp.columns if col.startswith("TPM")]
     cols_group = [col.lstrip("TPM.") for col in cols_ ]
 
-    group_b1  = [col for col, group in zip(cols_, cols_group) if group.startswith(treat)] 
+    group_b1  = [col for col, group in zip(cols_, cols_group) if group.startswith(treat)]
     group_b2  = [col for col, group in zip(cols_, cols_group) if group.startswith(ctrl)]
 
     #split psi values for each sample
     data = []
-    _b1 = [g.strip("TPM.") for g in group_b1] 
+    _b1 = [g.strip("TPM.") for g in group_b1]
     _b2 = [g.strip("TPM.") for g in group_b2]
     # handle data without replicates
-    if len(_b1) > 1: 
+    if len(_b1) > 1:
         for i, row in enumerate(_b1):
             sample1 = SE_sig['IncLevel1'].str.split(",").str[i].astype('float')
             sample1.name="PSI."+ row
@@ -97,7 +97,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
         sample1.name="PSI."+ _b1[0]
         data.append(sample1)
     # handle data without replicates
-    if len(_b2) > 1: 
+    if len(_b2) > 1:
         for i, row in enumerate(_b2):
             sample2 = SE_sig['IncLevel2'].str.split(",").str[i].astype('float')
             sample2.name="PSI."+ row
@@ -105,12 +105,12 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     else:
         sample2 = SE_sig['IncLevel2']
         sample2.name="PSI."+ _b2[0]
-        data.append(sample2)  
+        data.append(sample2)
 
     dat = pd.concat(data, axis=1,)
     dat = dat.dropna()
-    
-    
+
+
     outdir = outdir+"/Skip_Exons"
     #gsea data
     data_ann = pd.concat([SE_sig[['GeneID','geneSymbol']],dat],axis=1)
@@ -123,11 +123,11 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     sns.set(font_scale=1.5, context='talk')
     dat = dat[dat.std(axis=1) != 0 ]
     # to do: handle data with no replicates
-    sg = sns.clustermap(dat,yticklabels=False, col_cluster=False, figsize=(6,6), z_score=0)
+    #sg = sns.clustermap(dat,yticklabels=False, col_cluster=False, figsize=(6,6), z_score=0)
 
-    sg.fig.suptitle("differentially_skipped_exons")
-    sg.savefig(outdir+"/differentially_skipped_exons.pdf",bbox_inches='tight')
-    sg.savefig(outdir+"/differentially_skipped_exons.png",bbox_inches='tight', dpi=300)
+    #sg.fig.suptitle("differentially_skipped_exons")
+    #sg.savefig(outdir+"/differentially_skipped_exons.pdf",bbox_inches='tight')
+    #sg.savefig(outdir+"/differentially_skipped_exons.png",bbox_inches='tight', dpi=300)
 
 
 
@@ -170,7 +170,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     fig.savefig(outdir+"/RBP_vacano.pdf",bbox_inches='tight')
 
     #select columns for gsea
-    #b1_treat  = [col for col, group in zip(cols_, cols_group) if treat == group] 
+    #b1_treat  = [col for col, group in zip(cols_, cols_group) if treat == group]
     #b2_treat  = [col for col, group in zip(cols_, cols_group) if ctrl == group]
 
     #extract expression
@@ -196,7 +196,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     fig.savefig(os.path.join(outdir,"RBP_scatter.png"),bbox_inches='tight')
     fig.savefig(os.path.join(outdir,"RBP_scatter.pdf"),bbox_inches='tight')
 
-    #bar plot of sig RBPs, handle skip plotting when no sig rbs 
+    #bar plot of sig RBPs, handle skip plotting when no sig rbs
     if len(rbp_sig) >= 1:
         rbp_sig = rbp_sig.sort_values('log2FoldChange',)
 
@@ -223,10 +223,10 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
     rank_list = rank_list.drop('ID',axis=1)
     rank_list_up = rank_list[rank_list.IncLevelDifference < 0]
     rank_list_down = rank_list[rank_list.IncLevelDifference > 0]
-    
+
     # go domain
     GO_DOMAIN = go
-    # dir for blacklist 
+    # dir for blacklist
     os.makedirs("temp/blacklist.GO", exist_ok=True)
     plt.style.use('classic')
 
@@ -240,8 +240,8 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
                              pheno_pos=treat,pheno_neg=ctrl, outdir=outname)
         except:
             log1="Oops...%s_vs_%s: skip GSEA plotting for %s, please adjust paramters for GSEA input.\n"%(treat, ctrl, domain)
-            log2="the lenght of input degs = %s \n"%(rank_list.shape[0])  
-            print(log1, log2)     
+            log2="the lenght of input degs = %s \n"%(rank_list.shape[0])
+            print(log1, log2)
             os.system("touch %s/gseapy.gsea.gene_sets.report.csv"%outname)
             with open("temp/blacklist.GO/blacklist.gsea.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                 black.write(log1)
@@ -249,15 +249,15 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
 
     for domain in GO_DOMAIN:
 
-        for glist, gl_type in zip([rank_list.geneSymbol.squeeze().tolist(),
-                                   rank_list_up.geneSymbol.squeeze().tolist(), 
-                                   rank_list_down.geneSymbol.squeeze().tolist()],['all','up','down']):
-            
-            outname = os.path.join(outdir, "Enrichr_SkipExons_%s_vs_%s"%(treat, ctrl))  
+        for glist, gl_type in zip([rank_list.geneSymbol.squeeze(),
+                                   rank_list_up.geneSymbol.squeeze(),
+                                   rank_list_down.geneSymbol.squeeze()],['all','up','down']):
+
+            outname = os.path.join(outdir, "Enrichr_SkipExons_%s_vs_%s"%(treat, ctrl))
             outfile = "{o}/{d}.{t}.enrichr.reports.txt".format(o=outname, d=domain, t=gl_type)
             #skip plotting while file exists
             if os.path.isfile(outfile): continue
-            try:     
+            try:
                 enrichr = gp.enrichr(gene_list=glist, gene_sets=domain, description=domain, cutoff=0.1,
                                      outdir=outname+'/%s_%s'%(domain, gl_type))
             except Exception:
@@ -268,9 +268,8 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
                 os.system("touch  %s"%outfile)
                 with open("temp/blacklist.GO/blacklist.enrichr.rmats.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
                     black.write(log1)
-                    black.write(log2)   
+                    black.write(log2)
 
 
 rmats_anno(snakemake.params['indir'], snakemake.params['outdir'],
             snakemake.params['rbps'], snakemake.input[0], snakemake.params['go'])
-

@@ -9,7 +9,7 @@ def unique(seq):
     """Remove duplicates from a list in Python while preserving order.
     :param seq: a python list object.
     :return: a list without duplicates while preserving order.
-    """    
+    """
     seen = set()
     seen_add = seen.add
 
@@ -82,7 +82,7 @@ uGroup=unique(GROUP)
 PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
 
-# dirs 
+# dirs
 DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
         'differential_expression','logs','temp']
 # go domain
@@ -99,10 +99,10 @@ SAMPLE_TXTPM ="gene_expression/transcripts_expression.TPM.txt"
 SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
 SAMPLE_TXTPM_ANNO ="gene_expression/transcripts_expression.TPM.annotated.csv"
 
-SALMON_TPM = "temp/txi.salmon.RData"  
+SALMON_TPM = "temp/txi.salmon.RData"
 DESEQ_DDS = "temp/deseq2.dds.RData"
 DESEQ_NTD = "temp/deseq2.ntd.Rdata"
-DESEQ_RES = ["differential_expression/diff_{t}_vs_{c}/diff_{t}_vs_{c}_results.txt".format(t=j, c=i) 
+DESEQ_RES = ["differential_expression/diff_{t}_vs_{c}/diff_{t}_vs_{c}_results.txt".format(t=j, c=i)
              for i, j in combinations(uGroup, 2)]
 DESEQ_ANNO = [res.replace(".txt", ".annotated.xls") for res in DESEQ_RES]
 DESEQ_HEATMAP = ["differential_expression/diff_{t}_vs_{c}/diff_{t}_vs_{c}_all.degs.pdf".format(t=j, c=i)
@@ -116,7 +116,7 @@ GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene_sets.report.csv"%(j, i)
 
 
 rule target:
-    input: RAW_COUNTS, DESEQ_DDS,  DESEQ_ANNO, 
+    input: RAW_COUNTS, DESEQ_DDS,  DESEQ_ANNO,
            SAMPLE_TPM_ANNO, SAMPLE_TXTPM_ANNO,
            DESEQ_RES, DESEQ_HEATMAP, GSEA_FINAL
 
@@ -124,25 +124,25 @@ rule salmon_index:
     input: CDNA
     output: SALMON_INDEX
     threads: 8
-    params: 
+    params:
         genome_dir=config['genome'],
         cdna=CDNA.split("/")[-1],
         outdir=SALMON_INDEX_DIR.split("/")[-1],
         extra=" --gencode --type quasi -k 31"
-    shell: 
+    shell:
         #"salmon index {params.extra} -t {input} -i {params.outdir}"
         "docker run  -v {params.genome_dir}:/genome combinelab/salmon:latest  "
         "salmon index -i /genome/{params.outdir} -t /genome/{params.cdna} {params.extra}"
 ########## notes on salmon quant ###################################################################
 
-###   <LIBTYPE> 
+###   <LIBTYPE>
 ### A  (automatically infer the library type)
 ### IU (an unstranded paired-end library where the reads face each other)
 ### SF (a stranded single-end protocol where the reads come from the forward strand)
 ### more types visit: http://salmon.readthedocs.io/en/latest/salmon.html#quasi-mapping-based-mode-including-lightweight-alignment
 """
 salmon quant
-     
+
     -l (depends on the lib type, ISR for truseq stranded, equivalent to tophat -fr-firststrand)
     -p (the number of available cores on the instance)
     -g (the gene level counts will be part of output)
@@ -155,22 +155,22 @@ salmon quant
     --writeUnmappedNames
 
     Note:
-       Choose not to use --useVBOpt based on documentation and this link 
+       Choose not to use --useVBOpt based on documentation and this link
        https://groups.google.com/forum/#!topic/sailfish-users/-LBZD4aoJSc
        The behavior will be more like Kallisto and RSEM instead of BitSeq
 """
 ############ salmon quant start ####################################################################
 rule salmon_quant:
-    input: 
+    input:
         index=SALMON_INDEX,
         gtf=GTF_FILE,
-        r1=join(FASTQ_DIR, PATTERN_R1), 
+        r1=join(FASTQ_DIR, PATTERN_R1),
         r2=join(FASTQ_DIR, PATTERN_R2)
-    output: 
+    output:
         "salmon/{sample}/quant.sf",
     threads: 8
     params:
-        r1=join(FASTQ_DIR.split("/")[-1], PATTERN_R1), 
+        r1=join(FASTQ_DIR.split("/")[-1], PATTERN_R1),
         r2=join(FASTQ_DIR.split("/")[-1], PATTERN_R2),
         workdir=config['workdir'],
         index_dir=SALMON_INDEX_DIR,
@@ -178,26 +178,26 @@ rule salmon_quant:
         extra_paried=" --incompatPrior 0  --numBootstraps 100 --seqBias --gcBias --writeUnmappedNames",
         #extra_single=" --fldMean 250 --fldSD 25 --incompatPrior 0  --numBootstraps 100 --writeUnmappedNames"
     log: "logs/salmon/{sample}_salmons_quant.log"
-    shell:        
+    shell:
         "docker run -v {params.index_dir}:/index  -v {params.workdir}:/data combinelab/salmon:latest "
         "salmon quant -i /index -1 /data/{params.r1} -2 /data/{params.r2} "
         "-l A -p {threads}  -o /data/{params.outdir} {params.extra_paried} &> {log}"
 rule tximport:
-    '''used for kallisto, Salmon, Sailfish, and RSEM. see: 
+    '''used for kallisto, Salmon, Sailfish, and RSEM. see:
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html
     ###
     good tutorial to look:
     https://github.com/crazyhottommy/RNA-seq-analysis/blob/master/salmon_kalliso_STAR_compare.md#counts-versus-tpmrpkmfpkm
 
     '''
-    input:  
+    input:
         quant=expand("salmon/{sample}/quant.sf", sample=SAMPLES),
         tx2gene=GTF_Trans
-    output: 
+    output:
         tpm=SAMPLE_TPM,
         txtpm=SAMPLE_TXTPM,
         counts=RAW_COUNTS,
-        image="temp/txi.salmon.RData" #SALMON_TPM       
+        image="temp/txi.salmon.RData" #SALMON_TPM
     params:
         ids =",".join(SAMPLES)
     threads: 1
@@ -206,9 +206,9 @@ rule tximport:
 
 
 rule deseq2:
-    input: 
+    input:
         image="temp/txi.salmon.RData",#SALMON_TPM
-    output: 
+    output:
         res=DESEQ_RES,
         ddsimage="temp/deseq2.dds.RData", #DESEQ_DDS
         ntdimage="temp/deseq2.ntd.RData", #DESEQ_NTD
@@ -216,22 +216,22 @@ rule deseq2:
         group=" ".join(GROUP),#used for grouping each sample, to dectect degs.
         time=" ".join(TIME),
         alias=" ".join(SAMPLES_ALIAS)
-
+    threads: 4
     script:
         "scripts/runDESeq2.R"
 
 rule gtf_extract:
     input: GTF_FILE
-    output: 
+    output:
         gene_anno=GTF_Genes,
         tx2gene = GTF_Trans
     script:
         "scripts/extractGTF.py"
 
 rule anno_diffGenes:
-    input: 
+    input:
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.txt"
-    output: 
+    output:
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.annotated.xls"
     params:
         gene_anno=GTF_Genes,
@@ -247,50 +247,47 @@ rule anno_diffGenes:
         "scripts/annotateDEGs.py"
 
 rule pheatmap_degs:
-    input: 
+    input:
         degstab="differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.txt",
         image="temp/deseq2.ntd.RData"
     output:
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_all.degs.pdf",
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_top20genes.pdf"
-    params: 
+    params:
         treat="{treat}",
         ctrl="{ctrl}",
         padj=0.05,
         topgene=20,
     script:
-        "scripts/pheatmapDEGs.R"    
+        "scripts/pheatmapDEGs.R"
 
 rule anno_samples:
-    input: 
+    input:
         GTF_Genes,
         GTF_Trans,
         "gene_expression/gene_expression.TPM.txt",
         "gene_expression/transcripts_expression.TPM.txt",
-    output: 
+    output:
         "gene_expression/gene_expression.TPM.annotated.csv",
         "gene_expression/transcripts_expression.TPM.annotated.csv",
     params:
         group=GROUP,
         alias=SAMPLES_ALIAS,
         samples=SAMPLES,
-    script: 
+    script:
         "scripts/annotateTPMs.py"
 
 
 rule GSEA_Enrichr:
-    input: 
+    input:
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.annotated.xls"
     output:
-        GSEA_RES   
+        GSEA_RES
     params:
         treat="{treat}",
-        ctrl="{ctrl}",   
+        ctrl="{ctrl}",
         log2fc=1,
         padj=0.05,
         go=GO_DOMAIN,
     script:
         "scripts/gseaEnrichr.py"
-
-
-    

@@ -1,4 +1,4 @@
-deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
+deseq2 <- function(txi_image, outdds, outntd, group, time, alias, threads) {
      # R code
 
      suppressMessages(library("ggplot2"))
@@ -7,8 +7,8 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      suppressMessages(library("pheatmap"))
      suppressMessages(library("DESeq2"))
      suppressMessages(library('EnsDb.Hsapiens.v86'))
-     #library("BiocParallel")
-     #register(MulticoreParam(4))
+     suppressMessages(library("BiocParallel"))
+     register(MulticoreParam(threads))
      # and set DESeq() et.al with parallel=TRUE
      library(ggrepel)
 
@@ -32,7 +32,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
      ugr_len <- length(ugr)
 
      dds$condition <- relevel(dds$condition, ref=ugr[1])
-     dds <- DESeq(dds)
+     dds <- DESeq(dds, parallel=TRUE)
      
      # add blind=FALSE if the function DESeq has already been run, 
      # because then it is not necessary to re-estimate the dispersion values. 
@@ -142,7 +142,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias) {
 }
 
 deseq2(snakemake@input[['image']], snakemake@output[['ddsimage']], snakemake@output[['ntdimage']],
-       snakemake@params[['group']],snakemake@params[['time']],
-       snakemake@params[['alias']])
+       snakemake@params[['group']], snakemake@params[['time']],
+       snakemake@params[['alias']], snakemake@threads)
 
 
