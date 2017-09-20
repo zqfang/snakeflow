@@ -1,4 +1,4 @@
-snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top) 
+snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top)
 {
     suppressMessages(library("pheatmap"))
     suppressMessages(library("RColorBrewer"))
@@ -23,7 +23,7 @@ snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top)
 
      #MAplot
      #outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
-     #pdf(outMA, width = 5, height = 5)     
+     #pdf(outMA, width = 5, height = 5)
      #plotMA(res, ylim=c(-5,5))
      #dev.off()
 
@@ -49,7 +49,7 @@ snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top)
        color=heatcols, main = paste(treat, "vs", ctrl,sep="_"),
        filename = paste(outDIR, treat, "vs", ctrl, "groups.top20genes.png",sep="_"))
 
-     # if no significant genens found    
+     # if no significant genens found
      if (length(degs) < 1) {
 
           print(paste(treat, "vs", ctrl,"has no significant degs when padj =",padj, sep=" "))
@@ -64,37 +64,42 @@ snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top)
           system(paste("touch", cmd4, sep=" "))
 
      } else {
+          # bug: Pheatmap error Error in hclust(d, method = method) :
+          # NA/NaN/Inf in foreign function call (arg 11)
+          # remove rows with rowSds() == 0 fixed this bug
           dat1 <- ntd[degs, ntd_cols]
+          dat1 = dat1[rowSds(dat1) != 0,]
           dat2 <- ntd[degs,]
-          
+          dat2 = dat2[rowSds(dat2) != 0,]
+                  
           #pdf
           #add scale = "row"
-          pheatmap(dat1, scale = "row", cluster_rows=T, show_rownames=F, 
-              cluster_cols=T, annotation_col = df, 
+          pheatmap(dat1, scale = "row", cluster_rows=T, show_rownames=F,
+              cluster_cols=T, annotation_col = df,
               cellwidth = 15, fontsize = 8, color=heatcols,
               main = paste(treat, "vs", ctrl, sep="_"),
               filename = paste(outDIR, treat, "vs", ctrl, "all.degs.pdf",sep="_"))
           #png
-          pheatmap(dat1, scale = "row", cluster_rows=T, show_rownames=F, 
-              cluster_cols=T, annotation_col = df, 
+          pheatmap(dat1, scale = "row", cluster_rows=T, show_rownames=F,
+              cluster_cols=T, annotation_col = df,
               cellwidth = 15, fontsize = 8, color=heatcols,
               main = paste(treat, "vs", ctrl, sep="_"),
               filename = paste(outDIR, treat, "vs", ctrl, "all.degs.png",sep="_"))
 
           #pdf
-          pheatmap(dat2, scale = "row", cluster_rows=T, show_rownames=F, 
-              cluster_cols=T, annotation_col = df, 
+          pheatmap(dat2, scale = "row", cluster_rows=T, show_rownames=F,
+              cluster_cols=T, annotation_col = df,
               cellwidth = 15, fontsize = 8, color=heatcols,
               main = paste(treat, "vs", ctrl, sep="_"),
               filename = paste(outDIR, treat, "vs", ctrl, "groups.all.degs.pdf",sep="_"))
           #png
-          pheatmap(dat2, scale = "row", cluster_rows=T, show_rownames=F, 
-              cluster_cols=T, annotation_col = df, 
+          pheatmap(dat2, scale = "row", cluster_rows=T, show_rownames=F,
+              cluster_cols=T, annotation_col = df,
               cellwidth = 15, fontsize = 8, color=heatcols,
               main = paste(treat, "vs", ctrl, sep="_"),
               filename = paste(outDIR, treat, "vs", ctrl, "groups.all.degs.png",sep="_"))
   }
-          
+
 }
 snake_heatmap(snakemake@input[['degstab']], snakemake@input[['image']], snakemake@params[['treat']],
               snakemake@params[['ctrl']],snakemake@params[['padj']],
