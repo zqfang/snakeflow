@@ -3,6 +3,7 @@ snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top)
     suppressMessages(library("pheatmap"))
     suppressMessages(library("RColorBrewer"))
     suppressMessages(library("DESeq2"))
+    suppressMessages(library("genefilter"))
     #load ntd, group, df
     load(ntdimage)
     #load("temp/deseq2.dds.RData")
@@ -72,9 +73,9 @@ snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top)
           # NA/NaN/Inf in foreign function call (arg 11)
           # remove rows with rowSds() == 0 fixed this bug
           dat1 <- ntd[degs, ntd_cols]
-          dat1 = dat1[rowSds(dat1) != 0,]
+          dat1 <- dat1[rowSds(dat1) != 0,]
           dat2 <- ntd[degs,]
-          dat2 = dat2[rowSds(dat2) != 0,]
+          dat2 <- dat2[rowSds(dat2) != 0,]
 
           #pdf
           #add scale = "row"
