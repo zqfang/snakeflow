@@ -2,19 +2,19 @@
 # 2017-03-28
 
 # dir contains all indexes, genome sequences
-genome: "/Users/bioninja/genome" 
+genome: "/Users/bioninja/genome/Human_GRCh38"
 # Path to an uncompressed FASTA file with all choromsome genome sequences.
-# we use gencode archive, downlaod from here: 
+# we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
 fasta: "/Users/bioninja/genome/Human_GRCh38/GRCh38.p10.genome.fa"
 
 # Path to an uncompressed FASTA file with all transcript sequences.
-# we use gencode archive, downlaod from here: 
+# we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
 cdna: "/Users/bioninja/genome/Human_GRCh38/gencode.v26.transcripts.fa"
 
 # GTF file path
-# we use gencode archive, downlaod from here: 
+# we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
 gtf: "/Users/bioninja/genome/Human_GRCh38/gencode.v26.annotation.gtf"
 
@@ -26,18 +26,18 @@ salmon_index: "/Users/bioninja/genome/Human_GRCh38/salmonIndices_hg38"
 index_prefix: "hg38"
 
 # Full path to a folder where output files will be created.
-workdir: "/Users/bioninja/public-seq/H170013-P001/"
+workdir: "/Volumes/G-DRIVE/DBRL/fzq/"
 
 # extra scripts' dir for running. e.g preDEseq.py (StringTie)
-scripts: "/Users/bioninja/public-seq/H170013-P001/snakeflow/scripts"
+scripts: "/Volumes/G-DRIVE/DBRL/fzq/snakeflow/scripts"
 
 # Full path to a folder that holds all of your FASTQ files
-fastq_dir: "/Users/bioninja/public-seq/H170013-P001/fastq_clean"
+fastq_dir: "/Volumes/G-DRIVE/DBRL/fzq/fastq_clean"
 
 
 
 # Sequencing read length, only reqired for running rMATS or preDEseq.py.
-read_length: 150
+read_length: 50
 
 # Paired end sequencing library? True or False.
 paired: True
@@ -50,49 +50,49 @@ stranded: False
 # information in `samples` is used for deseq2 and rMATS
 samples:
     # fastq files prefix, seperate each sample by space
-    name: "WGC096874R WGC096875R WGC096876R WGC096877R" # keep order for each sample
+    name: "WGC74R WGC75R WGC76R WGC77R" # keep order for each sample
     # short names for sample names
     alias: "S74 S75 S76 S77" # optional
-    
+
     #Any lable name to indicate sample's group/condition where they belong to.
-    #keep the same order with `name`  
-    group: "Normal Control Normal Control" 
+    #keep the same order with `name`
+    group: "Normal Control Normal Control"
     # optional, if your data is not time-series, ignore `time` attr.
-    time: "0 0 0 0"   
+    time: "0 0 0 0"
 
     # ``dataframe``attribute works only if a file is given.
     # each column names correspond to the samples' attributes of above.
-    coldata: "/Users/bioninja/public-seq/H170013-P001/sample_info_single.txt" #  
-    
+    coldata: "/Volumes/G-DRIVE/DBRL/fzq/sample_info_single.txt" #
+
     # a sampleTable.txt look like this.
       ### name  alias  conditon  treatment
       ## WGC096874R S74    Normal 0
       ## WGC096875R S75    Cancer 0
       ## WGC096876R S76    Normal 0
-      ## WGC096877R S77    Cancer 0 
-enrichr_library: ['GO_Cellular_Component_2015','GO_Molecular_Function_2015',
-                  'GO_Biological_Process_2015','Human_Phenotype_Ontology',
+      ## WGC096877R S77    Cancer 0
+enrichr_library: ['GO_Cellular_Component_2017b','GO_Molecular_Function_2017b',
+                  'GO_Biological_Process_2017b','Human_Phenotype_Ontology',
                    'MSigDB_Oncogenic_Signatures','WikiPathways_2016',
                    'KEGG_2016']
 
-# RNA Binding Protein list                   
-rbps: "/Users/bioninja/public-seq/H170013-P001/snakeflow/221RBPs.csv"
+# RNA Binding Protein list
+rbps: "/Volumes/G-DRIVE/DBRL/fzq/snakeflow/221RBPs.csv"
 # Before running with your samples,
 # please rename all your samples with the same suffix below.
 # for example, rename all your sample like this: "WGC096874R_combined_R1.fastq.gz"
 # for trimed fastq, use suffix like: _trimmed.fq.gz
-read_pattern: 
-    r1: "{sample}_R1_val_1.fq.gz" # don't change {sample}
-    r2: "{sample}_R2_val_2.fq.gz" # don't change {sample}
-    fastqc: "qc/fastqc/{sample}_R1_val_1_fastqc.{suf}"
+read_pattern:
+    r1: "{sample}_1.fq.gz" # don't change {sample}
+    r2: "{sample}_2.fq.gz" # don't change {sample}
+    fastqc: "qc/fastqc/{sample}_1_fastqc.{suf}"
 
 # RSeQC bed file
 # this two files are optional, if you do not need to run RSeQC.
 # Download from https://sourceforge.net/projects/rseqc/files/BED/Human_Homo_sapiens/
-rseqc: 
+rseqc:
     refseq: "/Users/bioninja/genome/rseqc_ann/hg38_RefSeq.bed"
     housekeep: "/Users/bioninja/genome/rseqc_ann/hg38.HouseKeepingGenes.bed"
 
-#trimmonatic adaptors 
+#trimmonatic adaptors
 adaptors:
     illumina: "/Users/bioninja/github/snakeflow/adaptors/TruSeq3-PE.fa"

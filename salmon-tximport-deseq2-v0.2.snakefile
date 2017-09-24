@@ -216,7 +216,7 @@ rule deseq2:
         group=" ".join(GROUP),#used for grouping each sample, to dectect degs.
         time=" ".join(TIME),
         alias=" ".join(SAMPLES_ALIAS)
-    threads: 4
+    threads: 8
     script:
         "scripts/runDESeq2.R"
 
