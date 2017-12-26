@@ -52,10 +52,9 @@ source activate $name
 log "install snakemake-env-packages"
 #python packages
 conda install ipython cython numpy scipy pandas matplotlib seaborn snakemake  xlrd xlwt 
-conda install -c bioninja gseapy
 
 #other commandline tools
-conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz multiqc
+conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz multiqc deeptools gseapy 
 #R packages
 #conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon r-pheatmap r-ggrepel
 
