@@ -30,7 +30,7 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
             return
 
     #start to parse significant results
-    al_res = read_excel(diff, sheetname=None)
+    al_res = read_excel(diff, sheet_name=None)
     sig_deg = al_res["sig-all.log2fc%s-padj%s"%(log2fc, padj)]
     sig_deg_up = al_res['sig-up']
     sig_deg_dw = al_res['sig-down']
