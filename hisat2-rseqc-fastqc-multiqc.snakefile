@@ -11,7 +11,7 @@ def unique(seq):
     """Remove duplicates from a list in Python while preserving order.
     :param seq: a python list object.
     :return: a list without duplicates while preserving order.
-    """    
+    """
     seen = set()
     seen_add = seen.add
 
@@ -94,7 +94,7 @@ for suf in ['.fastq.gz','.fq.gz','.fastq','.fq']:
 ####### Tools dir#################
 SCRIPTS = config['scripts']
 
-# dirs 
+# dirs
 DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
         'differential_expression','logs','temp']
 
@@ -174,6 +174,7 @@ rule bam_stats:
         bam="mapped/{sample}.sorted.bam",
         bai="mapped/{sample}.sorted.bam.bai"
     output: "logs/rseqc/{sample}.bamstats.txt"
+    conda: "envs/rseqc-env.yml"
     shell: "bam_stat.py -i {input.bam} > {output}"
 
 rule geneBody_coverage:
@@ -184,6 +185,7 @@ rule geneBody_coverage:
     output:
         "qc/rseqc/{sample}.geneBodyCoverage.r",
         "qc/rseqc/{sample}.geneBodyCoverage.txt"
+    conda: "envs/rseqc-env.yml"
     log:"logs/rseqc/{sample}.geneBodyCoverage.log"
     shell:
         "geneBody_coverage.py -r {input.anno} -i {input.bam}  -o qc/rseqc/{wildcards.sample} &> {log}"
@@ -192,15 +194,16 @@ rule read_distribution:
     input:
         bam="mapped/{sample}.sorted.bam",
         bai="mapped/{sample}.sorted.bam.bai",
-        bed=RSEQC_ANNO['refseq']  
+        bed=RSEQC_ANNO['refseq']
     output:
         "qc/rseqc/{sample}.readDistribution.txt"
+    conda: "envs/rseqc-env.yml"
     shell:
         "read_distribution.py -i {input.bam} -r {input.bed} > {output}"
 
 rule htseq:
-    input: 
-        bam="mapped/{sample}.sorted.bam", 
+    input:
+        bam="mapped/{sample}.sorted.bam",
         bai="mapped/{sample}.sorted.bam.bai",
         gtf=GTF_FILE,
     output: "counts/{sample}.htseq.tsv"

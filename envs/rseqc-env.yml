@@ -1,0 +1,11 @@
+name: sfpy2
+channels:
+  - https://nanomirrors.tuna.tsinghua.edu.cn/anaconda/cloud/bioconda/
+  - bioconda
+  - defaults
+  - conda-forge
+dependencies:
+  - python=2.7
+  - numpy
+  - pysam
+  - rseqc
