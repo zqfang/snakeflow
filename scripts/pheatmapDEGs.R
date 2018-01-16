@@ -55,7 +55,7 @@ snake_heatmap <- function(degstab, ntdimage, treat, ctrl, padj, top)
        filename = paste(outDIR, treat, "vs", ctrl, "groups.top20genes.png",sep="_"))
 
      # if no significant genens found
-     if (length(degs) < 1) {
+     if (length(degs) <= 1) {
 
           print(paste(treat, "vs", ctrl,"has no significant degs when padj =",padj, sep=" "))
           cmd1 <-paste(outDIR, treat, "vs", ctrl, "all.degs.pdf",sep="_")
