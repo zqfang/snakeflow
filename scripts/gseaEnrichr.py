@@ -5,7 +5,7 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
     import gseapy as gp
 
     #outputfile name
-    outGSEAname = diff.split("/")[-1].lstrip("diff_").rpartition("_")[0]
+    outGSEAname = "%s_vs_%s"%(treat, ctrl)
     #treat, ctrl =outGSEAname.split("_vs_")
 
     #parse blacklist and skip no significant results
