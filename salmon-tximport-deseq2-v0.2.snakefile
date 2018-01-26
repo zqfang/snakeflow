@@ -108,8 +108,8 @@ DESEQ_ANNO = [res.replace(".txt", ".annotated.xls") for res in DESEQ_RES]
 DESEQ_HEATMAP = ["differential_expression/diff_{t}_vs_{c}/diff_{t}_vs_{c}_all.degs.pdf".format(t=j, c=i)
                for i, j in combinations(uGroup, 2)]
 
-GSEA_RES=["GO/GSEA_{treat}_vs_{ctrl}/%s/gseapy.gsea.gene_set.report.csv"%domain for domain in GO_DOMAIN]
-GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene_set.report.csv"%(j, i) for i, j in combinations(uGroup, 2)]
+GSEA_RES=["GO/GSEA_{treat}_vs_{ctrl}/%s/gseapy.gsea.gene_sets.report.csv"%domain for domain in GO_DOMAIN]
+GSEA_FINAL=["GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene_sets.report.csv"%(j, i) for i, j in combinations(uGroup, 2)]
 #Enrichr = ["GO/Enrichr_{treat}_vs_{ctrl}/{domain}_{types}/{domain}.{type}.enrichr.reports.txt",type=["all","up","down"]
 #GSEA_OUT = [ GSEA_RES.format(treat=uGroup[i], ctrl=uGroup[i-1]) for i in range(1, len(uGroup))]
 ################## Rules #######################################
