@@ -50,11 +50,11 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias, threads) {
      ntd <- assay(ntd)
 
      #remove tails(versions) of gene id
-     rownames(ntd) <- gsub('\\.[0-9a-zA-Z]+', '', rownames(ntd))
-
+     # rownames(ntd) <- gsub('\\.[0-9a-zA-Z_]+', '', rownames(ntd))
+     gene.ids <- gsub('\\.[0-9a-zA-Z_]+', '', rownames(ntd))
      #change the ensemble gene_id to gene_name for plotting
      edb <- EnsDb.Hsapiens.v86
-     maps_names <- mapIds(edb, keys = rownames(ntd), column="GENENAME",
+     maps_names <- mapIds(edb, keys = gene.ids, column="GENENAME",
                           keytype =  "GENEID", multiVals = "first")
      rownames(ntd) <- maps_names
 

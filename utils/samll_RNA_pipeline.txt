@@ -1,0 +1,27 @@
+###20180413
+###quality control , trim adaptor , length
+#software:cutadapt,fastx-toolkit
+cutadapt -a TGGAATTCTCGGGTGCCAAGG -q 15 -m 17 -M 60 -o output.fastq test.fastq.gz >>cutadapt.log ###cutadatpt
+fastq_to_fasta -i output.fastq |fastx_collapser -o collapser.fa ### fastx-toolkit
+
+###mapping genome
+#software:bowtie
+bowtie -v 0 genome_index -f ./collapser.fa --al ./mapped.fa > bowtie_mapping.out
+
+### small RNA analysis
+### miRNA
+#Database:miRbase
+bowtie ...
+
+### tRNA
+#Database:GtRNAdb
+bowtie ...
+
+### snRNA,snoRNA,rRNA,mRNA
+#Database:ENSEMBL
+bowtie ...
+
+miRBase有各个物种的miRNA序列，mature.fa是各个物种成熟的miRNA序列，做miRNA分析时，一般以这个文件为主,建议用最新版的(V22)
+做miRNA表达普分析时，各个样本之间需要做标准化（totol mapped reads）
+
+
