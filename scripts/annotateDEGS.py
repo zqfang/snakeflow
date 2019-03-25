@@ -3,8 +3,8 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, treat
     import os
     import pandas as pd 
 
-    anno = pd.read_table(annotation, index_col='gene_id')
-    tpm = pd.read_table(tpms, index_col=0)
+    anno = pd.read_csv(annotation, index_col='gene_id', sep="\t")
+    tpm = pd.read_csv(tpms, index_col=0, sep="\t")
     tpm = tpm[samples]
     cols_ = ["TPM.%s.%s"%(g, a) for a, g, s in zip(alias, group, samples)]
     tpm.columns = cols_
@@ -19,9 +19,9 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, treat
             [col for col, g in zip(cols_, group) if ctrl == g]
     tpm_diffs = tpm[cols]
    
-    deseq = pd.read_table(deseqs, index_col=0)
+    deseq = pd.read_csv(deseqs, index_col=0, sep="\t")
     #merge results
-    merge = pd.concat([anno, deseq, tpm_diffs], axis=1, join='inner')
+    merge = pd.concat([anno, deseq, tpm_diffs], axis=1, join='inner', sort=True)
     merge.index.name ='gene_id'
     
     #output a blacklist for group comparasion have not sinificant differential genes

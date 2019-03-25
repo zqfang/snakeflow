@@ -213,14 +213,14 @@ rule complie_htseq:
     input: cnt=expand("counts/{sample}.htseq.tsv", sample=SAMPLES)
     output: deseq="counts/All.raw.counts.for.Deseq2.txt"
     run:
-        from pandas import read_table, concat
+        from pandas import read_csv, concat
         count_df=[]
         for count in input.cnt:
-            cnt = read_table(count, index_col=0, header=None, skipfooter=5)
+            cnt = read_csv(count, index_col=0, header=None, skipfooter=5, sep='\t')
             cnt.columns = [count.split("/")[-1].rstrip(".htseq.tsv")]
             cnt = cnt.sort_index()
             count_df.append(cnt)
-        merge_cnt = concat(count_df, axis=1)
+        merge_cnt = concat(count_df, axis=1, sort=True)
         merge_cnt.to_csv(output.deseq)
 
 

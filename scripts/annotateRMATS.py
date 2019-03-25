@@ -39,7 +39,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
         temp = f.split("/")
         ast =temp[-1].split(".")[0]
         outname= os.path.join(outdir, "%s.MATS.JCEC.sig.txt"%(ast))
-        s = pd.read_table(f)
+        s = pd.read_csv(f,sep="\t")
         ss =  s[(s['IncLevelDifference'].abs() > 0.1) & (s['FDR'] < 0.05) ]
         ss.to_csv(outname, index=False, sep="\t")
 
@@ -70,7 +70,7 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
             r.write("%s\t%s\t%s\n"%(ty,to,si))
 
     #skip exons analysis
-    SE_sig = pd.read_table(os.path.join(outdir, "SE.MATS.JCEC.sig.txt"), index_col='ID')
+    SE_sig = pd.read_csv(os.path.join(outdir, "SE.MATS.JCEC.sig.txt"), index_col='ID', sep="\t")
     #gene_expression_table
     gene_exp=pd.read_excel(diff_exp, index_col='gene_id')
     #remove .versions of each id
@@ -107,16 +107,16 @@ def rmats_anno(indir, outdir, rbps, diff_exp, go):
         sample2.name="PSI."+ _b2[0]
         data.append(sample2)
 
-    dat = pd.concat(data, axis=1,)
+    dat = pd.concat(data, axis=1, sort=True)
     dat = dat.dropna()
 
 
     outdir = outdir+"/Skip_Exons"
     #gsea data
-    data_ann = pd.concat([SE_sig[['GeneID','geneSymbol']],dat],axis=1)
+    data_ann = pd.concat([SE_sig[['GeneID','geneSymbol']],dat],axis=1,sort=True)
     data_ann.to_csv(outdir+"/Diff_skip_exons_table_for_gsea.txt",sep="\t")
     # save psi to csv
-    data_ann2 = pd.concat([SE_sig, dat],axis=1)
+    data_ann2 = pd.concat([SE_sig, dat],axis=1, sort=True)
     data_ann2.to_csv(outdir+"/SE.MATS.JCEC.sig.annotated.csv")
 
     #plotting
