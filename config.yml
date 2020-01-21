@@ -32,7 +32,7 @@ workdir: "/home/fangzq/projects/bulk"
 scripts: "/home/fangzq/github/snakeflow/scripts"
 
 # Full path to a folder that holds all of your FASTQ files
-fastq_dir: "/home/mwang024/ARPKD/Data/bulk"
+fastq_dir: "/data/bases/shared/bulk_RNA_seq/30_225476525_trim"
 
 
 
