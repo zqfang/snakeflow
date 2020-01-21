@@ -174,7 +174,7 @@ rule bam_stats:
         bam="mapped/{sample}.sorted.bam",
         bai="mapped/{sample}.sorted.bam.bai"
     output: "logs/rseqc/{sample}.bamstats.txt"
-    conda: "envs/rseqc-env.yml"
+    #conda: "envs/rseqc-env.yml"
     shell: "bam_stat.py -i {input.bam} > {output}"
 
 rule geneBody_coverage:
@@ -185,7 +185,7 @@ rule geneBody_coverage:
     output:
         "qc/rseqc/{sample}.geneBodyCoverage.r",
         "qc/rseqc/{sample}.geneBodyCoverage.txt"
-    conda: "envs/rseqc-env.yml"
+    #conda: "envs/rseqc-env.yml"
     log:"logs/rseqc/{sample}.geneBodyCoverage.log"
     shell:
         "geneBody_coverage.py -r {input.anno} -i {input.bam}  -o qc/rseqc/{wildcards.sample} &> {log}"
@@ -197,7 +197,7 @@ rule read_distribution:
         bed=RSEQC_ANNO['refseq']
     output:
         "qc/rseqc/{sample}.readDistribution.txt"
-    conda: "envs/rseqc-env.yml"
+    #conda: "envs/rseqc-env.yml"
     shell:
         "read_distribution.py -i {input.bam} -r {input.bed} > {output}"
 

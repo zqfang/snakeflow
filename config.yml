@@ -2,42 +2,42 @@
 # 2017-03-28
 
 # dir contains all indexes, genome sequences
-genome: "/Users/bioninja/genome/Human_GRCh38"
+genome: /home/fangzq/genome/"
 # Path to an uncompressed FASTA file with all choromsome genome sequences.
 # we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
-fasta: "/Users/bioninja/genome/Human_GRCh38/GRCh38.p10.genome.fa"
+fasta: "/home/fangzq/genome/GRCh38.p13.genome.fa"
 
 # Path to an uncompressed FASTA file with all transcript sequences.
 # we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
-cdna: "/Users/bioninja/genome/Human_GRCh38/gencode.v26.transcripts.fa"
+cdna: "/home/fangzq/genome/GRCh38.gencode.v33.transcripts.fa"
 
 # GTF file path
 # we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
-gtf: "/Users/bioninja/genome/Human_GRCh38/gencode.v26.annotation.gtf"
+gtf: "/home/fangzq/genome/GRCh38.gencode.v33.annotation.gtf"
 
 # Index dir
-hisat_index: "/Users/bioninja/genome/Human_GRCh38/hisat2Indices_hg38"
-salmon_index: "/Users/bioninja/genome/Human_GRCh38/salmonIndices_hg38"
+hisat_index: "/home/fangzq/genome/hisat2Indices_hg38"
+salmon_index: "/home/fangzq/genome/salmonIndices_hg38"
 
 # Index basebame (only for hisat2)
 index_prefix: "hg38"
 
 # Full path to a folder where output files will be created.
-workdir: "/Volumes/G-DRIVE/DBRL/fzq/"
+workdir: "/home/fangzq/projects/bulk"
 
 # extra scripts' dir for running. e.g preDEseq.py (StringTie)
-scripts: "/Volumes/G-DRIVE/DBRL/fzq/snakeflow/scripts"
+scripts: "/home/fangzq/github/snakeflow/scripts"
 
 # Full path to a folder that holds all of your FASTQ files
-fastq_dir: "/Volumes/G-DRIVE/DBRL/fzq/fastq_clean"
+fastq_dir: "/home/mwang024/ARPKD/Data/bulk"
 
 
 
 # Sequencing read length, only reqired for running rMATS or preDEseq.py.
-read_length: 50
+read_length: 150
 
 # Paired end sequencing library? True or False.
 paired: True
@@ -62,7 +62,7 @@ samples:
 
     # ``dataframe``attribute works only if a file is given.
     # each column names correspond to the samples' attributes of above.
-    coldata: "/Volumes/G-DRIVE/DBRL/fzq/sample_info_single.txt" #
+    coldata: "/home/fangzq/projects/bulk/group.txt" #
 
     # a sampleTable.txt look like this.
       ### name  alias  conditon  treatment
@@ -76,23 +76,23 @@ enrichr_library: ['GO_Cellular_Component_2017b','GO_Molecular_Function_2017b',
                    'KEGG_2016']
 
 # RNA Binding Protein list
-rbps: "/Volumes/G-DRIVE/DBRL/fzq/snakeflow/221RBPs.csv"
+rbps: "/home/fangzq/github/snakeflow/221RBPs.csv"
 # Before running with your samples,
 # please rename all your samples with the same suffix below.
 # for example, rename all your sample like this: "WGC096874R_combined_R1.fastq.gz"
 # for trimed fastq, use suffix like: _trimmed.fq.gz
 read_pattern:
-    r1: "{sample}_1.fq.gz" # don't change {sample}
-    r2: "{sample}_2.fq.gz" # don't change {sample}
+    r1: "{sample}_R1_001.fastq.gz" # don't change {sample}
+    r2: "{sample}_R2_001.fastq.gz" # don't change {sample}
     fastqc: "qc/fastqc/{sample}_1_fastqc.{suf}"
 
 # RSeQC bed file
 # this two files are optional, if you do not need to run RSeQC.
 # Download from https://sourceforge.net/projects/rseqc/files/BED/Human_Homo_sapiens/
 rseqc:
-    refseq: "/Users/bioninja/genome/rseqc_ann/hg38_RefSeq.bed"
-    housekeep: "/Users/bioninja/genome/rseqc_ann/hg38.HouseKeepingGenes.bed"
+    refseq: "/home/fangzq/genome/rseqc/hg38.refseq.bed"
+    housekeep: "/home/fangzq/genome/rseqc/hg38.HouseKeepingGenes.bed"
 
 #trimmonatic adaptors
 adaptors:
-    illumina: "/Users/bioninja/github/snakeflow/adaptors/TruSeq3-PE.fa"
+    illumina: "/home/fangzq/github/snakeflow/adaptors/TruSeq3-PE.fa"

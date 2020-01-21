@@ -2,7 +2,7 @@ do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_counts, out_image, thr
   # R code
   library(tximport)
   library(readr)
-  suppressMessages(library('EnsDb.Hsapiens.v86'))
+  #suppressMessages(library('EnsDb.Hsapiens.v86'))
 
   #txdb <- EnsDb.Hsapiens.v86
   #k <- keys(txdb, keytype = "GENEID")
@@ -22,9 +22,10 @@ do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_counts, out_image, thr
   #                       tx2gene = tx2gene, countsFromAbundance = "no")
   txi.transcripts <- tximport(salmon.files, type = "salmon", 
                               txOut = TRUE, tx2gene = tx2gene,)
-                         #     ignoreTxVersion = TRUE)
+                              ignoreTxVersion = TRUE) #countsFromAbundance="scaledTPM" if not use DESeq2friomtximport
 
-  txi.salmon <- summarizeToGene(txi.transcripts, tx2gene)
+  txi.salmon <- summarizeToGene(txi.transcripts, tx2gene, ignoreTxVersion = TRUE) 
+  # #countsFromAbundance="scaledTPM" if not use DESeq2friomtximport
 
   #save raw counts 
   salmon.counts<- txi.salmon$counts

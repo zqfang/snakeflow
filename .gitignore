@@ -1,0 +1,4 @@
+.snakemake
+ .DS_Store
+ .idea
+ .vscode
