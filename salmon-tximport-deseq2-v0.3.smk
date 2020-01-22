@@ -15,7 +15,7 @@ def unique(seq):
 
     return [x for x in seq if x not in seen and not seen_add(x)]
 
-def parse_samples(tab=config['samples']['coldata']):
+def parse_samples(tab=config['sample_meta']):
     """parse samples """
     SAMPLES=[]
     SAMPLES_ALIAS=[]
@@ -30,7 +30,7 @@ def parse_samples(tab=config['samples']['coldata']):
         SAMPLES.append(item[0])
         SAMPLES_ALIAS.append(item[1])
         GROUP.append(item[2])
-        TIME.append(item[3])
+        if len(item) >3: TIME.append(item[3])
 
     return SAMPLES, SAMPLES_ALIAS, GROUP, TIME
 
@@ -47,7 +47,7 @@ PAIRED = config['paired']
 GENOME = config['genome']
 #CDNA =           join(GENOME,"gencode.v25.transcripts.fa")
 # genome sequence
-FASTA_REF =      config['fasta']
+FASTA_REF =      config['dna']
 # index_dir
 SALMON_INDEX_DIR=config['salmon_index']
 # index basename
@@ -65,20 +65,10 @@ GTF_Trans =      GTF_FILE.rstrip(".gtf")+".extracted.transx2gene.txt"
 #you must include this trailing comma, or else the code won’t work correctly.
 
 #SAMPLES, = glob_wildcards(join(FASTQ_DIR, '{sample, SRR[^/]+}_R1.fastq.gz'))
-
-if isfile(config['samples']['coldata']):
-    SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['samples']['coldata'])
-else:
-    SAMPLES = config['samples']['name'].split()
-    SAMPLES_ALIAS = config['samples']['alias'].split()
-    GROUP=config['samples']['group'].split()
-    TIME=config['samples']['time'].split()
-
+SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['sample_meta'])
 uGroup=unique(GROUP)
 
 # Patterns for the 1st mate and the 2nd mate using the 'sample' wildcard.
-#PATTERN_R1 = '{sample}_R1.fastq.gz'
-#PATTERN_R2 = '{sample}_R2.fastq.gz'
 PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
 
@@ -163,17 +153,18 @@ salmon quant
 ############ salmon quant start ####################################################################
 rule salmon_quant:
     input:
-        index=SALMON_INDEX, 
+        index=SALMON_INDEX,
+        #index_dir=SALMON_INDEX_DIR,
         gtf=GTF_FILE,
         r1=join(FASTQ_DIR, PATTERN_R1),
         r2=join(FASTQ_DIR, PATTERN_R2)
     output:
-        "salmon/{sample}/quant.sf",
+        sf="salmon/{sample}/quant.sf",
+        #outdir=directory("salmon/{sample}") # Directories as outputs
     threads: 8
     params:
         r1=join(FASTQ_DIR, PATTERN_R1),
         r2=join(FASTQ_DIR, PATTERN_R2),
-        workdir=config['workdir'],
         index_dir=SALMON_INDEX_DIR,
         outdir=join(config['workdir'],"salmon/{sample}"),
         extra_paried=" --incompatPrior 0  --numBootstraps 100 --seqBias --gcBias --writeUnmappedNames",
@@ -181,14 +172,13 @@ rule salmon_quant:
     log: "logs/salmon/{sample}_salmons_quant.log"
     shell:
         "salmon quant -l A -i {params.index_dir} -1 {params.r1} -2 {params.r2} "
-        "-g {input.gtf} -p {threads} -o {params.outdir} {params.extra_paried} &> {log}"
+        "-p {threads} -o {params.outdir} {params.extra_paried} &> {log}"
 rule tximport:
     '''used for kallisto, Salmon, Sailfish, and RSEM. see:
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html
     ###
     good tutorial to look:
     https://github.com/crazyhottommy/RNA-seq-analysis/blob/master/salmon_kalliso_STAR_compare.md#counts-versus-tpmrpkmfpkm
-
     '''
     input:
         quant=expand("salmon/{sample}/quant.sf", sample=SAMPLES),
@@ -204,23 +194,23 @@ rule tximport:
     script:
         "scripts/runTximport.R"
 
-"""
-rule salmon_quantmerge:
-    input:
-        expand("salmon/{sample}/quant.sf", sample=SAMPLES),
-        expand("salmon/{sample}/quant.genes.sf", sample=SAMPLES)
-    output:
-        tpm=SAMPLE_TPM,
-        txtpm=SAMPLE_TXTPM,
-        counts=RAW_COUNTS
-    params:
-        ids =" ".join(SAMPLES)
-    shell:
-        """salmon quantmerge --quants {params.ids}  --genes -o {output.tpm}
-           salmon quantmerge --quants {params.ids}  --genes -c numreads -o {output.counts}
-           salmon quantmerge --quants {params.ids}  -o {output.txtpm}
-        """
-"""
+
+# rule salmon_quantmerge:
+#     input:
+#         expand("salmon/{sample}/quant.sf", sample=SAMPLES),
+#         expand("salmon/{sample}/quant.genes.sf", sample=SAMPLES)
+#     output:
+#         tpm=SAMPLE_TPM,
+#         txtpm=SAMPLE_TXTPM,
+#         counts=RAW_COUNTS
+#     params:
+#         ids =" ".join(SAMPLES)
+#     shell:
+#         """salmon quantmerge --quants {params.ids}  --genes -o {output.tpm}
+#            salmon quantmerge --quants {params.ids}  --genes -c numreads -o {output.counts}
+#            salmon quantmerge --quants {params.ids}  -o {output.txtpm}
+#         """
+
         
 rule deseq2:
     input:

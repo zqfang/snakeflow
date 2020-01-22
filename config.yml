@@ -2,11 +2,11 @@
 # 2017-03-28
 
 # dir contains all indexes, genome sequences
-genome: /home/fangzq/genome/"
+genome: /home/fangzq/genome"
 # Path to an uncompressed FASTA file with all choromsome genome sequences.
 # we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
-fasta: "/home/fangzq/genome/GRCh38.p13.genome.fa"
+dna: "/home/fangzq/genome/GRCh38.p13.genome.fa"
 
 # Path to an uncompressed FASTA file with all transcript sequences.
 # we use gencode archive, downlaod from here:
@@ -26,15 +26,13 @@ salmon_index: "/home/fangzq/genome/salmonIndices_hg38"
 index_prefix: "hg38"
 
 # Full path to a folder where output files will be created.
-workdir: "/home/fangzq/projects/bulk"
+workdir: "/data/bases/fangzq/bulk"
 
 # extra scripts' dir for running. e.g preDEseq.py (StringTie)
 scripts: "/home/fangzq/github/snakeflow/scripts"
 
 # Full path to a folder that holds all of your FASTQ files
-fastq_dir: "/data/bases/shared/bulk_RNA_seq/30_225476525_trim"
-
-
+fastq_dir: "/data/bases/fangzq/bulk/fastq_trim"
 
 # Sequencing read length, only reqired for running rMATS or preDEseq.py.
 read_length: 150
@@ -48,30 +46,17 @@ stranded: False
 # if you have a fastq file named Sample1_R1.fastq.gz,
 # extract the sample pattern blow
 # information in `samples` is used for deseq2 and rMATS
-samples:
-    # fastq files prefix, seperate each sample by space
-    name: "WGC74R WGC75R WGC76R WGC77R" # keep order for each sample
-    # short names for sample names
-    alias: "S74 S75 S76 S77" # optional
-
-    #Any lable name to indicate sample's group/condition where they belong to.
-    #keep the same order with `name`
-    group: "Normal Control Normal Control"
-    # optional, if your data is not time-series, ignore `time` attr.
-    time: "0 0 0 0"
-
-    # ``dataframe``attribute works only if a file is given.
-    # each column names correspond to the samples' attributes of above.
-    coldata: "/home/fangzq/projects/bulk/group.txt" #
-
+sample_meta: "/data/bases/fangzq/bulk/group.txt"
+# ``dataframe``attribute works only if a file is given.
+# each column names correspond to the samples' attributes of above.
     # a sampleTable.txt look like this.
       ### name  alias  conditon  treatment
       ## WGC096874R S74    Normal 0
       ## WGC096875R S75    Cancer 0
       ## WGC096876R S76    Normal 0
       ## WGC096877R S77    Cancer 0
-enrichr_library: ['GO_Cellular_Component_2017b','GO_Molecular_Function_2017b',
-                  'GO_Biological_Process_2017b','Human_Phenotype_Ontology',
+enrichr_library: ['GO_Cellular_Component_2017','GO_Molecular_Function_2017',
+                  'GO_Biological_Process_2017','Human_Phenotype_Ontology',
                    'MSigDB_Oncogenic_Signatures','WikiPathways_2016',
                    'KEGG_2016']
 

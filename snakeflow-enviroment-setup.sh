@@ -11,40 +11,23 @@ log () {
     echo
 }
 
-PY_VERSION=3.6
-
-
-#if [[ "$PY_VERSION" == "2.7" ]]; then
-#        wget https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-#else
-#        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-#fi
-
-#bash miniconda.sh -b -p /miniconda
-#export PATH="/miniconda/bin:$PATH"
-
+PY_VERSION=3.7
 #setup bioconda channel.
 conda config --set always_yes yes 
-conda config --add channels conda-forge
 conda config --add channels defaults
 conda config --add channels bioconda
+conda config --add channels conda-forge
 
 
 log "install snakemake requirements"
 
-#python2 packages
-#conda install macs2 rseqc
-
-source deactivate
-conda install rseqc
 name="snakeflow"
 #clone a environment
 #conda list --export > snakemake-env-packages.txt
 #conda create -n snakeflow-clone --file snakemake-env-packages.txt
 
 conda env list | grep -q $name && conda env remove -y -n $name
-conda create -y -n $name  python=${PY_VERSION}
-               # --file "snakemake-env-packages.txt" 
+conda create -y -n $name  python=${PY_VERSION}  #--file "snakemake-env-packages.txt" 
 
     
 source activate $name
@@ -54,12 +37,12 @@ log "install snakemake-env-packages"
 conda install ipython cython numpy scipy pandas matplotlib seaborn snakemake  xlrd xlwt 
 
 #other commandline tools
-conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz multiqc deeptools gseapy 
+conda install hisat2 stringtie salmon star samtools bedtools fastqc graphviz multiqc deeptools gseapy rseqc macs2
 #R packages
 #conda install bioconductor-deseq2 bioconductor-tximport bioconductor-readr bioconductor-ballgwon r-pheatmap r-ggrepel
 
 #log "install gene annotation requirements"
 wget http://bioconductor.org/biocLite.R
-Rscript -e "source('biocLite.R');options(BioC_mirror='http://mirrors.ustc.edu.cn/bioc/');biocLite();biocLite(c('DESeq2','readr','pheatmap','tximport','ballgown','ggrepel','topGO','clusterProfiler','org.Hs.eg.db','Rgraphviz','EnsDb.Hsapiens.v86'))"
+Rscript -e "BiocManager::install(c('DESeq2','readr','pheatmap','tximport','ballgown','ggrepel','topGO','clusterProfiler','org.Hs.eg.db','Rgraphviz','EnsDb.Hsapiens.v86'))"
 
 log "all files are ready. Proceed to next step now."

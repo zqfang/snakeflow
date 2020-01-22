@@ -4,7 +4,7 @@ def anno_genes(annotation, tpms, deseqs, diff_anno, samples, alias, group, treat
     import pandas as pd 
 
     anno = pd.read_csv(annotation, index_col='gene_id', sep="\t")
-    anno.index = anno.index.str.split(".").str[0]
+    #anno.index = anno.index.str.split(".").str[0]
 
     tpm = pd.read_csv(tpms, index_col=0, sep="\t")
     tpm = tpm[samples]
