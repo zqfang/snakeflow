@@ -46,11 +46,11 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
     # enrichr and gsea start
     for glist, gl_type in zip(degs_sig, ['all','up','down']):
         outdir='differential_expression/GO/Enrichr_%s/%s'%(outGSEAname, gl_type)
-        outfile = "{o}/{t}.enrichr.reports.txt".format(o=outdir, d=domain, t=gl_type)
+        outfile = "{o}/{t}.enrichr.reports.txt".format(o=outdir, t=gl_type)
         # skip plotting while file exists
         if os.path.isfile(outfile): continue
         try:
-            gp.enrichr(gene_list=glist, gene_sets=domain, description=gl_type, cutoff=0.1, outdir=outdir)
+            res_enr = gp.enrichr(gene_list=glist, gene_sets=go, description=gl_type, cutoff=0.1, outdir=outdir)
         except Exception as e:
             log1="Enrichr Server No response: %s vs %s, %s \n"%(treat, ctrl, gl_type,)
             log2="the lenght of input gene list = %s \n"%(len(glist))
