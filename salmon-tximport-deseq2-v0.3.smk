@@ -235,10 +235,10 @@ rule gtf_extract:
     script:
         "scripts/extractGTF.py"
 
-rule anno_diffGenes:
-    input:
+rule anno_DEGs:
+    input: 
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.txt"
-    output:
+    output: 
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.annotated.xls"
     params:
         gene_anno=GTF_Genes,
