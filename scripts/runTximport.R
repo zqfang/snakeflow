@@ -21,10 +21,10 @@ do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_counts, out_image, thr
   #txi.salmon <- tximport(salmon.files, type = "salmon", 
   #                       tx2gene = tx2gene, countsFromAbundance = "no")
   txi.transcripts <- tximport(salmon.files, type = "salmon", 
-                              txOut = TRUE, tx2gene = tx2gene,
-                              ignoreTxVersion = TRUE) #countsFromAbundance="scaledTPM" if not use DESeq2friomtximport
+                              txOut = TRUE, tx2gene = tx2gene)
+                              #ignoreTxVersion = TRUE) #countsFromAbundance="scaledTPM" if not use DESeq2friomtximport
 
-  txi.salmon <- summarizeToGene(txi.transcripts, tx2gene, ignoreTxVersion = TRUE) 
+  txi.salmon <- summarizeToGene(txi.transcripts, tx2gene)# ignoreTxVersion = TRUE) 
   # #countsFromAbundance="scaledTPM" if not use DESeq2friomtximport
 
   #save raw counts 

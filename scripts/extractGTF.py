@@ -10,7 +10,7 @@ def extract_gtf(gtf, gene_anno, tx2gene, threads):
     for line in open(gtf):
         if line.startswith('#'): continue
         attr = dict(item.strip().split(' ')  for item in line.split('\t')[8].strip('\n').split(';') if item)
-        line_1st = attr['gene_id'].strip('\"').split(".")[0]+'\t'+ attr['gene_name'].strip('\"')+'\t'
+        line_1st = attr['gene_id'].strip('\"')+'\t'+ attr['gene_name'].strip('\"')+'\t'
         line_2nd = attr['gene_type'].strip('\"')+'\n'
         line_out = line_1st + line_2nd
 
@@ -18,7 +18,7 @@ def extract_gtf(gtf, gene_anno, tx2gene, threads):
             out1.write(line_out)
             lines_seen.add(line_out)
         if 'transcript_id' in attr:
-            tx2gene_out = attr['transcript_id'].strip('\"').split(".")[0]+'\t'+ attr['gene_id'].strip('\"').split(".")[0]+'\t'+ attr['gene_name'].strip('\"')+'\n'
+            tx2gene_out = attr['transcript_id'].strip('\"')+'\t'+ attr['gene_id'].strip('\"')+'\t'+ attr['gene_name'].strip('\"')+'\n'
             if tx2gene_out not in tx2gene_seen:
                 out2.write(tx2gene_out)
                 tx2gene_seen.add(tx2gene_out)

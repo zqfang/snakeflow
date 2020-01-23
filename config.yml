@@ -18,6 +18,19 @@ cdna: "/home/fangzq/genome/GRCh38.gencode.v33.transcripts.fa"
 # http://www.gencodegenes.org/releases/current.html
 gtf: "/home/fangzq/genome/GRCh38.gencode.v33.annotation.gtf"
 
+# RSeQC bed file
+# this two files are optional, if you do not need to run RSeQC.
+# Download from https://sourceforge.net/projects/rseqc/files/BED/Human_Homo_sapiens/
+rseqc:
+    refseq: "/home/fangzq/genome/rseqc/hg38.refseq.bed"
+    housekeep: "/home/fangzq/genome/rseqc/hg38.HouseKeepingGenes.bed"
+
+#trimmonatic adaptors
+# adaptors:
+#     illumina: "/home/fangzq/github/snakeflow/adaptors/TruSeq3-PE.fa"
+
+
+
 # Index dir
 hisat_index: "/home/fangzq/genome/hisat2Indices_hg38"
 salmon_index: "/home/fangzq/genome/salmonIndices_hg38"
@@ -29,7 +42,7 @@ index_prefix: "hg38"
 workdir: "/data/bases/fangzq/bulk"
 
 # extra scripts' dir for running. e.g preDEseq.py (StringTie)
-scripts: "/home/fangzq/github/snakeflow/scripts"
+# scripts: "/home/fangzq/github/snakeflow/scripts"
 
 # Full path to a folder that holds all of your FASTQ files
 fastq_dir: "/data/bases/fangzq/bulk/fastq_trim"
@@ -55,13 +68,6 @@ sample_meta: "/data/bases/fangzq/bulk/group.txt"
       ## WGC096875R S75    Cancer 0
       ## WGC096876R S76    Normal 0
       ## WGC096877R S77    Cancer 0
-enrichr_library: ['GO_Cellular_Component_2017','GO_Molecular_Function_2017',
-                  'GO_Biological_Process_2017','Human_Phenotype_Ontology',
-                   'MSigDB_Oncogenic_Signatures','WikiPathways_2016',
-                   'KEGG_2016']
-
-# RNA Binding Protein list
-rbps: "/home/fangzq/github/snakeflow/221RBPs.csv"
 # Before running with your samples,
 # please rename all your samples with the same suffix below.
 # for example, rename all your sample like this: "WGC096874R_combined_R1.fastq.gz"
@@ -71,13 +77,13 @@ read_pattern:
     r2: "{sample}_R2_001.fastq.gz" # don't change {sample}
     fastqc: "qc/fastqc/{sample}_1_fastqc.{suf}"
 
-# RSeQC bed file
-# this two files are optional, if you do not need to run RSeQC.
-# Download from https://sourceforge.net/projects/rseqc/files/BED/Human_Homo_sapiens/
-rseqc:
-    refseq: "/home/fangzq/genome/rseqc/hg38.refseq.bed"
-    housekeep: "/home/fangzq/genome/rseqc/hg38.HouseKeepingGenes.bed"
+enrichr_library: ['GO_Cellular_Component_2017','GO_Molecular_Function_2017',
+                  'GO_Biological_Process_2017','Human_Phenotype_Ontology',
+                   'MSigDB_Oncogenic_Signatures','WikiPathways_2016',
+                   'KEGG_2016']
 
-#trimmonatic adaptors
-adaptors:
-    illumina: "/home/fangzq/github/snakeflow/adaptors/TruSeq3-PE.fa"
+# RNA Binding Protein list
+rbps: "/home/fangzq/github/snakeflow/221RBPs.csv"
+# DESeq2 cutoff
+log2fc: 1
+fdr: 0.05

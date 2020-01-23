@@ -77,7 +77,9 @@ DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
         'differential_expression','logs','temp']
 # go domain
 GO_DOMAIN = config['enrichr_library']
-
+# cutoff
+LOG2FC = config['log2fc']
+FDR = config['fdr']
 ########### Target output files #################
 SALMON_INDEX = expand(SALMON_INDEX_DIR+"/{prefix}.bin", prefix=['pos','mphf'])
 SALMON_QUANT_Trans = expand("salmon/{sample}/quant.sf", sample=SAMPLES)
@@ -248,8 +250,8 @@ rule anno_DEGs:
         group=GROUP,
         treat="{treat}",
         ctrl="{ctrl}",
-        log2fc=1,
-        padj=0.05
+        log2fc=LOG2FC,
+        padj=FDR
     script:
         "scripts/annotateDEGs.py"
 
@@ -263,7 +265,7 @@ rule pheatmap_degs:
     params:
         treat="{treat}",
         ctrl="{ctrl}",
-        padj=0.05,
+        padj=FDR,
         topgene=20,
     script:
         "scripts/pheatmapDEGs.R"
@@ -289,12 +291,14 @@ rule GSEA_Enrichr:
     input:
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.annotated.xls"
     output:
-        GSEA_RES
+        GSEA_RES,
+        #directory("differential_expression/GO/GSEA_{treat}_vs_{ctrl}",
+        directory("differential_expression/GO/Enrichr_{treat}_vs_{ctrl}")
     params:
         treat="{treat}",
         ctrl="{ctrl}",
-        log2fc=1,
-        padj=0.05,
+        log2fc=LOG2FC,
+        padj=FDR,
         go=GO_DOMAIN,
     script:
         "scripts/gseaEnrichr.py"

@@ -18,15 +18,15 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
             print("Skip GSEA and Enrichr Procedure for %s vs %s."%(treat, ctrl))
             for domain in go:
                 #touch gsea output
-                outfile1="GO/GSEA_%s/%s/gseapy.gsea.gene_sets.report.csv"%(outGSEAname, domain)
-                os.makedirs("GO/GSEA_%s/%s".format(outGSEAname, domain), exist_ok=True)
+                outfile1="differential_expression/GO/GSEA_%s/%s/gseapy.gsea.gene_sets.report.csv"%(outGSEAname, domain)
+                os.makedirs("differential_expression/GO/GSEA_%s/%s".format(outGSEAname, domain), exist_ok=True)
                 os.system("touch %s"%outfile1)
                 #toutch Enrichr output
-                for gl_type in ['all','up','down']:
-                    touchdirs = "GO/Enrichr_{n}/{d}_{t}".format(n=outGSEAname, d=domain, t=gl_type)
-                    os.makedirs(touchdirs, exist_ok=True)
-                    outfile2='{n}/{d}.{t}.enrichr.reports.txt'.format(n=touchdirs, d=domain, t=gl_type)
-                    os.system("touch %s"%outfile2)
+                # for gl_type in ['all','up','down']:
+                #     touchdirs = "GO/Enrichr_{n}/{d}_{t}".format(n=outGSEAname, d=domain, t=gl_type)
+                #     os.makedirs(touchdirs, exist_ok=True)
+                #     outfile2='{n}/{d}.{t}.enrichr.reports.txt'.format(n=touchdirs, d=domain, t=gl_type)
+                #     os.system("touch %s"%outfile2)
             return
 
     #start to parse significant results
@@ -38,30 +38,28 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
     degs_sig = [deg.gene_name.squeeze() for deg in[sig_deg, sig_deg_up,sig_deg_dw]]
 
     sig_deg_gsea = sig_deg[['gene_name','log2FoldChange']]
-    sig_deg_gsea_sort = sig_deg_gsea.sort_values('log2FoldChange',ascending=False)
+    sig_deg_gsea_sort = sig_deg_gsea.sort_values('log2FoldChange', ascending=False)
     sig_deg_gsea_sort = sig_deg_gsea_sort.reset_index(drop=True)
 
     #dir for blacklist
     os.makedirs("temp/blacklist.GO", exist_ok=True)
     # enrichr and gsea start
-    for domain in go:
-        for glist, gl_type in zip(degs_sig, ['all','up','down']):
-            outdir='GO/Enrichr_%s/%s_%s'%(outGSEAname, domain, gl_type)
-            outfile = "{o}/{d}.{t}.enrichr.reports.txt".format(o=outdir, d=domain, t=gl_type)
-            #skip plotting while file exists
-            if os.path.isfile(outfile): continue
-            try:
-                gp.enrichr(gene_list=glist, gene_sets=domain, description=gl_type,
-                           cutoff=0.1, outdir=outdir)
-            except Exception as e:
-                log1="Enrichr Server No response: %s vs %s, %s, %s \n"%(treat, ctrl, domain, gl_type,)
-                log2="the lenght of input gene list = %s \n"%(len(glist))
-                print(log1, log2)
-                # touch file error exists
-                os.system("touch  %s"%outfile)
-                with open("temp/blacklist.GO/blacklist.enrichr.degs.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
-                    black.write(log1)
-                    black.write(log2)
+    for glist, gl_type in zip(degs_sig, ['all','up','down']):
+        outdir='differential_expression/GO/Enrichr_%s/%s'%(outGSEAname, gl_type)
+        outfile = "{o}/{t}.enrichr.reports.txt".format(o=outdir, d=domain, t=gl_type)
+        # skip plotting while file exists
+        if os.path.isfile(outfile): continue
+        try:
+            gp.enrichr(gene_list=glist, gene_sets=domain, description=gl_type, cutoff=0.1, outdir=outdir)
+        except Exception as e:
+            log1="Enrichr Server No response: %s vs %s, %s \n"%(treat, ctrl, gl_type,)
+            log2="the lenght of input gene list = %s \n"%(len(glist))
+            print(log1, log2)
+            # touch file error exists
+            #os.system("touch  %s"%outfile)
+            with open("temp/blacklist.GO/blacklist.enrichr.degs.%s_vs_%s.txt"%(treat, ctrl),'a') as black:
+                black.write(log1)
+                black.write(log2)
     #run prerank
     """
     for domain in go:
@@ -87,7 +85,7 @@ def gsea_enrichr(diff, treat, ctrl, log2fc, padj, go):
 
     # run gsea
     for domain in go:
-        outdir="GO/GSEA_%s/%s"%(outGSEAname, domain)
+        outdir="differential_expression/GO/GSEA_%s/%s"%(outGSEAname, domain)
         outfile = "%s/gseapy.gsea.gene_sets.report.csv"%outdir
         #skip plotting while file exists
         if os.path.isfile(outfile): continue
