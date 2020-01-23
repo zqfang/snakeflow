@@ -39,13 +39,13 @@ salmon_index: "/home/fangzq/genome/salmonIndices_hg38"
 index_prefix: "hg38"
 
 # Full path to a folder where output files will be created.
-workdir: "/data/bases/fangzq/bulk"
+workdir: "/home/fangzq/projects/bulk"
 
 # extra scripts' dir for running. e.g preDEseq.py (StringTie)
 # scripts: "/home/fangzq/github/snakeflow/scripts"
 
 # Full path to a folder that holds all of your FASTQ files
-fastq_dir: "/data/bases/fangzq/bulk/fastq_trim"
+fastq_dir: "/data/bases/shared/bulk_RNA_seq/30_225476525_trim"
 
 # Sequencing read length, only reqired for running rMATS or preDEseq.py.
 read_length: 150
@@ -59,7 +59,7 @@ stranded: False
 # if you have a fastq file named Sample1_R1.fastq.gz,
 # extract the sample pattern blow
 # information in `samples` is used for deseq2 and rMATS
-sample_meta: "/data/bases/fangzq/bulk/group.txt"
+sample_meta: "/home/fangzq/projects/bulk/group.txt"
 # ``dataframe``attribute works only if a file is given.
 # each column names correspond to the samples' attributes of above.
     # a sampleTable.txt look like this.
@@ -86,4 +86,4 @@ enrichr_library: ['GO_Cellular_Component_2017','GO_Molecular_Function_2017',
 rbps: "/home/fangzq/github/snakeflow/221RBPs.csv"
 # DESeq2 cutoff
 log2fc: 1
-fdr: 0.05
+fdr: 0.01
