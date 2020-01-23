@@ -32,7 +32,7 @@ rseqc:
 
 
 # Index dir
-hisat_index: "/home/fangzq/genome/hisat2Indices_hg38"
+hisat2_index: "/home/fangzq/genome/hisat2Indices_hg38"
 salmon_index: "/home/fangzq/genome/salmonIndices_hg38"
 
 # Index basebame (only for hisat2)
@@ -75,7 +75,6 @@ sample_meta: "/home/fangzq/projects/bulk/group.txt"
 read_pattern:
     r1: "{sample}_R1_001.fastq.gz" # don't change {sample}
     r2: "{sample}_R2_001.fastq.gz" # don't change {sample}
-    fastqc: "qc/fastqc/{sample}_1_fastqc.{suf}"
 
 enrichr_library: ['GO_Cellular_Component_2017','GO_Molecular_Function_2017',
                   'GO_Biological_Process_2017','Human_Phenotype_Ontology',

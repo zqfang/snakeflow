@@ -73,7 +73,7 @@ PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
 
 # dirs
-DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
+DIRS = ['qc','mapped','alternative_splicing', 'gene_expression',
         'differential_expression','logs','temp']
 # go domain
 GO_DOMAIN = config['enrichr_library']

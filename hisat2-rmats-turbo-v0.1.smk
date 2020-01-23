@@ -32,7 +32,7 @@ def parse_samples(tab=config['samples']['coldata']):
         SAMPLES.append(item[0])
         SAMPLES_ALIAS.append(item[1])
         GROUP.append(item[2])
-        TIME.append(item[3])
+        if len(item) >3: TIME.append(item[3])
 
     return SAMPLES, SAMPLES_ALIAS, GROUP, TIME
 
@@ -44,16 +44,16 @@ CDNA = config['cdna']
 # Full path to a folder that holds all of your FASTQ files.
 FASTQ_DIR = config['fastq_dir']
 READ_LEN = config['read_length']
-PAIRED = 'paired' if config['paired'] else 'single'
+PAIRED = config['paired']
 # Full path to a Genome.
 GENOME = config['genome']
 #CDNA =           join(GENOME,"gencode.v25.transcripts.fa")
 # genome sequence
-FASTA_REF =     config['fasta']
+FASTA_REF =      config['dna']
 # index_dir
-HISAT2_REFDIR= config['hisat_index']
+SALMON_INDEX_DIR=config['salmon_index']
 # index basename
-INDEX_PREFIX = config['index_prefix']
+INDEX_PREFIX = 'hg38'
 # gtf
 GTF_FILE =       config['gtf']
 GTF_Genes =      GTF_FILE.rstrip(".gtf")+".extracted.genes.annotation.txt"
@@ -67,14 +67,8 @@ GTF_Trans =      GTF_FILE.rstrip(".gtf")+".extracted.transx2gene.txt"
 #you must include this trailing comma, or else the code won’t work correctly.
 
 #SAMPLES, = glob_wildcards(join(FASTQ_DIR, '{sample, SRR[^/]+}_R1.fastq.gz'))
-if isfile(config['samples']['coldata']):
-    SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['samples']['coldata'])
-else:
-    SAMPLES = config['samples']['name'].split()
-    SAMPLES_ALIAS = config['samples']['alias'].split()
-    GROUP=config['samples']['group'].split()
-    TIME=config['samples']['time'].split()
 
+SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['sample_meta'])
 #rMATS
 uGroup=unique(GROUP)
 RMATS_DICT = [[] for i in range(len(uGroup))]
@@ -90,7 +84,7 @@ PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
 
 # dirs
-DIRS = ['qc','mapped','counts','alternative_splicing', 'gene_expression',
+DIRS = ['qc','mapped','alternative_splicing', 'gene_expression',
         'differential_expression','logs','temp']
 
 
