@@ -17,3 +17,6 @@ deeptools
 gseapy
 fastqc
 multiqc
+rseqc
+fastp
+macs2
