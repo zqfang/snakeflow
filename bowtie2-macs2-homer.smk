@@ -160,7 +160,7 @@ rule macs_broad:
        "--outdir macs2_highQuality_results -n {wildcards.sample}  --broad"
        "{params.extra} {params.extra2} 2> {log}"
 
-rule annotatepeaks
+rule annotatepeaks:
     input:
         bed="{sample}.bed"
     output:
