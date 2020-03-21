@@ -24,22 +24,21 @@ rule sample_calling:
         gvcfi="/data/bases/fangzq/GVCF/{strain}.raw.g.vcf.idx"
         # gvcf=expand("/data/bases/fangzq/strains/GATK_TMP/{strain}.chr{i}.raw.g.vcf", i=CHROMSOME),
         # gvcfi=expand("/data/bases/fangzq/strains/GATK_TMP/{strain}.chr{i}.raw.g.vcf.idx", i=CHROMSOME)
-    threads: 2
+    threads: 12
     log: "/data/bases/fangzq/strains/{strain}.haplotypecaller.log"
     params:
-        #java_ops="-Xmx16G -Djava.io.tmpdir=%s"%TMPDIR,
+        java_ops="-Xmx32G -Djava.io.tmpdir=%s"%TMPDIR,
         chrs=CHROMSOME,
         tmpdir=TMPDIR,
         strain="{strain}"
     shell:
-        """gatk HaplotypeCaller  \
-                -ERC GVCF --tmp-dir {params.tmpdir} \
-                --native-pair-hmm-threads {threads} \
-                --dbsnp {input.dbSNP} \
-                -R {input.genome} \
-                -I {input.bam} \
-                -O {output.gvcf} 2> {log} 
-        """
+        "gatk --java-options '{params.java_ops}' HaplotypeCaller "
+        "-ERC GVCF "
+        "--native-pair-hmm-threads {threads} "
+        "--dbsnp {input.dbSNP} "
+        "-R {input.genome} "
+        "-I {input.bam} "
+        "-O {output.gvcf} 2> {log} "
     ## split run into chromosomes
     # run:
     #     for ch in params['chrs']:
@@ -90,7 +89,7 @@ rule joint_calling:
     output: "combined.chr{i}.vcf",
     params:
         tmpdir=TMPDIR,
-        java_ops= "-Xmx12G -Djava.io.tmpdir=%s"%TMPDIR
+        java_ops= "-Xmx32G -Djava.io.tmpdir=%s"%TMPDIR
     log: "/data/bases/fangzq/strains/chr{i}.GenotypeGVCFs.log"
     shell:
         "gatk --java-options '{params.java_ops}' "

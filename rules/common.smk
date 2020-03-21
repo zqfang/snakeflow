@@ -20,9 +20,8 @@ def parse_samples(tab=config['sample_meta']):
     with open(tab, 'rU') as f:
         lines = f.readlines()
     for line in lines:
-        line = line.strip()
         if not len(line) or line.startswith('#'): continue #skip blank line or comment linne
-        item = line.split(" ")
+        item = line.strip().split()
         SAMPLES.append(item[0])
         SAMPLES_ALIAS.append(item[1])
         GROUP.append(item[2])
