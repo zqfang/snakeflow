@@ -1,31 +1,47 @@
+import os
 from snakemake.shell import shell
+############### Globals ########################
+WORKSPACE = "/home/fangzq/data/20200327"
+workdir: WORKSPACE
 
 GENOME="/home/fangzq/genome/mouse/GRCm38_68.fa"
 dbSNP="/home/fangzq/genome/mouse/mgp.v5.merged.snps_all.dbSNP142.sorted.vcf"
-STRAINS = "129P2 129S1 129S5 A_J AKR B10 B_C BPL BPN BTBR BUB C3H C57BL10J C57BL6NJ C57BRcd C57LJ C58 CBA CEJ DBA1J DBA FVB ILNJ KK LGJ LPJ MAMy NOD NON NOR NOR NUJ NZB NZO NZW PJ PLJ RBF RFJ RHJ RIIIS SEA SJL SMJ ST SWR TALLYHO"
-STRAINS = STRAINS.split(" ")
+STRAINS_FILE = "/data/bases/fangzq/strain"
+BAM_DIR = "/data/bases/fangzq/strains"
 TMPDIR = "/home/fangzq/TMPDATA"
+
 #CHROMSOME = [ str(c) for c in range(1,20)] + ["X", "Y", "MT"]
 CHROMSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,10)]+ ["MT", "X", "Y"]
-OUTPUT = expand("combined.chr{i}.vcf", i=CHROMSOME)
 
+with open(STRAINS_FILE, 'r') as s:
+    STRAINS = s.read().strip().split()
+
+# STRAINS = "129P2 129S1 129S5 B10 B_C BPL BPN BUB C3H C57BL10J C57BL6NJ C57BRcd C57LJ "+\
+#           "C58 CBA CEJ DBA ILNJ LGJ LPJ MAMy NOD NON NUJ NZB NZO PJ PLJ RHJ RIIIS SEA SJL SMJ ST SWR"
+
+# OUTPUT
+VCFs = expand("VCFs/combined.chr{i}.vcf", i=CHROMSOME)
+SNPs = expand("SNPs/combined.chr{i}.txt", i=CHROMSOME)
+
+
+############## Rules ##########################
 rule all:
-    input: OUTPUT
+    input: VCFs, SNPs
 
     
 rule sample_calling:
     input:
         dbSNP=dbSNP,
         genome=GENOME,
-        bam="/data/bases/fangzq/strains/{strain}/output.GATKrealigned.Recal.bam",
-        bai="/data/bases/fangzq/strains/{strain}/output.GATKrealigned.Recal.bai",
+        bam=os.path.join(BAM_DIR, "{strain}/output.GATKrealigned.Recal.bam"),
+        bai=os.path.join(BAM_DIR, "{strain}/output.GATKrealigned.Recal.bai"),
     output: 
-        gvcf="/data/bases/fangzq/GVCF/{strain}.raw.g.vcf",
-        gvcfi="/data/bases/fangzq/GVCF/{strain}.raw.g.vcf.idx"
+        gvcf="GVCF/{strain}.raw.g.vcf",
+        gvcfi="GVCF/{strain}.raw.g.vcf.idx"
         # gvcf=expand("/data/bases/fangzq/strains/GATK_TMP/{strain}.chr{i}.raw.g.vcf", i=CHROMSOME),
         # gvcfi=expand("/data/bases/fangzq/strains/GATK_TMP/{strain}.chr{i}.raw.g.vcf.idx", i=CHROMSOME)
     threads: 12
-    log: "/data/bases/fangzq/strains/{strain}.haplotypecaller.log"
+    log: "logs/{strain}.haplotypecaller.log"
     params:
         java_ops="-Xmx32G -Djava.io.tmpdir=%s"%TMPDIR,
         chrs=CHROMSOME,
@@ -68,36 +84,36 @@ rule sample_calling:
 rule combineGVCFs:
     input:
         genome=GENOME,
-        gvcf=expand("/data/bases/fangzq/GVCF/{strain}.raw.g.vcf", strain=STRAINS),
-        gvcfi=expand("/data/bases/fangzq/GVCF/{strain}.raw.g.vcf.idx", strain=STRAINS)
+        gvcf=expand("GVCF/{strain}.raw.g.vcf", strain=STRAINS),
+        gvcfi=expand("GVCF/{strain}.raw.g.vcf.idx", strain=STRAINS)
     output:
-        expand("combined.chr{i}.g.vcf", i=CHROMSOME),
-        expand("combined.chr{i}.g.vcf.idx", i=CHROMSOME)
+        expand("GVCF/combined.chr{i}.g.vcf", i=CHROMSOME),
+        expand("GVCF/combined.chr{i}.g.vcf.idx", i=CHROMSOME)
     params:
         chrs=CHROMSOME
-    log: "/data/bases/fangzq/strains/combineGVCFs.log"
+    log: "logs/combineGVCFs.log"
     run:
         variant = " --variant ".join(input.gvcf) 
         for i in params['chrs']:
-            shell("gatk CombineGVCFs -L {chr} -R {input.genome} --variant {var} -O combined.chr${chr}.g.vcf >> {log}".format(chr=i, var=variant))
+            shell("gatk CombineGVCFs -L {chr} -R {input.genome} --variant {var} -O combined.chr${chr}.g.vcf 2>> {log}".format(chr=i, var=variant))
 
 rule joint_calling:
     input: 
-        gvcf="combined.chr{i}.g.vcf",
-        gvcfi="combined.chr{i}.g.vcf.idx",
+        gvcf="GVCF/combined.chr{i}.g.vcf",
+        gvcfi="GVCF/combined.chr{i}.g.vcf.idx",
         genome=GENOME
-    output: "combined.chr{i}.vcf",
+    output: 
+        vcf=protected("VCFs/combined.chr{i}.vcf"),
+        vcfi=protected("VCFs/combined.chr{i}.vcf.idx"),
     params:
         tmpdir=TMPDIR,
         java_ops= "-Xmx32G -Djava.io.tmpdir=%s"%TMPDIR
-    log: "/data/bases/fangzq/strains/chr{i}.GenotypeGVCFs.log"
+    log: "logs/chr{i}.GenotypeGVCFs.log"
     shell:
         "gatk --java-options '{params.java_ops}' "
-        "GenotypeGVCFs -R {input.genome} -V {input.gvcf} -O {output} 2> {log}"
+        "GenotypeGVCFs -R {input.genome} -V {input.gvcf} -O {output.vcf} 2> {log}"
         # """
-        # gatk GenotypeGVCFs \
-        #     --tmp-dir {params.tmpdir} \
-        #     -R {input.genome} \
+        # gatk GenotypeGVCFs --tmp-dir {params.tmpdir} -R {input.genome} \
         #     -V {input.gvcf} \
         #     -O {output} 2> {log}
         # """
@@ -117,3 +133,30 @@ rule joint_calling:
 #    -V gendb://DB.chr${i} \
 #    -O chr${i}.combined.vcf
 # done
+
+rule vcf2strains:
+    input:  
+        vcf = "VCFs/combined.chr{i}.vcf", 
+        vcfi = "VCFs/combined.chr{i}.vcf.idx",
+    output: 
+        temp("VCFs/chr{chrom}.strains.txt")
+    shell:
+        # NOTE: '\t' is default delim for cut
+        "head -n 1000 {input.vcf} | grep '^#CHROM' | "
+        "cut -f10-  > {output}"
+   
+    
+rule vcf2niehs:
+    input:  
+        vcf = "VCFs/chr{chrom}.vcf", 
+        vcfi =  "VCFs/chr{chrom}.vcf.idx",
+        stains = "VCFs/chr{chrom}.strains.txt"
+    output: 
+        protected("SNPs/chr{chrom}.txt")
+    params:
+        outdir= "SNPs",
+        chrom="{chrom}",
+        qual_samtools=50, 
+        heterzygote_cutoff = 20
+    script:
+        "scripts/vcf2NIEHS.py"
