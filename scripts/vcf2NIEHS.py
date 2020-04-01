@@ -17,15 +17,17 @@ def vcf2niehs(invcf, outdir, sstrain, chromosome, qual_samtools=50, heterzygote_
     
     # prepared output
     ## chromosome = list(range(10,20)) + list(range(1, 10)) + [ "X", "Y", "MT"]
-    chromosome = [chromosome]
-    outputdict = { str(k) : open(os.path.join(outdir, f"chr{k}.txt" ), 'w') for k in chromosome }
+    chromosome = chromosome.split(",")
+    outputdict = { str(k) : open(os.path.join(outdir, f"chr{k}.full.txt" ), 'w') for k in chromosome }
+    output_compact = { str(k) : open(os.path.join(outdir, f"chr{k}.txt" ), 'w') for k in chromosome }
     # add header
     for chrom, output in outputdict.items():
         output.write("LOCAL_IDENTIFIER\tSS_ID\tCHROMOSOME\tACCESSION_NUM\tPOSITION\tSTRAND\tALLELES\t")
         output.write("\t".join(strains)+ "\n")
-
+    for chrom, output in output_compact.items():
+        output.write("\t".join(strains)+ "\n")
     # parse VCF
-    # CHROM	POS	ID	REF	ALT	QUAL FILTER	INFO FORMAT	AKR
+    # CHROM	POS	ID	REF	ALT	QUAL FILTER	INFO FORMAT	SAMPLES1 ...
     lineCount = 0
     for line in open(invcf, 'r'):
         # skip description lines
@@ -33,11 +35,7 @@ def vcf2niehs(invcf, outdir, sstrain, chromosome, qual_samtools=50, heterzygote_
         newline = line.strip().split("\t")
 
         lineCount +=1
-        totalVariant +=1
-
-        if lineCount % 100000 == 0:
-            sys.stdout.write(f"line: {lineCount}\n")
-            
+        totalVariant +=1            
         ## check vcf format
         if len(newline) < 9: 
             sys.exit("Error! format not recognized")
@@ -53,38 +51,37 @@ def vcf2niehs(invcf, outdir, sstrain, chromosome, qual_samtools=50, heterzygote_
             continue
         ### first, get the ref/alternative alleles
         ref = newline[3]
-        # skip indels, bcftool col7 is/not INDEL
-        # FIXME: len(ref) > 1 is bad ref or indel ?
-        if len(ref) > 1 or newline[7].startswith("INDEL"): 
+        # skip indels
+        # -1 if could not find pattern "INDEL"
+        if len(ref) > 1 or newline[7].find("INDEL") != -1: 
             numINDEL +=1
             continue
         
         # QUAL: The Phred-scaled probability that a REF/ALT polymorphism exists.
         # QUAL: -10 * log (1-p)
         # it's not a very useful property for evaluating the quality of a variant call 
-        # FIXME: the cutoff for GATK ???
+        # FIXME: the cutoff for GATK ??? -> VQSR or Hardfilering first!
         if float(newline[5]) < qualCutoffForSamtools:
             numLowQual +=1
             continue
 
         ###find the entries for GT & PL
         # GATK
-        if newline[8] == 'GT:AD:DP:GQ:PL':
-            GTind, PLind = 0, 4
-        elif newline[8] == 'GT:AD:DP:GQ:PGT:PID:PL':
-            GTind, PLind = 0, 6
-        # samtools
-        elif newline[8] == "GT:PL:DP:DV:SP:DP4:DPR:GP:GQ":
-            GTind, PLind = 0, 1
-        else:
-            IDS = newline[8].split(":") 
-            GTind, PLind = -1, -1
-            for i in IDS:
-                if i == 'GT': GTind = i
-                if i == "PL": PLind = i
-
-            if (GTind == -1) | (PLind == -1):
-                sys.exit("Error! NOT PL or GT!") 
+        # if newline[8] == 'GT:AD:DP:GQ:PL':
+        #     GTind, PLind = 0, 4
+        # elif newline[8] == 'GT:AD:DP:GQ:PGT:PID:PL':
+        #     GTind, PLind = 0, 6
+        # # samtools
+        # elif newline[8] == "GT:PL:DP:DV:SP:DP4:DPR:GP:GQ":
+        #     GTind, PLind = 0, 1
+        # else:
+        IDS = newline[8].split(":") 
+        GTind, PLind = -1, -1
+        try:
+            GTind = IDS.index('GT')
+            PLind = IDS.index('PL')
+        except ValueError:
+            sys.exit("Error! PL or GT NOT Found!") 
         
         chrom = newline[0]
         pos = newline[1]  
@@ -115,10 +112,9 @@ def vcf2niehs(invcf, outdir, sstrain, chromosome, qual_samtools=50, heterzygote_
                 alleles[s] = "NN" # heterozyte -> NN
                 continue
             ## now this is supposed to be a homogyzous call. Check whether the call is of good quality
-            
-            # TODO: what index do here
+            # find GT
             GTs = [int(s) for s in GTs]
-            index = (GTs[0]+ 1) * (GTs[0] + 2) // 2 - 1 # 0 or 2
+            index = (GTs[0]+ 1) * (GTs[0] + 2) // 2 - 1 # 0,2
             PLs = strainFormats[PLind].split(",")
             # PLs -> ['0/0', '0/1', '1/1']
             PLs = [float(s) for s in PLs]
@@ -144,7 +140,6 @@ def vcf2niehs(invcf, outdir, sstrain, chromosome, qual_samtools=50, heterzygote_
 
         numGoodAlt = 0
         theGoodAlt = -1
-        # TODO: fixme
         for i, k in enumerate(hasAlt):
             if k == 1:
                 numGoodAlt +=1
@@ -164,16 +159,23 @@ def vcf2niehs(invcf, outdir, sstrain, chromosome, qual_samtools=50, heterzygote_
             D = f"SNP_{chrom}_{pos}"
             outline = f"{D}\t{D}\t{chrom}\t{D}\t{pos}\t.\t{ref}/{alt}\t{allAlleles}\n"
             outputdict[chrom].write(outline)
+            alleles_compact = ''.join([s[0] for s in alleles]).replace("N", "?")
+            outline_compact = f"{D}\t{chrom}\t{pos}\t{alleles_compact}\n"
+            output_compact[chrom].write(outline_compact)
             numGoodSNP += 1
         else:
             if numGoodAlt == 0:
                 numLowQual += 1
             else:
             ## multiple good alternatives found;
-                numMultiAlt +=1          
+                numMultiAlt +=1  
+        
+        if lineCount % 100000 == 0:
+            sys.stdout.write(f"Finished line: {lineCount}\n")        
 
     # close file
     for chrom, ouput in outputdict.items(): output.close()
+    for chrom, ouput in output_compact.items(): output.close()
 
     print(f"total: {totalVariant}, interested: {totalInterested}, notPass: {numNonPass}, " +\
         f"indels: {numINDEL}, lowQual: {numLowQual}, multiAlt: {numMultiAlt}, good: {numGoodSNP}")
