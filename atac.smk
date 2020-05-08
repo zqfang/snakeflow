@@ -17,13 +17,13 @@ with open("atac.accession.txt") as atac:
 
 #this is the name sorted bam, not coordinate sorted bam, samtools index only for coordiante sorted bam.
 BAM_DIR = "/data/bases/fangzq/MouseEpigenomeAtlas/bam"
-
+BLACKLIST = "/home/fangzq/genome/mouse/mm10-blacklist.v2.bed" 
 ## downsample from the chrM excluded bam files
 ALL_DOWNSAMPLE_BAM = expand("bam/{sample}.downsample.sorted.bam", sample = ALL_SAMPLES)
 ALL_DOWNSAMPLE_INDEX = expand("bam/{sample}.downsample.sorted.bam.bai", sample = ALL_SAMPLES)
 
 ALL_BIGWIG = expand("bigwig/{sample}.bw", sample = ALL_SAMPLES)
-ALL_PEAKS = expand("macs2/{sample}.macs2_peaks.broadPeak", sample = ALL_SAMPLES)
+ALL_PEAKS = expand("beds/{sample}.macs2_peaks.blacklist_removed.broadPeak", sample = ALL_SAMPLES)
 
 # ALL_QC = ["10multiQC/multiQC_log.html"]
 # ALL_ATAQV = expand("04aln/{sample}.sorted.bam.ataqv.json", sample = ALL_SAMPLES)
@@ -49,24 +49,26 @@ rule namesort_bam:
 rule remove_chrM_bam:
     input: 
         bam="bam/{sample}.sorted.bam",
-        #bai="bam/{sample}.sorted.bam.bai"
     output:
         bam="bam/{sample}.exclude_chrM.sorted.bam",
-        bai="bam/{sample}.exclude_chrM.sorted.bam.bai"
     log: "logs/{sample}.exclude_chrM_bam.log"
     threads: 6
     message: "excluding chrM from bam {input.bam} : {threads} threads"
     params: jobname = "{sample}"
 	shell:
-		"""
 		# remove duplicates and reads on chrM, coordinate sort the bam
 		# samblaster expects name sorted bamq
-		samtools view -h {input.bam} | samblaster --removeDups \
-		| grep -v -P '\tchrM\t' | samtools view -Sb -F 4 - \
-		| samtools sort -m 2G -@ {threads} -T {output.bam}.tmp -o {output.bam}
+		"samtools view -h {input.bam} | samblaster --removeDups "
+		"| grep -v -P '\tchrM\t' | samtools view -Sb -F 4 - " 
+		"| samtools sort -m 2G -@ {threads} -T {output.bam}.tmp -o {output.bam}"
 
-		samtools index {output.bam}
-		"""
+rule bam_index:
+    input: 
+        "bam/{sample}.exclude_chrM.sorted.bam"
+    output: 
+        "bam/{sample}.exclude_chrM.sorted.bam.bai"
+    shell: 
+        "samtools index {input}"
 
 ## consider how to reuse the rules.
 rule flagstat_bam:
@@ -127,33 +129,47 @@ rule callpeaks_macs2:
     params:
         name = "{sample}_macs2",
         jobname = "{sample}",
-        g =  'mm', ## hs, mm, ce, dm
+        g = 'mm', ## hs, mm, ce, dm
         pvalue = 1e-5,
         pvalue_broad = 1e-5
 
     message: "call_peaks macs2 {input}: {threads} threads"
+    shell: 
+        ## for macs2, when nomodel is set, --extsize is default to 200bp, 
+        ## this is the same as 2 * shift-size in macs14.
+        "macs2 callpeak -t {input[0]} "
+        "--keep-dup all -f BAMPE -g {params.g} "
+        "--outdir macs2 -n {params.name} -p {params.pvalue} "
+        "--broad --broad-cutoff {params.pvalue_broad} &> {log}"
+
+
+
+rule make_bigwigs:
+    input: 
+        "bam/{sample}.downsample.sorted.bam", 
+        "bam/{sample}.downsample.sorted.bam.bai"
+    output: 
+        "bigwig/{sample}.bw"
+    log: "logs/{sample}.makebw"
+    threads: 5
+    params: jobname = "{sample}"
+    message: "making bigwig for {input} : {threads} threads"
     shell:
-        """    
-        ## for macs2, when nomodel is set, --extsize is default to 200bp, this is the same as 2 * shift-size in macs14.
-        macs2 callpeak -t {input[0]} \
-            --keep-dup all -f BAMPE -g {params.g} \
-            --outdir macs2 -n {params.name} -p {params.pvalue} \
-            --broad --broad-cutoff {params.pvalue_broad} &> {log}
-        """
+    	# no window smoothing is done, for paired-end, bamCoverage will extend the length to the fragement length of the paired reads
+        "bamCoverage -b {input[0]} --ignoreDuplicates --skipNonCoveredRegions "
+        "--normalizeUsingRPKM -p {threads} --extendReads -o {output} 2> {log}"
 
 
 
-# rule make_bigwigs:
-#     input : "06aln_downsample/{sample}-downsample.sorted.bam", "06aln_downsample/{sample}-downsample.sorted.bam.bai"
-#     output: "07bigwig/{sample}.bw"
-#     log: "00log/{sample}.makebw"
-#     threads: 5
-#     params: jobname = "{sample}"
-#     message: "making bigwig for {input} : {threads} threads"
-#     shell:
-#         """
-    
-#     	# no window smoothing is done, for paired-end, bamCoverage will extend the length to the fragement length of the paired reads
-#         bamCoverage -b {input[0]} --ignoreDuplicates --skipNonCoveredRegions --normalizeUsingRPKM -p 5 --extendReads -o {output} 2> {log}
-
-#         """
+# ENCFF606PRC
+# ENCFF643SJB
+# ENCFF471PVN
+# ENCFF819UNG
+rule subtract_blacklist:
+    input:
+        bed = "macs2/{sample}_macs2_peaks.broadPeak",
+        blacklist= BLACKLIST,
+    output:
+        "beds/{sample}.macs2_peaks.blacklist_removed.broadPeak"
+    shell:
+        "sort -k1,1 -k2,2n {input} | bedtools subtract -a stdin -b {input.blacklist} -A > {output}"
