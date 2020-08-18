@@ -1,0 +1,21 @@
+# slurm_config.yaml - cluster configuration
+__default__:
+    partition: normal
+    time_min: "01:00:00" # time limit for each job
+    cpus: 1
+    mem_mb: 1000
+    #ntasks-per-node: 14 #Request n cores be allocated per node.
+    # output: a_name_for_my_job-%j.out
+    # error: a_name_for_my_job-%j.err
+
+strain2trait:
+    time_min: "30:00"
+
+annotateSNPs:
+    mem_mb: "8g"
+
+eblocks:
+    mem_mb: 4000
+
+ghmap:
+    mem_mb: 4000
