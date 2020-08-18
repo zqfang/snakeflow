@@ -9,7 +9,10 @@ def extract_gtf(gtf, gene_anno, tx2gene, threads):
     out2.write("tx_id\tgene_id\tgene_name\n")
     for line in open(gtf):
         if line.startswith('#'): continue
-        attr = dict(item.strip().split(' ')  for item in line.split('\t')[8].strip('\n').split(';') if item)
+        row = line.strip().split('\t')
+        #if row[4] != "gene": continue
+        attrs = row[8].split(';')
+        attr = dict(item.strip().split(' ')  for item in attrs if item)
         line_1st = attr['gene_id'].strip('\"')+'\t'+ attr['gene_name'].strip('\"')+'\t'
         line_2nd = attr['gene_type'].strip('\"')+'\n'
         line_out = line_1st + line_2nd
