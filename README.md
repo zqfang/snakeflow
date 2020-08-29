@@ -1,8 +1,17 @@
 # snakeflow
+My NGS workflows based on snakemake
 
-### RNA-Seq and ChIP-seq workflow based on snakemake
+**workflows include**:
+- RNA-seq (Salmon,hisat2)
+- ChIP-seq (MACS2)
+- ATAC-seq (MACS2)
+- CITE-seq (Antibody captured, 10X genomics)
+- Germline SNV calling (GATK, BCFtools)
+- Germline Structural Variant calling (Speedseq + svtools)
+
 
 ## Dependency
+
 * python 3
   - numpy
   - pandas
@@ -10,6 +19,9 @@
   - matplotlib
   - seaborn
   - gseapy
+  - macs2
+  - rseqc
+
 
 * hisat2, salmon
 * samtools, deeptools, bedtools
@@ -26,6 +38,10 @@
   - clusterProfiler
   - ChIPSeeker
   - EnsDb.Hsapiens.v86
+
+* cellranger
+* GATK (> 4.0)
+* Speedseq + svtools
 
 ## Installation
 

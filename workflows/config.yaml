@@ -77,5 +77,9 @@ BCFTOOLS:
     WORKSPACE: "/data/bases/fangzq/20200429_BCFTOOLS"
     qual: 50 
     heterzygote_cutoff: 20
+
+SPEEDSEQ_SV:
+    EXCLUDE_REGION: "../data/mouse.mm10.excl.tsv"
+
     
 
