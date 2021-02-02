@@ -1,4 +1,5 @@
-.snakemake
-.DS_Store
-.idea
-.vscode
+*.snakemake
+*.DS_Store
+*.idea
+*.vscode
+*.ipynb_checkpoints

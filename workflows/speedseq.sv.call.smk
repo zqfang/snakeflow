@@ -12,7 +12,7 @@ SAMPLES = ['129P2', '129S1', '129S5', 'AKR', 'A_J', 'B10',
 
 BAM_DIR= "/data/bases/fangzq/strains"
 GENOME = "/home/fangzq/genome/mouse/GRCm38_68.fa"
-SPEESEQ = "/home/fangzq/github/speedseq/bin/"
+SPEESEQ = "/home/fangzq/github/speedseq/bin"
 EXCLUDE = "/home/fangzq/github/snakeflow/data/mouse.mm10.excl.bed"
 
 ### use svtools env ####
@@ -24,8 +24,9 @@ EXCLUDE = "/home/fangzq/github/snakeflow/data/mouse.mm10.excl.bed"
 rule target:
     input: 
         #expand("bams/{sample}.realign.bam", sample=SAMPLES),
-        #"strains.analysis.sv.vcf.gz",
         "svtools/merged.sv.pruned.vcf.gz",
+        #"svtools/output.largesample.vcf.gz",
+        "svtools/merged.sv.pruned.annot.txt"
 
 rule realign:
     input:
@@ -113,7 +114,7 @@ rule svtools_lmerge:
     #conda: "envs/svtools.yaml"
     shell:
         "zcat {input} | svtools lmerge -i /dev/stdin -f 20 | "
-        "bigzip -c > {output}"
+        "bgzip -c > {output}"
 
 rule svtools_genotype:
     # genotype all samples for all variants present in the merged set
@@ -229,7 +230,7 @@ rule repeat_elements:
     shell:
         "curl -s http://hgdownload.cse.ucsc.edu/goldenPath/{params.genome_build}/database/rmsk.txt.gz "
         "| gzip -cdfq "
-        "| awk '{ gsub(\"^chr\", \"\", $6); if ($3<200) print $6,$7,$8,$12\"|\"$13\"|\"$11,$3,$10 }' OFS=\"\\t\" "
+        "| awk '{{ gsub(\"^chr\", \"\", $6); if ($3<200) print $6,$7,$8,$12\"|\"$13\"|\"$11,$3,$10 }}' OFS=\"\\t\" "
         "| sort -k1,1V -k2,2n -k3,3n "
         "| awk '$4~\"LINE\" || $4~\"SINE\" || $4~\"SVA\"' "
         "| bgzip -c > {output}"
@@ -322,9 +323,37 @@ rule svtools_classify_largesample:
         vcf="svtools/merged.sv.pruned.vcf.gz",
         repeatmasker="repeatMasker.recent.lt200millidiv.LINE_SINE_SVA.mm10.sorted.bed.gz",
         chrXcopy="strain.chrXnum.txt",
-    output: "output.largesample.vcf.gz"
+    output: "svtools/output.largesample.vcf.gz"
     # conda: "envs/svtools.yaml"
     shell:
         "zcat {input.vcf} |  svtools classify "
         "-g {input.chrXcopy} -a {input.repeatmasker} "
         "-m large_sample | bgzip -c > {output}"
+
+rule ensemble_vep:
+    input: "svtools/merged.sv.pruned.vcf.gz",
+    output: "svtools/merged.sv.pruned.annot.txt"
+    threads: 8
+    params:
+        genome_build="GRCm38",
+        species="mus_musculus",
+        BIN= "/home/fangzq/github/ensembl-vep"
+    shell:
+        "{params.BIN}/vep -i {input} -o {output} --tab -a {params.genome_build} --species {params.species} "
+        "--fork {threads} --offline --uniprot --cache --format vcf --force_overwrite -overlaps "
+        "--plugin TSSDistance --domains --plugin StructuralVariantOverlap "
+        "--plugin phenotypes --plugin miRNA --symbol "
+        "--nearest gene --regulatory --distance 5000 "
+        "--no_check_variants_order --dont_skip –max_sv_size 50000" # --check_svs 
+
+rule annotSV:
+    input: "svtools/merged.sv.pruned.vcf.gz",
+    output: "svtools/merged.sv.pruned.annotSV.tsv"
+    threads: 8
+    params:
+        genome_build="mm10",
+        species="mus_musculus",
+        BIN= "/home/fangzq/github/AnnotSV/bin"
+    shell:
+        "{params.BIN}/AnnotSV -SvinputFile {input} -genomeBuild {params.genome_build} "
+        "-outputFile {output} -overwrite -promoterSize 2000"

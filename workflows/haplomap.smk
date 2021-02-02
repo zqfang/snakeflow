@@ -31,14 +31,12 @@ with open(TRAIT_IDS, 'r') as t:
     IDS_ = t.read().strip().split()
     assert len(IDS_) >= 1
 ## skip run if already done
-pat = config['HBCGM']['WORKSPACE'] + "MPD_{ids}{sex}/chrX.results.txt"
+pat = config['HBCGM']['WORKSPACE'] + "MPD_{ids}/chrX.results.txt"
 IDS = []
 for mnum in IDS_:
-    found = []
-    for suf in ["","-f","-m"]:
-        found.append(os.path.exists(pat.format(ids = mnum, sex=suf)))
-    if not any(found):
-        IDS.append(mnum)
+    if os.path.exists(pat.format(ids = mnum)):
+        continue
+    IDS.append(mnum)
 
 
 CHROMOSOMES = [str(i) for i in range (1, 20)] + ['X'] # NO 'Y'

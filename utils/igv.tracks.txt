@@ -1,0 +1,532 @@
+,
+
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/129P2.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/129S1.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/129S5.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/A_J.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/AKR.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/B10.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/B_C.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/BPL.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/BPN.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/BTBR.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/BUB.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/C3H.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/C57BL10J.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/C57BL6NJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/C57BRcd.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/C57LJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/C58.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/CAST.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/CBA.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/CEJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/DBA1J.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/DBA.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/FVB.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/ILNJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/KK.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/LGJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/LPJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/MAMy.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/MOLF.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/MRL.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/NOD.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/NON.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/NOR.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/NUJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/NZB.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/NZO.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/NZW.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/PJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/PLJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/PWD.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/PWK.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/RBF.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/RFJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/RHJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/RIIIS.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/SEA.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/SJL.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/SMJ.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/SPRET.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/ST.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/SWR.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/TALLYHO.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+        
+        {
+            type: "annotation",
+                format: "bed",
+                sourceType: "file",
+                url: "/data/bases/fangzq/20200815_SV/igv/short/WSB.short.bed",
+                order: Number.MAX_VALUE,
+                visibilityWindow: 300000000,
+                displayMode: "EXPANDED"
+        }
+       

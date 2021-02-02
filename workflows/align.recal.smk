@@ -9,10 +9,10 @@ dbSNP = config['dbSNP']
 dbINDEL = config['dbINDEL']
 BAM_DIR = config['BAM_DIR']
 TMPDIR = config['TMPDIR']
-STRAINS = config['strains']
+STRAINS = config['STRAINS']
 
 #CHROMSOME = [ str(c) for c in range(1,20)] + ["X", "Y", "MT"]
-CHROMSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,10)]+ ["MT", "X", "Y"]
+CHROMSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,10)]+ ["X", "Y"]
 
 #outputs
 BAMS = expand("BAM/{sample}.marked.fixed.BQSR.bam", sample=STRAINS)
@@ -98,6 +98,7 @@ rule genome_dict:
 #            gatk IndexFeatureFile -F {input[1]}
 #         """
 
+## GATK HaplotypeCaller will assemble haplotype itself, you skip Recalibrate if use GATK 
 rule baseRecalibrate:
     input: 
         genome=GENOME,

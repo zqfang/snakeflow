@@ -7,10 +7,18 @@ My NGS workflows based on snakemake
 - ATAC-seq (MACS2)
 - CITE-seq (Antibody captured, 10X genomics)
 - Germline SNV calling (GATK, BCFtools)
-- Germline Structural Variant calling (Speedseq + svtools)
+- Germline Structural Variant calling 
+    - short-read: Speedseq + svtools
+    - long-read:
+        - Pacbio: ngmlr/minimap2 + sniffiles
 
 
 ## Dependency
+
+* General
+  - samtools, deeptools, bedtools
+  - fastqc, rseqc, multiqc, fastp
+  - graphviz
 
 * python 3
   - numpy
@@ -22,12 +30,6 @@ My NGS workflows based on snakemake
   - macs2
   - rseqc
 
-
-* hisat2, salmon
-* samtools, deeptools, bedtools
-* rMATS-turbo, rmats2sashimiplot
-* fastqc, rseqc, multiqc
-* graphviz
 * R
   - DESeq2
   - tximport
@@ -39,9 +41,21 @@ My NGS workflows based on snakemake
   - ChIPSeeker
   - EnsDb.Hsapiens.v86
 
-* cellranger
-* GATK (> 4.0)
-* Speedseq + svtools
+
+* Variant calling
+  - GATK (> 4.0)
+  - BCFtools
+  - Speedseq + svtools
+  - minimap2
+  - ngmlr
+  - sniffiles
+
+* RNA-seq
+  - hisat2, salmon
+  - rMATS-turbo, rmats2sashimiplot
+
+* Single cell genomics
+ - cellranger
 
 ## Installation
 

@@ -1,10 +1,4 @@
-
-# files
-GENOME: "/home/fangzq/genome/mouse/GRCm38_68.fa"
-dbSNP: "/home/fangzq/genome/mouse/mgp.v5.merged.snps_all.dbSNP142.sorted.vcf"
-dbINDEL: "/home/fangzq/genome/mouse/mgp.v5.merged.indels.dbSNP142.normed.vcf"
-BAM_DIR: "/data/bases/fangzq/strains"
-TMPDIR: "/home/fangzq/TMPDATA"
+### INPUT  
 # raw fastq files
 FASTQS:
     PATH: ""
@@ -14,72 +8,143 @@ FASTQS:
     R2: "([A-Z0-9-]+)_(L[0-9]{3})_R2_[0-9]{3}.fastq.gz"
 
 STRAINS: ['129P2', '129S1', '129S5', 'AKR', 'A_J', 'B10', 
-        'BPL', 'BPN', 'BTBR', 'BUB', 'B_C', 'C3H', 'C57BL10J',
+        'BPL', 'BPN', 'BTBR', 'BUB', 'BALB', 'C3H', 'C57BL10J',
         'C57BL6NJ', 'C57BRcd', 'C57LJ', 'C58', 'CBA', 'CEJ', 
         'DBA', 'DBA1J', 'FVB', 'ILNJ', 'KK', 'LGJ', 'LPJ', 
         'MAMy', 'MRL','NOD', 'NON', 'NOR', 'NUJ', 'NZB', 'NZO', 'NZW', 
         'PJ', 'PLJ', 'RFJ', 'RHJ', 'RIIIS', 'SEA', 'SJL', 'SMJ', 'ST', 'SWR', 'TALLYHO', 'RBF',
-        'CAST', 'MOLF', 'PWD','PWK', 'SPRET', 'WSB'] 
+        'CAST', 'MOLF', 'PWD','PWK', 'SPRET', 'WSB'] # the last 6 are wild-derived inbred strain
+
+BAM_DIR: "/data/bases/fangzq/strains"
+
+## genome fasta
+GENOME: "/home/fangzq/genome/mouse/GRCm38_68.fa" # mm10
+## wget ftp://ftp.ncbi.nih.gov/snp/organisms/archive/mouse_10090/VCF/00-All.vcf.gz -O mouse.dbsnp.vcf.gz
+dbSNP: "/home/fangzq/genome/mouse/mouse.dbsnp.vcf.gz" # mm10 
+
 
 HBCGM:
     # working directory
-    WORKSPACE: "/scratch/users/fangzq/20200816"
+    WORKSPACE: "/mnt/synology_share/HAPLOMAP_TEST"
     # path to haplomap
-    BIN: "/scratch/users/fangzq/HBCGM/build/bin"
+    BIN: "/home/fangzq/github/HBCGM/build/bin"
     
-    # ghmap input
+    ######### ghmap input ######### 
     # MPD trait ids 
-    TRAIT_IDS: "/scratch/users/fangzq/mpd_clean.split.90.txt"
+    TRAIT_IDS: "/data/bases/shared/haplomap/new_test_ids.txt"
     # set to true if input individual animal data. Default: use strain means.   
     USE_RAWDATA: false 
     # use custom database instead of using MPD API to get data.
     TRAIT_DATA:  "" # default: MPD database
-    # genetic relation file from PLink output
-    GENETIC_REL: "/scratch/users/fangzq/PELTZ_20200429/mouse54_grm.rel"
-    GENETIC_REL_ID: "/scratch/users/fangzq/PELTZ_20200429/mouse54_grm.rel.id"
-    # gene expression file
-    GENE_EXPRS: "/scratch/users/fangzq/PELTZ_20200429/mus.compact.exprs.txt"
-    # open chromatin regions to annotate haploblocks.
-    ATAC_PEAKS: "/scratch/users/fangzq/MouseEpigenomeAtlas/beds/*.blacklist_removed.broadPeak"
 
-    # eblock input
+    # genetic relation file from PLink output
+    GENETIC_REL: "/data/bases/shared/haplomap/PELTZ_20200429/mouse54_grm.rel"
+    GENETIC_REL_ID: "/data/bases/shared/haplomap/PELTZ_20200429/mouse54_grm.rel.id"
+    # gene expression file
+    GENE_EXPRS: "/data/bases/shared/haplomap/PELTZ_20200429/mus.compact.exprs.txt"
+    
+    ######### eblock input ######### 
     # strains metadata. 
-    STRAIN_ANNO: "/scratch/users/fangzq/PELTZ_20200429/strains.metadata.csv"
+    STRAIN_ANNO: "/data/bases/shared/haplomap/PELTZ_20200429/strains.metadata.csv"
     # path to SNP database
-    SNPS_DIR: "/scratch/users/fangzq/PELTZ_20200429/SNPs"
+    SNPS_DIR: "/data/bases/shared/haplomap/PELTZ_20200429/SNPs"
     # PATH to SNP annotations for all genes
-    ANNOVAR: "/scratch/users/fangzq/PELTZ_20200429/SNP_Annotation" 
+    ANNOVAR: "/data/bases/shared/haplomap/PELTZ_20200429/SNP_Annotation" 
     # snp, geneid,genename mapping
-    KNOWNGENE_META: "/scratch/users/fangzq/PELTZ_20200429/SNP_Annotation/mm10_kgXref.txt" 
-    KNOWNGENE: "/scratch/users/fangzq/PELTZ_20200429/SNP_Annotation/mm10_knownGene.txt" 
+    KNOWNGENE_META: "/data/bases/shared/haplomap/PELTZ_20200429/SNP_Annotation/mm10_kgXref.txt" 
+    KNOWNGENE: "/data/bases/shared/haplomap/PELTZ_20200429/SNP_Annotation/mm10_knownGene.txt" 
+
+    ######### others #########
+    # open chromatin regions to annotate haploblocks.
+    # ATAC_PEAKS: "/scratch/users/fangzq/MouseEpigenomeAtlas/beds/*.blacklist_removed.broadPeak"
+
+
+## ensemble-vep
+VEP: 
+    BIN: "/home/fangzq/github/ensembl-vep"
+    CACHE_DIR: "/home/fangzq/.vep" # offline mode
+    GENOME_BUILD: " -a GRCm38 --species mus_musculus " # specify organism 
+
+
+BCFTOOLS:
+    WORKSPACE: "/data/bases/fangzq/20200429_BCFTOOLS"
+    ## variant filtering
+    qual: 50 
+    phred_likelihood_diff: 20
+    allele_depth: 3 # min AD of all samples
+    allele_mindepth_ratio: 0.1  # min(AD) / min(DP) ratio of all samples
+    strand_bias_pvalue: 0.0001 # pvalue
+    mapping_quality: 20
+
+    # MinDP (Minimum read depth):   5 (Indels) and 3 (SNPs)
+    # MaxDP (Maximum read depth):  You have a low coverage data, so I would set it to 100. Normally it is 3 times the average coverage.
+    # BaseQualBias (Minimum p-value for baseQ bias):  0
+    # MinMQ (Minimum RMS mapping quality for SNPs):  20 or 30 (to be more stringent)
+    # Qual (Minimum value of QUAL field):  15 or 20
+
+    # StrandBias (Minimum p-value for strand bias):  0.0001
+    # EndDistBias (Minimum p-value for end distance bias):  0.0001
+    # MapQualBias (Minimum p-value for mapQ bias):  0
+    # VBD (Minimum Variant Distance Bias):  0 (More relevant to RNA-seq reads)
+
+    # GapWin (Window size for filtering adjacent gaps):  30 bp
+    # SnpGap (SNP within INT bp around a gap to be filtered):   20 bp
+    # SNPcluster (number of snps within a region): I usually drop all the snps if there are more than 3 snps within 10 bp. 
 
 
 GATK:
     WORKSPACE: "/data/bases/fangzq/20200430_GATK"
+    # gatk --tempdir
+    TMPDIR: "/home/fangzq/TMPDATA"
+    ## variant filtering
     qual: 50 
-    heterzygote_cutoff: 20
-    # for hardfilering, no implemented yet
+    phred_likelihood_diff: 20
+    allele_depth: 3 # min AD of all samples
+    allele_mindepth_ratio: 0.1  # min(AD) / min(DP) ratio of all samples
+    strand_bias_pvalue: 0.0001 # pvalue
+    mapping_quality: 20
+
+    ### for VQSR
+    ## sanger mouse genome progjects, mm10
+    dbSNP: "/home/fangzq/genome/mouse/mgp.v5.merged.snps_all.dbSNP142.sorted.vcf"
+    dbINDEL: "/home/fangzq/genome/mouse/mgp.v5.merged.indels.dbSNP142.normed.vcf"
+
+    ### for hardfilering
+    # GATK recommended filters for human genetics: for non-reference variant db
     snp:
-        - "-filter 'QD < 2.0' --filter-name 'QD2' " 
+        - "-filter 'QD < 2.0' --filter-name 'QD2' " # (Variant Quality / depth of non-ref samples)
         - "-filter 'QUAL < 30.0' --filter-name 'QUAL30' " 
         - "-filter 'SOR > 3.0' --filter-name 'SOR3' " 
-        - "-filter 'FS > 60.0' --filter-name 'FS60' " 
-        - "-filter 'MQ < 40.0' --filter-name 'MQ40' " 
-        - "-filter 'MQRankSum < -12.5' --filter-name 'MQRankSum-12.5' " 
-        - "-filter 'ReadPosRankSum < -8.0' --filter-name 'ReadPosRankSum-8' " 
+        - "-filter 'FS > 60.0' --filter-name 'FS60' " # FS (Phred score Fisher’s test p-value for strand bias)
+        - "-filter 'MQ < 40.0' --filter-name 'MQ40' " # (Mapping Quality)
+        - "-filter 'MQRankSum < -12.5' --filter-name 'MQRankSum-12.5' " # (Mapping quality of Reference reads vs ALT reads )
+        - "-filter 'ReadPosRankSum < -8.0' --filter-name 'ReadPosRankSum-8' " #  (Distance of ALT reads from the end of the reads)
+        - "-filter 'HaplotypeScore > 13.0' --filter-name 'HaplotypeScore' " # (Consistency of the 'active' site with at most two segregating haplotype)
     indel:
         - "-filter 'QD < 2.0' --filter-name 'QD2' " 
         - "-filter 'QUAL < 30.0' --filter-name 'QUAL30' " 
         - "-filter 'FS > 200.0' --filter-name 'FS200' " 
         - "-filter 'ReadPosRankSum < -20.0' --filter-name 'ReadPosRankSum-20' " 
+        - "-filter 'InbreedingCoeff < 0.8' --filter-name 'InbreedingCoeff-.8' " # warning !!!
+    ### Note that the InbreedingCoeff statistic is a population-level calculation 
+    ### that is only available with 10 or more samples. 
+    ### If you have fewer samples you will need to omit that particular filter statement.
+    ### The maximum DP (depth) filter only applies to whole genome data
 
-BCFTOOLS:
-    WORKSPACE: "/data/bases/fangzq/20200429_BCFTOOLS"
-    qual: 50 
-    heterzygote_cutoff: 20
+    ## VQSR example for mouse
+    # Next we used the Variant Quality Score Recalibrator (VQSR) from the GATK for variant filtration, where
+    # we used the set of variants present on the Affymetrix Mouse Diversity Genotyping Array (PMID: 19668205) as a set
+    # of true positive variation5. We used the annotations “HRun”, “HaplotypeScore”, “DP”, “QD”,
+    # “FS”, “MQ”, “MQRankSum”, and “ReadPosRankSum” to train the VQSR, and we used a
+    # sensitivity threshold of 90% for the true positive set to define the set of newly genotyped sites
+    # that passed VQSR filtration.
 
-SPEEDSEQ_SV:
-    EXCLUDE_REGION: "../data/mouse.mm10.excl.tsv"
+    ## other useful variant filtering metric
+    # Total read depth of variant site ≤2 × average genomic read depth
+    # It has no more than two alleles
+    # Variants are not in phase with other variants (GTAK  HaplotypeCaller)
+    # Variants do not have more than one read whose read pair was aligned to another chromosome
 
+    
     
 
