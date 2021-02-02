@@ -51,6 +51,7 @@ rule Coverage:
     shell:
         "samtools depth -a --reference {input.genome} {input.bam}  | "
         " awk -v sample={params.samples} '{{ for (i=3;i<=NF;i++) {{ sum[i]+=$i; if($i>0) total[i]+=1;}} }} "
-        " END {{ split(sample,arr,\",\"); for (i in sum) print arr[i], sum[i]/total, sum[i]/NR, total[i]/NR }}' "
+        " END {{ split(sample,arr,\",\"); print \"Sample\tDepthOfCovered\tDepthOfGenome\tBreath\"; " 
+        " for (i in sum) print arr[i], sum[i]/total[i], sum[i]/NR, total[i]/NR*100 }}' "
         " > {output} "
         
