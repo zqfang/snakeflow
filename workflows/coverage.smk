@@ -50,8 +50,8 @@ rule Coverage:
         samples=",".join(STRAINS),
     shell:
         "samtools depth -a --reference {input.genome} {input.bam}  | "
-        " awk -v sample={params.samples} '{{ for (i=3;i<=NF;i++) {{ sum[i]+=$i; if($i>0) total[i]+=1;}} }} "
-        " END {{ split(sample,arr,\",\"); print \"Sample\tDepthOfCovered\tDepthOfGenome\tBreath\"; " 
+        " awk -v sample={params.samples} '{{ for (i=3;i<=NF;i++) {{ sum[i-2]+=$i; if($i>0) total[i-2]+=1;}} }} "
+        " END {{ split(sample,arr,\",\"); print \"Sample DepthOfCovered DepthOfGenome Breath\"; " 
         " for (i in sum) print arr[i], sum[i]/total[i], sum[i]/NR, total[i]/NR*100 }}' "
         " > {output} "
         
