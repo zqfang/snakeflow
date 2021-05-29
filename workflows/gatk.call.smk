@@ -13,10 +13,10 @@ STRAINS = sorted(config['STRAINS'])
 #CHROMOSOME = [ str(c) for c in range(1,20)] + ["X", "Y", "MT"]
 CHROMOSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,10)]+ ["X", "Y"]
 # OUTPUT
-VCF_VQSR = expand("VCFs/combined.chr{i}.vqsr.vcf.gz", i=CHROMOSOME)
-VCF_HFILTER_PASS = expand("VCFs/combined.chr{i}.hardfilter.vcf.gz", i=CHROMOSOME)
-VEP_ANNO = expand("VEP/combined.chr{i}.hardfilter.pass.vep.txt.gz", i=CHROMOSOME)
-VCF_RAW = expand("VCFs/combined.chr{i}.raw.vcf.gz", i=CHROMOSOME)
+VCF_VQSR = expand("VCFs/chr{i}.vqsr.vcf.gz", i=CHROMOSOME)
+VCF_HFILTER_PASS = expand("VCFs/chr{i}.hardfilter.vcf.gz", i=CHROMOSOME)
+VEP_ANNO = expand("VEP/chr{i}.hardfilter.pass.vep.txt.gz", i=CHROMOSOME)
+VCF_RAW = expand("VCFs/chr{i}.raw.vcf.gz", i=CHROMOSOME)
 
 SNPDB = expand("SNPs/chr{i}.txt", i=CHROMOSOME)
 
@@ -71,8 +71,8 @@ rule concatGVCFs:
         gvcf=["GVCF/%s.chr{i}.raw.g.vcf.gz"%s for s in STRAINS],
         gvcfi=["GVCF/%s.chr{i}.raw.g.vcf.gz.tbi"%s for s in STRAINS]
     output:
-        gvcf=temp("GVCF/combined.chr{i}.g.vcf.gz"),
-        gvcfi=temp("GVCF/combined.chr{i}.g.vcf.gz.tbi")
+        gvcf=temp("GVCF/chr{i}.g.vcf.gz"),
+        gvcfi=temp("GVCF/chr{i}.g.vcf.gz.tbi")
     params:
         gvcf=" --variant ".join(["GVCF/%s.chr{i}.raw.g.vcf.gz"%s for s in STRAINS]),
         java_ops="-Xmx8G -Djava.io.tmpdir=%s"%config['GATK']['TMPDIR']
@@ -85,12 +85,12 @@ rule concatGVCFs:
 # NOTE：GATK 相比于samtools 更容易找到杂合突变
 rule jointCalling:
     input: 
-        gvcf="GVCF/combined.chr{i}.g.vcf.gz",
-        gvcfi="GVCF/combined.chr{i}.g.vcf.gz.tbi",
+        gvcf="GVCF/chr{i}.g.vcf.gz",
+        gvcfi="GVCF/chr{i}.g.vcf.gz.tbi",
         genome=GENOME
     output: 
-        vcf=protected("VCFs/combined.chr{i}.raw.vcf.gz"),
-        vcfi=protected("VCFs/combined.chr{i}.raw.vcf.gz.tbi"),
+        vcf=protected("VCFs/chr{i}.raw.vcf.gz"),
+        vcfi=protected("VCFs/chr{i}.raw.vcf.gz.tbi"),
     params:
         java_ops= "-Xmx16G -Djava.io.tmpdir=%s"%config['GATK']['TMPDIR']
     log: "logs/chr{i}.GenotypeGVCFs.log"
@@ -104,16 +104,16 @@ rule jointCalling:
 # for non-human, better to do is hardfilering
 rule variantRecalSNPs:
     input: 
-        vcf="VCFs/combined.chr{i}.raw.vcf.gz",
-        vcfi="VCFs/combined.chr{i}.raw.vcf.gz.tbi",
+        vcf="VCFs/chr{i}.raw.vcf.gz",
+        vcfi="VCFs/chr{i}.raw.vcf.gz.tbi",
         genome=GENOME,
     output: 
-        recal="VCFs/combined.chr{i}.snp.Recal",
-        tranches= "VCFs/combined.chr{i}.snp.tranches",
-        rscript= "VCFs/combined.chr{i}.snp.R", 
+        recal="VCFs/chr{i}.snp.Recal",
+        tranches= "VCFs/chr{i}.snp.tranches",
+        rscript= "VCFs/chr{i}.snp.R", 
     params:
         dbsnp="snps,known=true,training=true,truth=true,prior=2.0:"+config['GATK']['dbSNP'],  
-    log: "logs/combined.chr{i}.snp.Recal.log"   
+    log: "logs/chr{i}.snp.Recal.log"   
     shell:
         "gatk VariantRecalibrator -mode SNP "
         "-an QD -an MQ -an MQRankSum -an ReadPosRankSum -an FS -an SOR -an DP "
@@ -124,15 +124,15 @@ rule variantRecalSNPs:
 rule applyVQSR4SNPs:
     input:
         genome=GENOME,
-        vcf="VCFs/combined.chr{i}.raw.vcf.gz",
-        vcfi="VCFs/combined.chr{i}.raw.vcf.gz.tbi",
-        recal="VCFs/combined.chr{i}.snp.Recal",
-        tranches= "VCFs/combined.chr{i}.snp.tranches",
-        rscript= "VCFs/combined.chr{i}.snp.R",        
+        vcf="VCFs/chr{i}.raw.vcf.gz",
+        vcfi="VCFs/chr{i}.raw.vcf.gz.tbi",
+        recal="VCFs/chr{i}.snp.Recal",
+        tranches= "VCFs/chr{i}.snp.tranches",
+        rscript= "VCFs/chr{i}.snp.R",        
     output:
-        vcf=temp("VCFs/combined.chr{i}.snp.VQSR.vcf.gz"),
-        vcfi=temp("VCFs/combined.chr{i}.snp.VQSR.vcf.gz.tbi"),
-    log: "logs/combined.chr{i}.snp.VQSR.log"
+        vcf=temp("VCFs/chr{i}.snp.VQSR.vcf.gz"),
+        vcfi=temp("VCFs/chr{i}.snp.VQSR.vcf.gz.tbi"),
+    log: "logs/chr{i}.snp.VQSR.log"
     shell:
         "gatk ApplyVQSR -mode SNP "
         "-R {input.genome} -V {input.vcf} -O {output} "
@@ -143,18 +143,18 @@ rule applyVQSR4SNPs:
 
 rule variantRecalINDELs:
     input: 
-        vcf="VCFs/combined.chr{i}.raw.vcf.gz",
-        vcfi="VCFs/combined.chr{i}.raw.vcf.gz.tbi",
+        vcf="VCFs/chr{i}.raw.vcf.gz",
+        vcfi="VCFs/chr{i}.raw.vcf.gz.tbi",
         genome=GENOME,
     output: 
-        recal ="VCFs/combined.chr{i}.indel.Recal",
-        tranches = "VCFs/combined.chr{i}.indel.tranches",
-        rscript = "VCFs/combined.chr{i}.indel.plots.R",
+        recal ="VCFs/chr{i}.indel.Recal",
+        tranches = "VCFs/chr{i}.indel.tranches",
+        rscript = "VCFs/chr{i}.indel.plots.R",
     params:
         #format: "{},known={},training={},truth={},prior={}:{}"
         dbindel="indels,known=true,training=true,truth=true,prior=12.0:"+config['GATK']['dbINDEL'],
         dbsnp="snps,known=true,training=true,truth=true,prior=2.0:"+config['GATK']['dbSNP'], 
-    log: "logs/combined.chr{i}.indel.Recal.log"
+    log: "logs/chr{i}.indel.Recal.log"
     shell:
         "gatk VariantRecalibrator -mode INDEL "
         "--max-gaussians 4"
@@ -167,15 +167,15 @@ rule variantRecalINDELs:
 rule applyVQSR4INDEL:
     input:
         genome = GENOME,
-        vcf = "VCFs/combined.chr{i}.raw.vcf.gz",
-        vcfi= "VCFs/combined.chr{i}.raw.vcf.gz.tbi",
-        recal = "VCFs/combined.chr{i}.indel.Recal",
-        tranches = "VCFs/combined.chr{i}.indel.tranches",
-        rscript = "VCFs/combined.chr{i}.indel.plots.R", 
+        vcf = "VCFs/chr{i}.raw.vcf.gz",
+        vcfi= "VCFs/chr{i}.raw.vcf.gz.tbi",
+        recal = "VCFs/chr{i}.indel.Recal",
+        tranches = "VCFs/chr{i}.indel.tranches",
+        rscript = "VCFs/chr{i}.indel.plots.R", 
     output:
-        vcf=temp("VCFs/combined.chr{i}.indel.VQSR.vcf.gz"),
-        vcfi=temp("VCFs/combined.chr{i}.indel.VQSR.vcf.gz.tbi"),
-    log: "logs/combined.chr{i}.indel.VQSR.log"
+        vcf=temp("VCFs/chr{i}.indel.VQSR.vcf.gz"),
+        vcfi=temp("VCFs/chr{i}.indel.VQSR.vcf.gz.tbi"),
+    log: "logs/chr{i}.indel.VQSR.log"
     shell:
         "gatk ApplyVQSR -mode INDEL "
         "-R {input.genome} -V {input.vcf} -O {output.vcf} "
@@ -186,13 +186,13 @@ rule applyVQSR4INDEL:
 
 rule mergeVQSRVCFs:
     input:
-        snp = "VCFs/combined.{chrom}.snp.VQSR.vcf.gz",
-        snpi = "VCFs/combined.{chrom}.snp.VQSR.vcf.gz.tbi",
-        indel = "VCFs/combined.{chrom}.indel.VQSR.vcf.gz",
-        indeli = "VCFs/combined.{chrom}.indel.VQSR.vcf.gz.tbi",
+        snp = "VCFs/{chrom}.snp.VQSR.vcf.gz",
+        snpi = "VCFs/{chrom}.snp.VQSR.vcf.gz.tbi",
+        indel = "VCFs/{chrom}.indel.VQSR.vcf.gz",
+        indeli = "VCFs/{chrom}.indel.VQSR.vcf.gz.tbi",
     output:
-        vcf=protected("VCFs/combined.{chrom}.vqsr.vcf.gz"),
-        vcfi=protected("VCFs/combined.{chrom}.vqsr.vcf.gz.tbi")
+        vcf=protected("VCFs/{chrom}.vqsr.vcf.gz"),
+        vcfi=protected("VCFs/{chrom}.vqsr.vcf.gz.tbi")
     shell:
         "gatk MergeVcfs -I {input.snp} -I {input.indel} "
         "-O {output.vcf} 2>/dev/null"
@@ -201,23 +201,23 @@ rule mergeVQSRVCFs:
 ################# Hard filering ######################
 rule selectSNPs:
     input: 
-        vcf="VCFs/combined.{chrom}.raw.vcf.gz",
-        vcfi="VCFs/combined.{chrom}.raw.vcf.gz.tbi",
+        vcf="VCFs/{chrom}.raw.vcf.gz",
+        vcfi="VCFs/{chrom}.raw.vcf.gz.tbi",
     output: 
-        vcf=temp("VCFs/combined.{chrom}.snp.vcf.gz"), # snp only, before filter
-        vcfi=temp("VCFs/combined.{chrom}.snp.vcf.gz.tbi"), # 
+        vcf=temp("VCFs/{chrom}.snp.vcf.gz"), # snp only, before filter
+        vcfi=temp("VCFs/{chrom}.snp.vcf.gz.tbi"), # 
     shell:
         "gatk SelectVariants -select-type SNP " 
         "-V {input.vcf} -O {output.vcf} 2>/dev/null"
 
 rule hardFilterSNPs:
     input: 
-        vcf="VCFs/combined.{chrom}.snp.vcf.gz",
-        vcfi="VCFs/combined.{chrom}.snp.vcf.gz.tbi"
+        vcf="VCFs/{chrom}.snp.vcf.gz",
+        vcfi="VCFs/{chrom}.snp.vcf.gz.tbi"
     output: 
-        vcf=temp("VCFs/combined.{chrom}.snp.filter.vcf.gz"),
-        vcfi=temp("VCFs/combined.{chrom}.snp.filter.vcf.gz.tbi"),
-    log: "logs/combined.{chrom}.snp.filter.log"
+        vcf=temp("VCFs/{chrom}.snp.filter.vcf.gz"),
+        vcfi=temp("VCFs/{chrom}.snp.filter.vcf.gz.tbi"),
+    log: "logs/{chrom}.snp.filter.log"
     shell:
         "gatk VariantFiltration "
         "-filter 'QD < 2.0' --filter-name 'QD2' " 
@@ -231,23 +231,23 @@ rule hardFilterSNPs:
 
 rule selectINDELs:
     input: 
-        vcf="VCFs/combined.{chrom}.raw.vcf.gz",
-        vcfi="VCFs/combined.{chrom}.raw.vcf.gz.tbi",
+        vcf="VCFs/{chrom}.raw.vcf.gz",
+        vcfi="VCFs/{chrom}.raw.vcf.gz.tbi",
     output: 
-        vcf=temp("VCFs/combined.{chrom}.indel.vcf.gz"),
-        vcfi=temp("VCFs/combined.{chrom}.indel.vcf.gz.tbi"),
+        vcf=temp("VCFs/{chrom}.indel.vcf.gz"),
+        vcfi=temp("VCFs/{chrom}.indel.vcf.gz.tbi"),
     shell:
         "gatk SelectVariants -select-type INDEL " 
         "-V {input.vcf} -O {output.vcf} 2>/dev/null "   
 
 rule hardFilterINDELs:
     input: 
-        vcf="VCFs/combined.{chrom}.indel.vcf.gz",
-        vcfi="VCFs/combined.{chrom}.indel.vcf.gz.tbi",
+        vcf="VCFs/{chrom}.indel.vcf.gz",
+        vcfi="VCFs/{chrom}.indel.vcf.gz.tbi",
     output: 
-        vcf=temp("VCFs/combined.{chrom}.indel.filter.vcf.gz"),
-        vcfi=temp("VCFs/combined.{chrom}.indel.filter.vcf.gz.tbi"),
-    log: "logs/combined.{chrom}.indel.filter.log"
+        vcf=temp("VCFs/{chrom}.indel.filter.vcf.gz"),
+        vcfi=temp("VCFs/{chrom}.indel.filter.vcf.gz.tbi"),
+    log: "logs/{chrom}.indel.filter.log"
     shell:
         "gatk VariantFiltration " 
         "-filter 'QD < 2.0' --filter-name 'QD2' " 
@@ -258,13 +258,13 @@ rule hardFilterINDELs:
 
 rule mergeHardVCFs:
     input:
-        snp= "VCFs/combined.{chrom}.snp.filter.vcf.gz",
-        snpi= "VCFs/combined.{chrom}.snp.filter.vcf.gz.tbi",
-        indel= "VCFs/combined.{chrom}.indel.filter.vcf.gz",
-        indeli= "VCFs/combined.{chrom}.indel.filter.vcf.gz.tbi",
+        snp= "VCFs/{chrom}.snp.filter.vcf.gz",
+        snpi= "VCFs/{chrom}.snp.filter.vcf.gz.tbi",
+        indel= "VCFs/{chrom}.indel.filter.vcf.gz",
+        indeli= "VCFs/{chrom}.indel.filter.vcf.gz.tbi",
     output: 
-        vcf=protected("VCFs/combined.{chrom}.hardfilter.vcf.gz"),
-        vcfi=protected("VCFs/combined.{chrom}.hardfilter.vcf.gz.tbi")
+        vcf=protected("VCFs/{chrom}.hardfilter.vcf.gz"),
+        vcfi=protected("VCFs/{chrom}.hardfilter.vcf.gz.tbi")
     shell:
         "gatk MergeVcfs -I {input.snp} -I {input.indel} "
         "-O {output.vcf} 2>/dev/null "
@@ -279,7 +279,7 @@ rule strainOrder:
 rule snp2NIEHS:
     input:  
         strain = "strain.order.snpdb.txt",
-        vcf = "VCFs/combined.chr{i}.hardfilter.vcf.gz",
+        vcf = "VCFs/chr{i}.hardfilter.vcf.gz",
     output: 
         protected("SNPs/chr{i}.txt")
     params:
@@ -290,7 +290,7 @@ rule snp2NIEHS:
         mq = config['GATK']['mapping_quality'],
         sb = config['GATK']['strand_bias_pvalue'], 
         BIN = config['HBCGM']['BIN']# path to haplomap binary
-    log: "logs/combined.chr{i}.snp2niehs.log"
+    log: "logs/chr{i}.snp2niehs.log"
     shell:
         # MARK: bcftools view -v snps won't work for GATK VCFs, 
         # haplomap niehs will handle indels
@@ -303,12 +303,12 @@ rule snp2NIEHS:
 ## only do this for VEP input
 # rule selectPASS:
 #     input: 
-#         vcf="VCFs/combined.{chrom}.hardfilter.vcf.gz",
-#         vcfi="VCFs/combined.{chrom}.hardfilter.vcf.gz.tbi",
+#         vcf="VCFs/{chrom}.hardfilter.vcf.gz",
+#         vcfi="VCFs/{chrom}.hardfilter.vcf.gz.tbi",
 #         genome=GENOME
 #     output: 
-#         temp("VCFs/combined.{chrom}.hardfilter.pass.vcf.gz"),
-#         temp("VCFs/combined.{chrom}.hardfilter.pass.vcf.gz.tbi")
+#         temp("VCFs/{chrom}.hardfilter.pass.vcf.gz"),
+#         temp("VCFs/{chrom}.hardfilter.pass.vcf.gz.tbi")
 #     shell:
 #         "gatk SelectVariants -R {input.genome} -V {input.vcf} -O {output[0]} "
 #         " -select 'vc.isNotFiltered()' 2>/dev/null"
@@ -316,9 +316,9 @@ rule snp2NIEHS:
 rule variantEeffectPrediction:
     """emsemble-vep"""
     input: 
-        vcf="VCFs/combined.{chrom}.hardfilter.vcf.gz",
+        vcf="VCFs/{chrom}.hardfilter.vcf.gz",
         reference=GENOME,
-    output: "VEP/combined.{chrom}.hardfilter.pass.vep.txt.gz"
+    output: "VEP/{chrom}.hardfilter.pass.vep.txt.gz"
     params:
         #genome_build = " -a GRCm38 --species mus_musculus ",
         genome_build = config['VEP']['GENOME_BUILD'],

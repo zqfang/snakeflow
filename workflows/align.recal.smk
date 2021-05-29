@@ -50,7 +50,7 @@ rule bwa_men:
     params:
         # PL has to be one of ILLUMINA，SLX，SOLEXA，SOLID，454，LS454，COMPLETE，
         # PACBIO，IONTORRENT，CAPILLARY，HELICOS, or UNKNOWN
-        # ID：输入reads集的ID号； LB： reads集的文库名； SM：样本名称； PL：测序平台
+        # ID：input read group's ID； LB： read group's library name； SM：sample name； PL：sequencing platform
         RG="@RG\tID:SAMPLE_ID\tPL:illumina\tSM:{sample}"
     shell:
         "bwa mem -t {threads} -R '{param.RG}' {input.index} "
