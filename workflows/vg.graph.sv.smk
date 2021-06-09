@@ -1,5 +1,6 @@
 
-import os 
+import os, glob
+import pysam
 
 ## see the tutorial here: 
 ## https://github.com/vgteam/vg/wiki/Working-with-a-whole-genome-variation-graph
@@ -10,12 +11,14 @@ import os
 workdir: "/data/bases/fangzq/20200815_SV/PacBio_project"
 THREADS = 48
 GENOME = "/home/fangzq/genome/mouse/GRCm38_68.fa"
-SAMPLES =  ['BTBR'] #["BALB","SJL","129S1","AJ", "C57BL6J", "BTBR"] # ["SJL","129S1","BALB"] #
+VCF_5_STRAIN = "/data/bases/fangzq/20200815_SV/PacBio_project/VCFs/merged_gt_SURVIVOR_1kbpdist.filter.vcf"
+VCF_DELETION = "merged_deletion.vcf"
+SAMPLES =  [ "BTBR"] #, "BALB","SJL","129S1","AJ", "BTBR"] # ["SJL","129S1","BALB"] #"C57BL6J",
 #CHROMSOME = [ str(c) for c in range(1,20)] + ["X", "Y", "MT"]
 CHROMOSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,10)]+ ["X"]
-VG_BAMS = expand("vg/{sample}.aln.bam", sample=SAMPLES)
-VG = expand("vg/{sample}.{g}", sample=SAMPLES, g=['vg','xg','gcsa'])
+VG = expand("vg/merged.deletion.{g}", sample=SAMPLES, g=['vg','xg','gcsa'])
 GT = expand("vg/{sample}.genotypes.vcf", sample=SAMPLES)
+
 
 ######################################################################################################3
 rule target:
@@ -30,13 +33,13 @@ rule vcf_prepared:
     """
     input:
         genome = GENOME,
-        vcf = "{sample}.filtered.vcf",
+        vcf = VCF_5_STRAIN,
     output:
-        vcf = "{sample}.deletion.vcf"
+        vcf = VCF_DELETION,
     run:
         vcf = input.vcf
         genome = pysam.FastaFile(input.genome)
-        outname = vcf.replace("filtered", "deletion")
+        outname = output.vcf
         outfile = open(output.vcf,'w')
         result = []
         with open(vcf) as v:
@@ -52,8 +55,8 @@ rule vcf_prepared:
                 info = dict(item.strip().split("=")  for item in line[7].strip('\n').split(';') if item.find("=") >= 0)
                 end = info['END']
                 if chrom in ["Y", "MT"]: continue 
-                if float(info['AF']) < 0.8: continue
-                if int(info['SVLEN']) > 10000: continue
+                #if float(info['AF']) < 0.8: continue
+                if 50 < int(info['SVLEN']) < 10000: continue
                 if info['SVTYPE'] == 'DEL':
                     ref = genome.fetch(region=f"{chrom}:{start}-{end}")
                     alt = genome.fetch(region=f"{chrom}:{start}-{start}") 
@@ -65,16 +68,16 @@ rule vcf_prepared:
         outfile.close()
 
 
-# rule vcf_index:
-#     input: "{sample}.deletion.vcf"
-#     output: 
-#         vcf = "{sample}.deletion.vcf.gz",
-#         vcfi = "{sample}.deletion.vcf.gz.tbi"
-#     shell:
-#         """
-#         bcftools sort -Oz {input} > {output.vcf}
-#         tabix -p vcf {output.vcf}
-#        """
+rule vcf_index:
+    input: VCF_DELETION
+    output: 
+        vcf = VCF_DELETION + ".gz",
+        vcfi = VCF_DELETION + ".gz.tbi"
+    shell:
+        """
+        bcftools sort -Oz {input} > {output.vcf}
+        tabix -p vcf {output.vcf}
+       """
 
 # rule vg_chrom:
 #     output:  temp(expand("vgraph.chr{i}.tmp", i=CHROMOSOME))
@@ -86,33 +89,35 @@ rule vcf_prepared:
 rule vg_construct:
     input:
         genome = GENOME,
-        #tmp = "vgraph.chr{i}.tmp",
-        vcf = "{sample}.deletion.vcf.gz",
-        vcfi = "{sample}.deletion.vcf.gz.tbi",
+        # tmp = "vgraph.chr{i}.tmp",
+        vcf = VCF_DELETION + ".gz",
+        vcfi =  VCF_DELETION + ".gz.tbi",
     output:  
-        #"vg/{sample}.chr{i}.vg"
-        "vg/{sample}.vg"
-    threads: 48
+        #"vg/chr{i}.vg"
+        "vg/merged.deletion.vg"
+    threads: THREADS
     shell:
         # or construct the graph using toil-vg
-        "vg construct --threads {threads} --reference {input.genome} --vcf {input.vcf} " # -R {wlidcards.i} -C
+        "vg construct --threads {threads} --reference {input.genome} --vcf {input.vcf} "
+        # " -R {wlidcards.i} -C "
         "--node-max 32 --alt-paths --flat-alts --handle-sv "
         "| vg mod --until-normal 10 - "
         "| vg mod --chop 32 - "
         "| vg ids --sort - > {output} "
 
+
 rule vg_prune:
-    input:  "vg/{sample}.vg",
-    output:  "vg/{sample}.pruned.vg"
+    input:  "vg/merged.deletion.vg",
+    output:  "vg/merged.deletion.pruned.vg"
     threads: THREADS
     shell:
         "vg prune --threads {threads} -r {input} > {output}"
 
 rule vg_index:
-    input: "vg/{sample}.pruned.vg"
+    input: "vg/merged.deletion.pruned.vg"
     output: 
-        xg = "vg/{sample}.xg",
-        gcsa = "vg/{sample}.gcsa"
+        xg = "vg/merged.deletion.xg",
+        gcsa = "vg/merged.deletion.gcsa"
     params:
          kmer_size = 16
     threads: THREADS
@@ -138,15 +143,15 @@ rule samtools_namesort:
 rule vg_map:
     input: 
         cram="{sample}.rnst.cram",
-        xg = "vg/{sample}.xg",
-        gcsa = "vg/{sample}.gcsa",
+        xg = "vg/merged.deletion.xg",
+        gcsa = "vg/merged.deletion.gcsa",
     output: "vg/{sample}.mapped.gam"
-    threads: THREADS
+    threads: 24
     shell:
         ### Note: use fastq.gz if you want => -f 
         # # convert the alignments to interleaved fastq and map
         "samtools bam2fq {input.cram} | "
-        "vg map -if - -x {input.xg} -g {input.gcsa} -t {threads} -S 0 -u 1 -m 1 > {output}.mapped.gam"
+        "vg map -if - -x {input.xg} -g {input.gcsa} -t {threads}  > {output}.mapped.gam" # -S 0 -u 1 -m 1
         # note -m align mode short, or long
 
 # rule count_mapped_reads:
@@ -194,7 +199,7 @@ rule sort_gam:
 ################ SV genotyping ########################################################
 rule vg_pack:
     input: 
-        vg = "vg/{sample}.vg",
+        vg = "vg/merged.deletion.pruned.vg",
         gam = "vg/{sample}.mapped.sorted.gam",
         gai= "vg/{sample}.mapped.sorted.gam.gai"
     output: "vg/{sample}.pack"
@@ -203,16 +208,16 @@ rule vg_pack:
         "vg pack --threads {threads} -x {input.vg} -g {input.gam} -o {output} -Q 5"
 
 rule vg_snarls:
-    input: "vg/{sample}.vg"
-    output: "vg/{sample}.snarls"
+    input: "vg/merged.deletion.pruned.vg"
+    output: "vg/merged.deletion.pruned.snarls"
     threads: THREADS
     shell:
         "vg snarls --threads {threads} {input} > {output}"
 
 rule vg_call:
     input:
-        vg = "vg/{sample}.vg",
-        snarls = "vg/{sample}.snarls",
+        vg = "vg/merged.deletion.pruned.vg",
+        snarls = "vg/merged.deletion.pruned.snarls",
         pack = "vg/{sample}.pack",
         vcf = "{sample}.deletion.vcf.gz",
         vcfi = "{sample}.deletion.vcf.gz.tbi",
