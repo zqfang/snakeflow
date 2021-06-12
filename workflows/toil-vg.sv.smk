@@ -1,23 +1,23 @@
 
-
-
-
-
-import os, glob
-
+## this is pipeline for genotyping SVs given known VCFs.
+## we use toil-vg insteal of vg to simply the commands
 
 ## see the tutorial here: 
-## https://github.com/vgteam/toil-vg/wiki/Genotyping-Structural-Variants  # however, this tutorial is outdated.
+## https://github.com/vgteam/toil-vg/wiki/Genotyping-Structural-Variants  
 ## https://github.com/vgteam/sv-genotyping-paper
+# however, this tutorial is outdated.
+# I've updated the commands and run toil-vg locally without container
 
 # require package:
 # 
 # R package ->  BiocManager::install('jmonlong/sveval') 
-# conda install vg rtg-tools
+# conda install vg=1.33.0 rtg-tools
 # pip install toil==3.24.0
-# pip install toil-vg
+# pip install toil-vg==1.6.0
 # apt-get install jq
 
+## note: change toil-vg/src/vcf_eval.py "min.cov" -> "min.ol" will run sveval sucessfully.
+import os, glob
 
 ## Commands
 WKDIR = "/data/bases/fangzq/20200815_SV/PacBio_project"

@@ -64,14 +64,25 @@ rule splitRead2fastq:
 
 
 # -g is the genome size
-## --meta is for metagenomes / uneven coverage. Since we are assembling split-reads 
-## the coverage is very uneven. Might want to experiment with this option, though
+## --meta is for metagenomes / uneven coverage.
 rule flye:
     input: "FASTQs/{sample}.fastq"
     output: "flye_sr/{sample}/assembly.fasta"
     threads: 36
     shell:
         "flye -t {threads} --pacbio-raw {input} -o flye_sr/{wildcards.sample} " # --meta 
+
+
+# rule canu:
+#     input: "FASTQs/{sample}.fastq"
+#     output: "canu/{sample}.canu.contigs.fasta"  
+#     params:
+#        gsize = "3g",
+#        outdir= "canu"
+#     threads: 12
+#     shell:  
+#         "canu -p {wildcards.sample}.canu -d canu_outdir genomeSize={params.gsize} corThreads={threads} -pacbio {input}"
+
 
 # 
 rule unimap:

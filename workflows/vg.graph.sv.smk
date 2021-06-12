@@ -79,152 +79,109 @@ rule vcf_index:
         tabix -p vcf {output.vcf}
        """
 
-# rule vg_chrom:
-#     output:  temp(expand("vgraph.chr{i}.tmp", i=CHROMOSOME))
-#     run:
-#         for v in output:
-#             os.system("touch %s"%v)
+rule vg_chrom:
+    output:  temp(expand("vgraph.chr{i}.tmp", i=CHROMOSOME))
+    run:
+        for v in output:
+            os.system("touch %s"%v)
 
 ##################### variation graph index map ###########################################
 rule vg_construct:
     input:
         genome = GENOME,
-        # tmp = "vgraph.chr{i}.tmp",
+        tmp = "vgraph.chr{i}.tmp",
         vcf = VCF_DELETION + ".gz",
         vcfi =  VCF_DELETION + ".gz.tbi",
     output:  
-        #"vg/chr{i}.vg"
-        "vg/merged.deletion.vg"
+        "vg/merged.deletion.chr{i}.vg"
     threads: THREADS
     shell:
         # or construct the graph using toil-vg
         "vg construct --threads {threads} --reference {input.genome} --vcf {input.vcf} "
-        # " -R {wlidcards.i} -C "
-        "--node-max 32 --alt-paths --flat-alts --handle-sv "
-        "| vg mod --until-normal 10 - "
-        "| vg mod --chop 32 - "
-        "| vg ids --sort - > {output} "
+        "-R {wlidcards.i} -C " # split into chromosomes
+        "--alt-paths --handle-sv > {output} "
 
-
-rule vg_prune:
-    input:  "vg/merged.deletion.vg",
-    output:  "vg/merged.deletion.pruned.vg"
-    threads: THREADS
-    shell:
-        "vg prune --threads {threads} -r {input} > {output}"
 
 rule vg_index:
-    input: "vg/merged.deletion.pruned.vg"
+    input: "vg/merged.deletion.chr{i}.vg"
     output: 
-        xg = "vg/merged.deletion.xg",
-        gcsa = "vg/merged.deletion.gcsa"
+        xg = "vg/merged.deletion.chr{i}.xg",
+        gcsa = "vg/merged.deletion.chr{i}.gcsa"
     params:
          kmer_size = 16
     threads: THREADS
     run:
         # store the graph in the xg/gcsa index pair
-        ## WARNING: the ./tmp need 2T space 
+        ## WARNING: the ./tmp need 2T disk space 
         shell("mkdir -p ./tmp")
-        shell("vg index --temp-dir ./tmp --threads {threads} --xg-alts "
+        shell("vg index --temp-dir ./tmp --threads {threads} "
               "-x {output.xg} -g {output.gcsa} -k {params.kmer_size} {input}")
 
-
-rule samtools_namesort:
-    input: 
-        bam = "../bams/{sample}.realign.bam",
-        genome = GENOME,
-    output: "{sample}.rnst.cram"
-    threads: THREADS
+rule split_bams:
+    input: "../bams/{sample}.realign.bam"
+    output: "tmp_bams/{sample}.chr{i}.bam"
     shell:
-        # if got "Too many open files" error, please increase -m 
-        "samtools sort -m 4G -@ {threads} -n {input.bam} -T tmp.{wildcards.sample} "
-        "| samtools view -C --reference {input.genome} -o {output} -"
+        "samtools view -h -O BAM {input} {wildcards.i} > {output}"
+
 
 rule vg_map:
     input: 
-        cram="{sample}.rnst.cram",
-        xg = "vg/merged.deletion.xg",
-        gcsa = "vg/merged.deletion.gcsa",
-    output: "vg/{sample}.mapped.gam"
+        bam = "tmp_bams/{sample}.chr{i}.bam",
+        xg = "vg/merged.deletion.chr{i}.xg",
+        gcsa = "vg/merged.deletion.chr{i}.gcsa",
+    output: "vg/{sample}.chr{i}.mapped.gam"
     threads: 24
     shell:
         ### Note: use fastq.gz if you want => -f 
-        # # convert the alignments to interleaved fastq and map
-        "samtools bam2fq {input.cram} | "
-        "vg map -if - -x {input.xg} -g {input.gcsa} -t {threads}  > {output}.mapped.gam" # -S 0 -u 1 -m 1
+        # -i, --interleaved  fastq or GAM is interleaved paired-ended
+        "vg map -i -b {input.bam} -x {input.xg} -g {input.gcsa} -t {threads}  > {output}.mapped.gam" # -S 0 -u 1 -m 1
         # note -m align mode short, or long
-
-# rule count_mapped_reads:
-#     input:
-#         "vg/{sample}.mapped.gam"
-#     output:
-#         "vg/stats/{sample}.tsv"
-#     run:
-#         shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>0' | wc -l > {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=10' | wc -l >> {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=20' | wc -l >> {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=30' | wc -l >> {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=40' | wc -l >> {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=50' | wc -l >> {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=60' | wc -l >> {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=1' | wc -l >> {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=0.9' | wc -l >> {output}")
-#         shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=0.5' | wc -l >> {output}")
-#         shell("vg view -a {input} | wc -l >> {output}")
-
-# rule cat_counts:
-#     input:
-#         stats=expand("mappings/stats/{sample}.tsv", sample=SAMPLES),
-#         samples="../../illumina_reads/samples.txt"
-#     output:
-#         "mappings/stats/all.tsv"
-#     run:
-#         for f in input.stats:
-#             sample = f.split("/")[2].split(".")[0]
-#             shell("cat {f} | tr '\\n' '\\t' >> {output}")
-#             shell("echo -e -n \"construct\\t\" >> {output}")
-#             shell("grep {sample} {input.samples} | awk '{{ print $3}}' >> {output}")
-
-rule sort_gam:
-    input:
-        "vg/{sample}.mapped.gam"
-    output:
-        gam="vg/{sample}.mapped.sorted.gam",
-        gai="vg/{sample}.mapped.sorted.gam.gai"
-    threads: THREADS
-    shell:
-        "vg gamsort -t {threads} -i {output.gai} {input} > {output.gam}"
 
 
 ################ SV genotyping ########################################################
 rule vg_pack:
     input: 
-        vg = "vg/merged.deletion.pruned.vg",
-        gam = "vg/{sample}.mapped.sorted.gam",
-        gai= "vg/{sample}.mapped.sorted.gam.gai"
-    output: "vg/{sample}.pack"
+        vg = "vg/merged.deletion.chr{i}.vg",
+        gam = "vg/{sample}.chr{i}.mapped.gam",
+        gai= "vg/{sample}.chr{i}.mapped.gam.gai"
+    output: "vg/{sample}.chr{i}.pack"
     threads: THREADS
     shell:
         "vg pack --threads {threads} -x {input.vg} -g {input.gam} -o {output} -Q 5"
 
 rule vg_snarls:
-    input: "vg/merged.deletion.pruned.vg"
-    output: "vg/merged.deletion.pruned.snarls"
+    input: "vg/merged.deletion.chr{i}.vg"
+    output: "vg/merged.deletion.chr{i}.snarls"
     threads: THREADS
     shell:
         "vg snarls --threads {threads} {input} > {output}"
 
+
+rule split_vcf:
+    input:
+        tmp = "vgraph.chr{i}.tmp",
+        vcf = VCF_DELETION + ".gz",
+        vcfi = VCF_DELETION + ".gz.tbi"
+    output:
+        vcf = VCF_DELETION + ".chr{i}.vcf.gz",
+        vcfi = VCF_DELETION + ".chr{i}.vcf.gz.tbi"
+    run:
+        shell("bcftools view {input.vcf} {whildcards.i} | bcftools sort -Oz > {output.vcf}")
+        shell("tabix -f -p vcf {output.vcf}")
+
+
 rule vg_call:
     input:
-        vg = "vg/merged.deletion.pruned.vg",
-        snarls = "vg/merged.deletion.pruned.snarls",
-        pack = "vg/{sample}.pack",
-        vcf = "{sample}.deletion.vcf.gz",
-        vcfi = "{sample}.deletion.vcf.gz.tbi",
+        vg = "vg/merged.deletion.chr{i}.vg",
+        snarls = "vg/merged.deletion.chr{i}.snarls",
+        pack = "vg/{sample}.chr{i}.pack",
+        vcf = VCF_DELETION + ".chr{i}.vcf.gz",
+        vcfi = VCF_DELETION + ".chr{i}.vcf.gz.tbi"
     output:
-        gt = "vg/{sample}.genotypes.vcf"
+        gt = "vg/{sample}.chr{i}.genotypes.vcf"
     threads: THREADS
     shell:
         # If an insertion fasta file was needed to construct with -I, it must be passed to call with -i.
         "vg call --threads {threads} --pack {input.pack} --snarls {input.snarls} "
-        "--vcf {input.vcf} --sample {wildcards.sample} > {output.gt} " # --vcf must have been used to construct input graph with -a)
+        "--vcf {input.vcf} --sample {wildcards.sample} {input.vg} > {output.gt} " 
+        # --vcf must have been used to construct input graph with -a)
