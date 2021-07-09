@@ -25,55 +25,61 @@ workdir: WKDIR
 THREADS = 48
 GENOME = "/home/fangzq/genome/mouse/GRCm38_68.fa"
 VCF_5_STRAIN = "/data/bases/fangzq/20200815_SV/PacBio_project/VCFs/merged_gt_SURVIVOR_1kbpdist.filter.vcf"
-VCF_DELETION = "BTBR.deletion.vcf" # "merged_deletion.vcf"
-SAMPLES =  [ "BTBR"] #, "BALB","SJL","129S1","AJ", "BTBR"] # ["SJL","129S1","BALB"] #"C57BL6J",
+VCF_DELETION =  "merged_deletion.vcf"# "BTBR.deletion.vcf"
+SAMPLES =  ['129P2', '129S1', '129S5', 'AKR', 'A_J', 'B10', 
+        'BPL', 'BPN', 'BTBR', 'BUB', 'BALB', 'C3H', 'C57BL10J',
+        'C57BL6NJ', 'C57BRcd', 'C57LJ', 'C58', 'CBA', 'CEJ', 
+        'DBA', 'DBA1J', 'FVB', 'ILNJ', 'KK', 'LGJ', 'LPJ', 
+        'MAMy', 'MRL','NOD', 'NON', 'NOR', 'NUJ', 'NZB', 'NZO', 'NZW', 
+        'PJ', 'PLJ', 'RFJ', 'RHJ', 'RIIIS', 'SEA', 'SJL', 'SMJ', 'ST', 'SWR', 'TALLYHO', 'RBF',
+        'CAST', 'MOLF', 'PWD','PWK', 'SPRET', 'WSB']# ["SJL","129S1","BALB"] #"C57BL6J",
 #CHROMSOME = [ str(c) for c in range(1,20)] + ["X", "Y", "MT"]
 CHROMOSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,10)]+ ["X"]
 VG = expand("vg/GRCm38_chr{i}.{g}", i=CHROMOSOME, g=['xg','gcsa'])
 #GT = expand("vg/{sample}.genotypes.vcf", sample=SAMPLES)
-VMAP = expand("vcfs/{sample}_chr{i}.vcf.gz", i=CHROMOSOME,  sample=SAMPLES)
-
+VCALL = expand("gams/{sample}_chr{i}/GRCm38_chr{i}_{sample}.vcf.gz", i=CHROMOSOME,  sample=SAMPLES)
+VEVAL = expand("gams/{sample}_chr{i}/sv_accuracy.tsv", i=CHROMOSOME,  sample=SAMPLES)
 
 
 rule target:
-    input: VG, VMAP
+    input: VG, VEVAL, 
 
 rule vg_chrom:
     output:  temp(expand("vgraph.chr{i}.tmp", i=CHROMOSOME))
     run:
         for v in output:
-            os.system("touch %s"%v)
+            shell("touch %s"%v)
 
-rule toilvg_construct:
-    input:
-        genome = GENOME,
-        tmp = "vgraph.chr{i}.tmp",
-        vcf = VCF_DELETION + ".gz",
-        vcfi =  VCF_DELETION + ".gz.tbi",
-    output:  
-        "vg/GRCm38_chr{i}.gcsa",
-        "vg/GRCm38_chr{i}.xg",
-        "vg/GRCm38_chr{i}.vg",
-        "vg/GRCm38_chr{i}_alts.gam",
-    params:
-        wkdir = WKDIR,
-    threads: 1
-    log: "logs/vg_construct_chr{i}.log"
-    run:
-        shell("rm -rf {params.wkdir}/jobStore_construct_chr{wildcards.i}")
-        shell("mkdir -p {params.wkdir}/vg ")
-        shell("toil-vg construct "
-        "--vcf {input.vcf} --fasta {input.genome} --regions {wildcards.i} "
-        "--out_name GRCm38_chr{wildcards.i}  --container None " # --container None 
-        "--xg_index --gcsa_index --realTimeLogging --pangenome "
-        "--flat_alts --handle_svs --alt_path_gam_index --validate --normalize "
-        "--merge_graphs --gcsa_index_cores {threads} --workDir {params.wkdir} "
-        "{params.wkdir}/jobStore{wildcards.i} {params.wkdir}/vg "
-        "2>&1 | tee {log} ")
+# rule toilvg_construct:
+#     input:
+#         genome = GENOME,
+#         tmp = "vgraph.chr{i}.tmp",
+#         vcf = VCF_DELETION + ".gz",
+#         vcfi =  VCF_DELETION + ".gz.tbi",
+#     output:  
+#         "vg/GRCm38_chr{i}.gcsa",
+#         "vg/GRCm38_chr{i}.xg",
+#         "vg/GRCm38_chr{i}.vg",
+#         "vg/GRCm38_chr{i}_alts.gam",
+#     params:
+#         wkdir = WKDIR,
+#     threads: 1
+#     log: "logs/vg_construct_chr{i}.log"
+#     run:
+#         shell("rm -rf {params.wkdir}/jobStore_construct_chr{wildcards.i}")
+#         shell("mkdir -p {params.wkdir}/vg ")
+#         shell("toil-vg construct "
+#         "--vcf {input.vcf} --fasta {input.genome} --regions {wildcards.i} "
+#         "--out_name GRCm38_chr{wildcards.i}  --container None " # --container None 
+#         "--xg_index --gcsa_index --realTimeLogging --pangenome "
+#         "--flat_alts --handle_svs --alt_path_gam_index --validate --normalize "
+#         "--merge_graphs --gcsa_index_cores {threads} --workDir {params.wkdir} "
+#         "{params.wkdir}/jobStore{wildcards.i} {params.wkdir}/vg "
+#         "2>&1 | tee {log} ")
 
 rule split_bams:
-    input: "../bams/{sample}.realign.bam"
-    output: "tmp_bams/{sample}.chr{i}.bam"
+    input: "/data/bases/fangzq/strains/{sample}/output.GATKrealigned.Recal.bam"
+    output: temp("tmp_bams/{sample}.chr{i}.bam")
     shell:
         "samtools view -h -O BAM {input} {wildcards.i} > {output}"
 
@@ -109,7 +115,7 @@ rule split_vcf:
         vcf = VCF_DELETION + ".chr{i}.vcf.gz",
         vcfi = VCF_DELETION + ".chr{i}.vcf.gz.tbi"
     run:
-        shell("bcftools view {input.vcf} {whildcards.i} | bcftools sort -Oz > {output.vcf}")
+        shell("bcftools view {input.vcf} {wildcards.i} | bcftools sort -Oz > {output.vcf}")
         shell("tabix -f -p vcf {output.vcf}")
 
 
@@ -129,9 +135,9 @@ rule vg_call:
     log: "logs/vg_call_{sample}_chr{i}.log"
     run:
         shell("rm -rf {params.wkdir}/jobStore_call_{wildcards.sample}_{wildcards.i}")
-        shell("mkdir -p {params.wkdir}/gams/{wildcards.sample}_{wildcards.i} ")
+        shell("mkdir -p {params.wkdir}/gams/{wildcards.sample}_chr{wildcards.i} ")
         shell("toil-vg call {params.wkdir}/jobStore_call_{wildcards.sample}_{wildcards.i} "
-              "{params.wkdir}/gams/{wildcards.sample}_{wildcards.i} --graph {input.vg} "
+              "{params.wkdir}/gams/{wildcards.sample}_chr{wildcards.i} --graph {input.vg} "
               "--gam {input.gam} "# --alt_path_gam {input.altgam} --chroms {wildcards.i}
               "--genotype_vcf {input.vcf} --sample {wildcards.sample} " # makesure you know the sample name in vcf file 
               "--realTimeLogging --calling_cores {threads} "
@@ -156,11 +162,11 @@ rule vg_eval:
         # need to install R package BiocManager::install('jmonlong/sveval') 
         # need to install rtg-tools, conda install rtg-tools
         shell("rm -rf {params.wkdir}/jobStore_eval_{wildcards.sample}_{wildcards.i}")
-        shell("mkdir -p {params.wkdir}/gams/{sample}_chr{wildcards.i} ")
+        shell("mkdir -p {params.wkdir}/gams/{wildcards.sample}_chr{wildcards.i} ")
         shell("toil-vg vcfeval {params.wkdir}/jobStore_{wildcards.sample}_{wildcards.i} "
-              "{params.wkdir}/vcfs/{sample}_chr{wildcards.i} "
-              "--vcfeval_baseline {input.vcf} --call_vcf {input.vg_vcf} "
-              "--genotype_eval --sveval --vcfeval_sample {wildcard.sample} "
+              "{params.wkdir}/gams/{wildcards.sample}_chr{wildcards.i} "
+              "--vcfeval_baseline {input.vcf_truth} --call_vcf {input.vcf_call} "
+              "--genotype_eval --sveval --vcfeval_sample {wildcards.sample} "
               "--realTimeLogging --container None --workDir {params.wkdir} "
               "--vcfeval_cores {threads} "
               "2>&1 | tee {log} " ) # --vcfeval_fasta {input.genome}
