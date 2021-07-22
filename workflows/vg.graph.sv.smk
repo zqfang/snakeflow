@@ -138,6 +138,21 @@ rule vg_map:
         # note -m align mode short, or long
 
 
+rule vg_sort:
+    input: "vg/{sample}.chr{i}.mapped.gam"
+    output:
+        gai = "vg/{sample}.chr{i}.sorted.gam.gai"
+        gam = "vg/{sample}.chr{i}.sorted.gam"
+    threads: 24
+    shell:
+        "vg gamsort -t {threads} -i BTBR_chr1_sort.gam.gai BTBR_chr1_default.gam > BTBR_chr1_sorted.gam"
+
+
+### NOTE: to view the gam or graph,
+# vg chunk required a gam.gai file, so vg gamsort first (very slow)
+# vg chunk -x graph.xg -a reads.sorted.gam -g -T -b ./subgraph -c 20 -p ${CHROM}:${START}-${END} > chunk.vg
+# vg view -dp ${SOMETHING}.vg -A ${SOMETHING}.gam | dot -Tsvg -o chunk.svg
+
 ################ SV genotyping ########################################################
 rule vg_pack:
     input: 

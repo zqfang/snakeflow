@@ -123,7 +123,6 @@ rule vg_call:
     input:
         vcf = VCF_DELETION + ".chr{i}.vcf.gz",
         vcfi = VCF_DELETION + ".chr{i}.vcf.gz.tbi",
-        bam= "tmp_bams/{sample}.chr{i}.bam",
         #altgam = "vg/GRCm38_chr{i}_alts.gam",
         gam = "gams/{sample}_chr{i}/{sample}_chr{i}_default.gam",
         vg = "vg/GRCm38_chr{i}.vg",
