@@ -150,8 +150,8 @@ rule vg_sort:
 
 ### NOTE: to view the gam or graph,
 # vg chunk required a gam.gai file, so vg gamsort first (very slow)
-# vg chunk -x graph.xg -a reads.sorted.gam -g -T -b ./subgraph -c 20 -p ${CHROM}:${START}-${END} > chunk.vg
-# vg view -dp ${SOMETHING}.vg -A ${SOMETHING}.gam | dot -Tsvg -o chunk.svg
+# vg chunk -x graph.xg -a reads.sorted.gam -g -T -b ./chunkgraph -c 20 -p ${CHROM}:${START}-${END} > chunk.vg
+# vg view -dp chunk.vg -A chunkgraph_${CHROM}_${START}_${END}.gam | dot -Tsvg -o chunk.svg
 
 ################ SV genotyping ########################################################
 rule vg_pack:
