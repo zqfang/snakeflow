@@ -50,32 +50,32 @@ rule vg_chrom:
         for v in output:
             shell("touch %s"%v)
 
-# rule toilvg_construct:
-#     input:
-#         genome = GENOME,
-#         tmp = "vgraph.chr{i}.tmp",
-#         vcf = VCF_DELETION + ".gz",
-#         vcfi =  VCF_DELETION + ".gz.tbi",
-#     output:  
-#         "vg/GRCm38_chr{i}.gcsa",
-#         "vg/GRCm38_chr{i}.xg",
-#         "vg/GRCm38_chr{i}.vg",
-#         "vg/GRCm38_chr{i}_alts.gam",
-#     params:
-#         wkdir = WKDIR,
-#     threads: 1
-#     log: "logs/vg_construct_chr{i}.log"
-#     run:
-#         shell("rm -rf {params.wkdir}/jobStore_construct_chr{wildcards.i}")
-#         shell("mkdir -p {params.wkdir}/vg ")
-#         shell("toil-vg construct "
-#         "--vcf {input.vcf} --fasta {input.genome} --regions {wildcards.i} "
-#         "--out_name GRCm38_chr{wildcards.i}  --container None " # --container None 
-#         "--xg_index --gcsa_index --realTimeLogging --pangenome "
-#         "--flat_alts --handle_svs --alt_path_gam_index --validate --normalize "
-#         "--merge_graphs --gcsa_index_cores {threads} --workDir {params.wkdir} "
-#         "{params.wkdir}/jobStore{wildcards.i} {params.wkdir}/vg "
-#         "2>&1 | tee {log} ")
+rule toilvg_construct:
+    input:
+        genome = GENOME,
+        tmp = "vgraph.chr{i}.tmp",
+        vcf = VCF_DELETION + ".gz",
+        vcfi =  VCF_DELETION + ".gz.tbi",
+    output:  
+        "vg/GRCm38_chr{i}.gcsa",
+        "vg/GRCm38_chr{i}.xg",
+        "vg/GRCm38_chr{i}.vg",
+        "vg/GRCm38_chr{i}_alts.gam",
+    params:
+        wkdir = WKDIR,
+    threads: 1
+    log: "logs/vg_construct_chr{i}.log"
+    run:
+        shell("rm -rf {params.wkdir}/jobStore_construct_chr{wildcards.i}")
+        shell("mkdir -p {params.wkdir}/vg ")
+        shell("toil-vg construct "
+        "--vcf {input.vcf} --fasta {input.genome} --regions {wildcards.i} "
+        "--out_name GRCm38_chr{wildcards.i}  --container None " # --container None 
+        "--xg_index --gcsa_index --realTimeLogging --pangenome "
+        "--flat_alts --handle_svs --alt_path_gam_index --validate --normalize "
+        "--merge_graphs --gcsa_index_cores {threads} --workDir {params.wkdir} "
+        "{params.wkdir}/jobStore{wildcards.i} {params.wkdir}/vg "
+        "2>&1 | tee {log} ")
 
 rule split_bams:
     input: "/data/bases/fangzq/strains/{sample}/output.GATKrealigned.Recal.bam"
