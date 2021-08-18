@@ -107,16 +107,6 @@ rule samtools_sort:
         shell("samtools index {output.bam}")
 
 
-rule samtools_chr6:
-    input: "BAMs/{sample}.unimap.sorted.bam"
-    output: 
-        bam = protected("BAMs/{sample}.chr6.sorted.bam"),
-        bai = protected("BAMs/{sample}.chr6.sorted.bam.bai"),
-    # threads: 8
-    run:
-        shell("samtools view -O BAM {input} 6 > {output.bam}")
-        shell("samtools index {output.bam}")
-
 
 rule svviz2:
     input:

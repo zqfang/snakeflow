@@ -25,14 +25,15 @@ workdir: WKDIR
 THREADS = 48
 GENOME = "/home/fangzq/genome/mouse/GRCm38_68.fa"
 VCF_5_STRAIN = "/data/bases/fangzq/20200815_SV/PacBio_project/VCFs/merged_gt_SURVIVOR_1kbpdist.filter.vcf"
-VCF_DELETION =  "merged_deletion.vcf"# "BTBR.deletion.vcf"
-SAMPLES =  ['129P2', '129S1', '129S5', 'AKR', 'A_J', 'B10', 
-        'BPL', 'BPN', 'BTBR', 'BUB', 'BALB', 'C3H', 'C57BL10J',
-        'C57BL6NJ', 'C57BRcd', 'C57LJ', 'C58', 'CBA', 'CEJ', 
-        'DBA', 'DBA1J', 'FVB', 'ILNJ', 'KK', 'LGJ', 'LPJ', 
-        'MAMy', 'MRL','NOD', 'NON', 'NOR', 'NUJ', 'NZB', 'NZO', 'NZW', 
-        'PJ', 'PLJ', 'RFJ', 'RHJ', 'RIIIS', 'SEA', 'SJL', 'SMJ', 'ST', 'SWR', 'TALLYHO', 'RBF',
-        'CAST', 'MOLF', 'PWD','PWK', 'SPRET', 'WSB']# ["SJL","129S1","BALB"] #"C57BL6J",
+VCF_DELETION =   "BTBR.deletion.vcf"#, #"merged_deletion.vcf"#
+SAMPLES = ['BTBR']
+# SAMPLES =  ['129P2', '129S1', '129S5', 'AKR', 'A_J', 'B10', 
+#         'BPL', 'BPN', 'BTBR', 'BUB', 'BALB', 'C3H', 'C57BL10J',
+#         'C57BL6NJ', 'C57BRcd', 'C57LJ', 'C58', 'CBA', 'CEJ', 
+#         'DBA', 'DBA1J', 'FVB', 'ILNJ', 'KK', 'LGJ', 'LPJ', 
+#         'MAMy', 'MRL','NOD', 'NON', 'NOR', 'NUJ', 'NZB', 'NZO', 'NZW', 
+#         'PJ', 'PLJ', 'RFJ', 'RHJ', 'RIIIS', 'SEA', 'SJL', 'SMJ', 'ST', 'SWR', 'TALLYHO', 'RBF',
+#         'CAST', 'MOLF', 'PWD','PWK', 'SPRET', 'WSB']# ["SJL","129S1","BALB"] #"C57BL6J",
 #CHROMSOME = [ str(c) for c in range(1,20)] + ["X", "Y", "MT"]
 CHROMOSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,10)]+ ["X"]
 VG = expand("vg/GRCm38_chr{i}.{g}", i=CHROMOSOME, g=['xg','gcsa'])
@@ -50,47 +51,48 @@ rule vg_chrom:
         for v in output:
             shell("touch %s"%v)
 
-rule toilvg_construct:
-    input:
-        genome = GENOME,
-        tmp = "vgraph.chr{i}.tmp",
-        vcf = VCF_DELETION + ".gz",
-        vcfi =  VCF_DELETION + ".gz.tbi",
-    output:  
-        "vg/GRCm38_chr{i}.gcsa",
-        "vg/GRCm38_chr{i}.xg",
-        "vg/GRCm38_chr{i}.vg",
-        "vg/GRCm38_chr{i}_alts.gam",
-    params:
-        wkdir = WKDIR,
-    threads: 1
-    log: "logs/vg_construct_chr{i}.log"
-    run:
-        shell("rm -rf {params.wkdir}/jobStore_construct_chr{wildcards.i}")
-        shell("mkdir -p {params.wkdir}/vg ")
-        shell("toil-vg construct "
-        "--vcf {input.vcf} --fasta {input.genome} --regions {wildcards.i} "
-        "--out_name GRCm38_chr{wildcards.i}  --container None " # --container None 
-        "--xg_index --gcsa_index --realTimeLogging --pangenome "
-        "--flat_alts --handle_svs --alt_path_gam_index --validate --normalize "
-        "--merge_graphs --gcsa_index_cores {threads} --workDir {params.wkdir} "
-        "{params.wkdir}/jobStore{wildcards.i} {params.wkdir}/vg "
-        "2>&1 | tee {log} ")
+# rule toilvg_construct:
+#     input:
+#         genome = GENOME,
+#         tmp = "vgraph.chr{i}.tmp",
+#         vcf = VCF_DELETION + ".gz",
+#         vcfi =  VCF_DELETION + ".gz.tbi",
+#     output:  
+#         "vg/GRCm38_chr{i}.gcsa",
+#         "vg/GRCm38_chr{i}.xg",
+#         "vg/GRCm38_chr{i}.vg",
+#         "vg/GRCm38_chr{i}_alts.gam",
+#     params:
+#         wkdir = WKDIR,
+#     threads: 1
+#     log: "logs/vg_construct_chr{i}.log"
+#     run:
+#         shell("rm -rf {params.wkdir}/jobStore_construct_chr{wildcards.i}")
+#         shell("mkdir -p {params.wkdir}/vg ")
+#         shell("toil-vg construct "
+#         "--vcf {input.vcf} --fasta {input.genome} --regions {wildcards.i} "
+#         "--out_name GRCm38_chr{wildcards.i}  --container None " # --container None 
+#         "--xg_index --gcsa_index --realTimeLogging --pangenome "
+#         "--flat_alts --handle_svs --alt_path_gam_index --validate --normalize "
+#         "--merge_graphs --gcsa_index_cores {threads} --workDir {params.wkdir} "
+#         "{params.wkdir}/jobStore{wildcards.i} {params.wkdir}/vg "
+#         "2>&1 | tee {log} ")
 
 rule split_bams:
     input: "/data/bases/fangzq/strains/{sample}/output.GATKrealigned.Recal.bam"
     output: temp("tmp_bams/{sample}.chr{i}.bam")
     shell:
-        "samtools view -h -O BAM {input} {wildcards.i} > {output}"
+        # only select unique mapped reads: MAPQ >= 30 
+        "samtools view -q 30 -h -O BAM {input} {wildcards.i} > {output}"
 
 rule vg_map:
     input:
         bam= "tmp_bams/{sample}.chr{i}.bam",
-        gcsa = "vg/GRCm38_chr{i}.gcsa",
-        xg = "vg/GRCm38_chr{i}.xg",
+        gcsa = "vg_BTBR/GRCm38_chr{i}.gcsa",
+        xg = "vg_BTBR/GRCm38_chr{i}.xg",
     output:
         gam = "gams/{sample}_chr{i}/{sample}_chr{i}_default.gam",
-    threads: 1
+    threads: 8
     params:
         wkdir = WKDIR,
     log: "logs/vg_map_{sample}_chr{i}.log"
@@ -105,6 +107,17 @@ rule vg_map:
               "--interleaved --alignment_cores {threads} "
               "--single_reads_chunk --realTimeLogging  --container None --workDir {params.wkdir} "
               "2>&1 | tee {log} ")
+
+rule vcf_index:
+    input: VCF_DELETION
+    output: 
+        vcf = VCF_DELETION + ".gz",
+        vcfi = VCF_DELETION + ".gz.tbi"
+    shell:
+        """
+        bcftools sort -Oz {input} > {output.vcf}
+        tabix -p vcf {output.vcf}
+       """
 
 rule split_vcf:
     input:
@@ -125,12 +138,12 @@ rule vg_call:
         vcfi = VCF_DELETION + ".chr{i}.vcf.gz.tbi",
         #altgam = "vg/GRCm38_chr{i}_alts.gam",
         gam = "gams/{sample}_chr{i}/{sample}_chr{i}_default.gam",
-        vg = "vg/GRCm38_chr{i}.vg",
+        vg = "vg_BTBR/GRCm38_chr{i}.vg",
     output:
         vcf = "gams/{sample}_chr{i}/GRCm38_chr{i}_{sample}.vcf.gz"
     params:
         wkdir = WKDIR,
-    threads: 1
+    threads: 4
     log: "logs/vg_call_{sample}_chr{i}.log"
     run:
         shell("rm -rf {params.wkdir}/jobStore_call_{wildcards.sample}_{wildcards.i}")
