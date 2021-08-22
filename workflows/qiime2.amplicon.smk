@@ -14,6 +14,7 @@ workdir: "/data/bases/fangzq/Amplicon_seq"
 POOL_SAMPLES = ['CRISPaint_293']
 SPLIT_SAMPLES = ['S501-N701','S502-N702']
 FINAL_SAMPLES = ['TUBB-mNeon','TUBB-HOT','H4C3-mNeon','H4C3-HOT']
+P2A_SAMPLES = ['TUBB-HOT', 'H4C3-HOT']
 # OUT = expand("{sample}.deblur.rep.align.mask.qza", sample=SAMPLES)
 OUT = expand("{sample}.trimmed.join.filtered.qzv", sample=POOL_SAMPLES) 
 FASTQ = ["%s_demux/%s_%s_L001_R1_001.fasta"%(pool, split, i) for i, split in enumerate(SPLIT_SAMPLES) for pool in POOL_SAMPLES]
@@ -27,15 +28,21 @@ with open("barcodes-2nd.txt", 'r') as p:
 
 OUT2= []
 ALIGNMENT = []
+CRISPRESSO = []
 for i, split in enumerate(SPLIT_SAMPLES):
    for pool in POOL_SAMPLES:
        for fx in FINAL_SAMPLES:
-           OUT2.append(f"{pool}_demux/{split}_{i}.{fx}.fasta")
+           OUT2.append(f"{pool}_demux/{split}_{i}.{fx}.fastq")
            ALIGNMENT.append(f"{pool}_demux/{split}_{i}.{fx}.msa.txt")
+           CRISPRESSO.append(f"{pool}_demux/CRISPResso/CRISPResso_on_{split}_{i}.{fx}/Alleles_frequency_table.zip")
+           if fx in P2A_SAMPLES:
+               OUT2.append(f"{pool}_demux/{split}_{i}.{fx}P2A.fastq") 
+               ALIGNMENT.append(f"{pool}_demux/{split}_{i}.{fx}P2A.msa.txt")
+               CRISPRESSO.append(f"{pool}_demux/CRISPResso/CRISPResso_on_{split}_{i}.{fx}P2A/Alleles_frequency_table.zip")
 
 
 rule all:
-    input: OUT, OUT2, ALIGNMENT
+    input: OUT, OUT2, CRISPRESSO# ALIGNMENT
 
 
 # rule rename_r1:
@@ -152,7 +159,12 @@ rule amplicon_demux:
     input: 
         fq="{sample}_demux/{split}_{i}_L001_R1_001.fastq.gz", 
         primers="barcodes-2nd.txt"
-    output: ["{sample}_demux/{split}_{i}.%s.fasta"%(f) for f in FINAL_SAMPLES],
+    output: 
+        first = ["{sample}_demux/{split}_{i}.%s.fastq"%(f) for f in FINAL_SAMPLES],
+        second = ["{sample}_demux/{split}_{i}.%sP2A.fastq"%(f) for f in P2A_SAMPLES],
+    params:
+        P2A = "gctactaacttcagcctgctgaagcaggctggagacgtggaggagaaccctggacct",
+        P2A_SAMPLES = P2A_SAMPLES
     run:
         # mamba install -c bioconda seqkit 
         with open(input.primers, 'r') as p:
@@ -160,70 +172,89 @@ rule amplicon_demux:
                 if line.startswith("#"): continue
                 record = line.strip().split()
                 start, end = len(record[1]), len(record[2])
-                cmd = f"seqkit amplicon -F {record[1]} -R {record[2]} -r {start+1}:-{end+1} > "        
-                cmd = "seqkit fq2fa {input.fq} |  " + cmd 
-                cmd += "{wildcards.sample}_demux/{wildcards.split}_{wildcards.i}.%s.fasta"%(record[0])
-                shell(cmd)
+                outfile = "{wildcards.sample}_demux/{wildcards.split}_{wildcards.i}.%s.fastq"%(record[0])
+                # command     
+                cmd = "seqkit amplicon -F %s -R %s {input.fq}"%(record[1], record[2]) # -r {start+1}:-{end+1} > 
+                if record[0] in params.P2A_SAMPLES:
+                    op2a = "{wildcards.sample}_demux/{wildcards.split}_{wildcards.i}.%sP2A.fastq"%(record[0])
+                    shell(cmd + " | seqkit grep -s -i -p {params.P2A} > %s"%op2a)
+                    shell(cmd + " | seqkit grep -s -i -v -p {params.P2A} > %s"%outfile)
+                else:
+                    shell(cmd + " > " +  outfile)
 
 
-rule clustalo:
-    input: "{sample}_demux/{split}_{i}.{final}.fasta"
-    output: "{sample}_demux/{split}_{i}.{final}.msa.fasta"
-    threads: 8
-    shell:
-        # mamba install -c bioconda clustalo
-        "clustalo -i {input} -o {output} --force --outfmt fasta --threads {threads}"
+rule CRISPResso_alignment:
+    input: 
+        fq="{sample}_demux/{split}_{i}.{final}.fastq",
+        ref = "template.ref.fa",
+    output: 
+        msa="{sample}_demux/CRISPResso/CRISPResso_on_{split}_{i}.{final}/Alleles_frequency_table.zip",
+    threads: 1
+    params: 
+        outdir = "{sample}_demux/CRISPResso",
+        final = "{final}",
+    run:
+        from Bio import SeqIO
+        amplicons = list(SeqIO.parse("template.ref.fa", "fasta"))
+        ids = { t.id : i for i, t in enumerate(amplicons) }
+        idx = ids[params.final]
+        amplicon = str(amplicons[idx].seq)       
+        cmd = "CRISPResso --amplicon_seq " + amplicon
+        cmd += " --fastq_r1 {input.fq} --output_folder {params.outdir} "
+        cmd += " --amplicon_name {wildcards.final} " #"--guide_seq GAGTCCGAGCAGAAGAAGAA  --guide_name xxx"
+        cmd += " --quantification_window_size 20 " #--quantification_window_center -10 "
+        cmd += " --write_cleaned_report "# --place_report_in_output_folder"
+        shell(cmd)
 
-rule fx2tabular:
-    input: "{sample}_demux/{split}_{i}.{final}.msa.fasta"
-    output: "{sample}_demux/{split}_{i}.{final}.msa.txt"
-    shell:
-        "seqkit fx2tab {input} > {output}"
 
-
-# # ### DENOISE PROCESSED READS ###        
-# rule deblur:
+# rule amplicon_demux:
 #     input: 
-#         filt="{sample}.trimmed.join.filtered.qza",
-#         ref = ""
-#     output:
-#         rep = "{sample}.deblur.rep.qza",
-#         tab = "{sample}.deblur.table.qza",
-#         stat = "{sample}.debulr.stat.qza"
+#         fq="{sample}_demux/{split}_{i}_L001_R1_001.fastq.gz", 
+#         primers="barcodes-2nd.txt"
+#     output: 
+#         first = ["{sample}_demux/{split}_{i}.%s.fasta"%(f) for f in FINAL_SAMPLES],
+#         second = ["{sample}_demux/{split}_{i}.%sP2A.fasta"%(f) for f in P2A_SAMPLES],
 #     params:
-#         length = 0 # -1, disable trim
+#         P2A = "gctactaacttcagcctgctgaagcaggctggagacgtggaggagaaccctggacct",
+#         P2A_SAMPLES = P2A_SAMPLES
+#     run:
+#         # mamba install -c bioconda seqkit 
+#         with open(input.primers, 'r') as p:
+#             for line in p:
+#                 if line.startswith("#"): continue
+#                 record = line.strip().split()
+#                 start, end = len(record[1]), len(record[2])
+#                 outfile = "{wildcards.sample}_demux/{wildcards.split}_{wildcards.i}.%s.fasta"%(record[0])
+#                 # command     
+#                 cmd = "seqkit fq2fa {input.fq} |  " 
+#                 cmd = cmd + "seqkit amplicon -F %s -R %s  "%(record[1], record[2]) # -r {start+1}:-{end+1} > 
+
+#                 if record[0] in params.P2A_SAMPLES:
+#                     op2a = "{wildcards.sample}_demux/{wildcards.split}_{wildcards.i}.%sP2A.fasta"%(record[0])
+#                     shell(cmd + " | seqkit grep -s -i -p {params.P2A} > %s"%op2a)
+#                     shell(cmd + " | seqkit grep -s -i -v -p {params.P2A} > %s"%outfile)
+#                 else:
+#                     shell(cmd + " > " +  outfile)
+               
+
+
+# rule clustalo:
+#     input: 
+#         fasta="{sample}_demux/{split}_{i}.{final}.fasta",
+#         ref = "template.ref.fa"
+#     output: 
+#         msa="{sample}_demux/{split}_{i}.{final}.msa.fasta",
+#         ref = temp("tmp.{sample}.{split}_{i}.{final}.ref.fa"),
+#         ref_query =temp("tmp.{sample}.{split}_{i}.{final}.fa")
 #     threads: 8
+#     run:
+#         shell("seqkit grep -p {wildcards.final} {input.ref} > {output.ref}") # extract fasta record by ID
+#         shell("cat {output.ref} {input.fasta} > {output.ref_query}")
+#         # mamba install -c bioconda clustalo
+#         shell("clustalo -i {output.ref_query} -o {output.msa} --force --outfmt fasta --threads {threads}")
+
+# rule fx2tabular:
+#     input: "{sample}_demux/{split}_{i}.{final}.msa.fasta"
+#     output: "{sample}_demux/{split}_{i}.{final}.msa.txt"
 #     shell:
-#         "qiime deblur denoise-other " # amplicon data not 16S
-#         "--p-jobs-to-start {threads} "
-#         "--i-demultiplexed-seqs {input.filt} "
-#         "--i-reference-seqs {input.ref} "
-#         "--p-trim-length {params.length} "
-#         "--o-representative-sequences {output.rep} "
-#         "--o-table {output.tab} "
-#         "--p-sample-stats "
-#         "--o-stats {output.stat} "
-
-
-# # ### STEP 7: CREATE PHYLOGENY ###
-# # #ALIGNMENT OF REPRESENTATIVE SEQUENCES
-# rule mafft:
-#     input: "{sample}.trimmed.join.filtered.qza" #"{sample}.deblur.rep.qza"
-#     output: "{sample}.deblur.rep.align.qza"
-#     threads: 8
-#     shell:
-#         "qiime alignment mafft --p-n-threads {threads} "
-#         "--i-sequences {input} "
-#         "--o-alignment {output} "
-
-# # #MASK HIGHLY VARIABLE NOISY POSITIONS IN ALIGNMENT
-# rule mask:
-#     input: "{sample}.deblur.rep.align.qza"
-#     output: "{sample}.deblur.rep.align.mask.qza"
-#     shell:
-#         "qiime alignment mask "
-#         "--i-alignment {input} "
-#         "--o-masked-alignment {output}"
-
-
-
+#         "seqkit fx2tab {input} > {output}"
