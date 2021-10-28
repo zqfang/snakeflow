@@ -1,5 +1,26 @@
 
-""" see a short tutorial here for metagenome analysis
+"""
+This is a pipeline for CRISPR Editing Amplicon analysis using QIIME2
+
+NGS sequencing with 250 bp in each end of amplicon
+
+R1: 
+    barcode| ----- primer ---- | ----- amplicon ----
+    >>>>>>>>===================AATCGCGTTCCGGAAAATCCTG......
+
+R2: 
+
+    barcode| ----- primer ---- | ----- amplicon ----
+    >>>>>>>>===================CCTGAACCTCGATCGGATAGCT......
+
+pipeline:
+>> demux barcode (split sample) >> trim primer >> join R1-R2 >> amplicon >> qc >> CRISPR Resso 
+
+
+two pipline ->  qiime2 +  CRISPRResso2 
+
+
+see a short tutorial here for metagenome analysis
 http://www.int-res.com/articles/suppl/m648p169_supp3.txt
 
 #What: Computational pipeline for the V3/V4 region of the 16S rRNA gene 
@@ -45,20 +66,6 @@ rule all:
     input: OUT, OUT2, CRISPRESSO# ALIGNMENT
 
 
-# rule rename_r1:
-#     input: "{sample}_R1.fastq.gz"
-#     output: "{sample}/forward.fastq.gz"
-#     shell:
-#         "mv {input} {output}"
-
-# rule rename_r2:
-#     input: "{sample}_R2.fastq.gz"
-#     output: "{sample}/reverse.fastq.gz"
-#     shell:
-#         "mv {input} {output}"
-
-
-
 rule data_import:
     """
     The import format for paired-end reads with the barcodes still in the sequence 
@@ -96,26 +103,40 @@ rule demulex_cutadapt:
         "--m-reverse-barcodes-file {input.barcode}  "
         "--o-per-sample-sequences {output.demulexed}  "
         "--o-untrimmed-sequences {output.unmatched} "
+        #"--p-mixed-orientation "
+        "--p-error-rate 0.20 "
 
-rule trim_primer:
+
+rule trim_index_primer:
     """
     If there are sequencing adapters or PCR primers in the reads which you’d like to remove, you can do that next as follows.
     """
-    input: "{sample}.demulexed.qza"
+    input: 
+        demux="{sample}.demulexed.qza",
+        barcode = "{sample}.barcodes.txt"
     output: "{sample}.trimmed.qza"
-    params:
-        primer_f= "GCACTCACTAGCCGTGACTATCGACTAATAGAT",#"GCACTCACTAGCCGTGACT",
-        primer_r= "CGACCGCACGTCTATTTAGTGGAGCCGAGATGT",#CGACCGCACGTCTATTTAGT",
     threads: 8
-    shell:
-        "qiime cutadapt trim-paired "
-        "--i-demultiplexed-sequences {input} "
-        "--p-front-f {params.primer_f} "
-        "--p-front-r {params.primer_r} "
-        "--p-error-rate 0.1 "
-        "--o-trimmed-sequences {output} "
-        "--verbose "
-        "--p-cores {threads} "
+    run:
+        fwd = set()
+        rev = set()
+        with open(input.barcode, newline='') as f:
+            reader = csv.DictReader(f, delimiter='\t',)
+            for row in reader:
+                fwd.add(row['adaptor-fwd'])
+                rev.add(row['adaptor-rev'])    
+
+        primer_f = fwd.pop()
+        primer_r = rev.pop()    
+
+        cmd =  "qiime cutadapt trim-paired " +\
+                "--i-demultiplexed-sequences {input.demux} " +\
+                f"--p-front-f {primer_f} " +\
+                f"--p-front-r {primer_r} " +\
+                "--p-error-rate 0.1 " +\
+                "--o-trimmed-sequences {output} " +\
+                "--verbose " +\
+                "--p-cores {threads} "
+        shell(cmd)
 
 rule join_paired:
     input: "{sample}.trimmed.qza"
@@ -186,22 +207,29 @@ rule amplicon_demux:
 rule CRISPResso_alignment:
     input: 
         fq="{sample}_demux/{split}_{i}.{final}.fastq",
-        ref = "template.ref.fa",
+        ref = "template.ref.fa", 
     output: 
         msa="{sample}_demux/CRISPResso/CRISPResso_on_{split}_{i}.{final}/Alleles_frequency_table.zip",
     threads: 1
     params: 
         outdir = "{sample}_demux/CRISPResso",
         final = "{final}",
+        tubb = "GAGGCCGAAGAGGAGGCCTA", # sgRNA
+        h4c3 = "GGGCGCACTCTGTATGGCTT",
     run:
         from Bio import SeqIO
         amplicons = list(SeqIO.parse("template.ref.fa", "fasta"))
         ids = { t.id : i for i, t in enumerate(amplicons) }
         idx = ids[params.final]
+        name = params.final.split("-")[0].lower()
+        sgRNA = params.tubb if name == 'tubb' else params.h4c3
         amplicon = str(amplicons[idx].seq)       
-        cmd = "CRISPResso --amplicon_seq " + amplicon
+        cmd = "CRISPResso --amplicon_seq " + amplicon # this could be WT allel sequences.
+        # cmd = " --expected_hdr_amplicon_seq " + hdr_amplicon  # if you know the exepected sequence
         cmd += " --fastq_r1 {input.fq} --output_folder {params.outdir} "
-        cmd += " --amplicon_name {wildcards.final} " #"--guide_seq GAGTCCGAGCAGAAGAAGAA  --guide_name xxx"
+        cmd += " --amplicon_name {wildcards.final} " 
+        #cmd += " --guide_seq %s "%sgRNA   # exclude PAM
+        #cmd += " --guide_name %s "%name
         cmd += " --quantification_window_size 20 " #--quantification_window_center -10 "
         cmd += " --write_cleaned_report "# --place_report_in_output_folder"
         shell(cmd)
