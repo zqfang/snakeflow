@@ -145,8 +145,8 @@ rule bam2bw:
 #        H3K4me3
 #     """
 #     input: 
-#         treat="mapped/{treat}.highQuality.q25.sorted.bam",
-#         ctrl="mapped/{ctrl}.highQuality.q25.sorted.bam",
+#         treat="mapped/{treat}.q25.sorted.bam",
+#         ctrl="mapped/{ctrl}.q25.sorted.bam",
 #         temp="temp/{sample}.{treat}.{ctrl}.txt"
 #     output: 
 #         "macs_out/{sample}_summits.bed",
@@ -162,15 +162,14 @@ rule bam2bw:
 #         " {params.extra} 2> {log}"
 
 # rule macs_broad:
-#     """use for braod domains calling, H3K27ac, H3K4me1.et. al"""
+#     """use for broad domains calling, H3K27ac, H3K4me1.et. al"""
 #     input: 
-#         treat="mapped/{treat}.highQuality.q25.sorted.bam",
-#         ctrl="mapped/{ctrl}.highQuality.q25.sorted.bam",
+#         treat="mapped/{treat}.q25.sorted.bam",
+#         ctrl="mapped/{ctrl}.q25.sorted.bam",
 #         temp="temp/{sample}.{treat}.{ctrl}.txt"
 #     output: 
 #         "macs_out/{sample}_summits.bed",
 #         "macs_out/{sample}_peaks.broadPeak",
-#     conda=MACS2_ENV,
 #     log: "logs/macs/{sample}.macs2.log"
 #     params:
 #         extra=" -f BAM -g hs -B --SPMR --broad --call-summits",
