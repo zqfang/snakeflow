@@ -18,7 +18,7 @@ FASTA_REF =     config['dna']
 BOWTIE_REFDIR= config['bowtie2_index']
 # index basename
 INDEX_PREFIX = config['index_prefix']
-_SAMPLES = config['samples']
+_SAMPLES = config['sample_meta']
 
 ############ Samples ##################
 # A Snakemake regular expression matching the forward mate FASTQ files.
@@ -33,16 +33,18 @@ _SAMPLES = config['samples']
 # Patterns for the 1st mate and the 2nd mate using the 'sample' wildcard.
 #PATTERN_R1 = '{sample}_R1.fastq.gz'
 #PATTERN_R2 = '{sample}_R2.fastq.gz'
+PATTERN_U = config['read_pattern']['u']
 PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
 
 with open(_SAMPLES, 'r') as s:
     SAMPLES = [ l.strip() for l in s]
-print(SAMPLES)
-#PERRETY_SAMPLE = expand("mapped/{sample}.{replicate}.bam", sample=SAMPLES, replicate=[0, 1])
-#SAMPLES,GROUP,IDS,= glob_wildcards(join(FASTQ_DIR, '{sample}_{group}_{id}_R1.fastq.gz'))
+
+## find fastq files 
+FASTQ_GE = {s:[os.path.join(FASTQ_DIR, f) for f in os.listdir(FASTQ_DIR) if (f.startswith(s) and (f.endswith("fastq") or f.endswith(".gz"))) ] for s in SAMPLES}
+#SAMPLES, GROUP, IDS,= glob_wildcards(join(FASTQ_DIR, '{sample}_{group}_{id}_R1.fastq.gz'))
 #######output######
-_BW = expand("mapped/{sample}.q25.bw", sample=SAMPLES)
+_BW = expand("igv/{sample}.q25.bw", sample=SAMPLES)
 # _MACS = "macs_out"
 # _HOMER 
 # _MOTIF ="motif"
@@ -65,27 +67,11 @@ rule target:
 #     shell: "bowtie2-build -f {input.fasta}  -p {threads}  {params.basename} &> {log}"
 
 
-# rule botiwe_align_single:
-#     input:
-#         index=expand(join(BOWTIE_REFDIR, INDEX_PREFIX)+".{ids}.bt2", ids=range(1,4)),
-#         r1 = join(FASTQ_DIR, "{sample}.fastq")
-#     output:
-#         temp('mapped/{sample}.bam')
-#     log:
-#         "logs/bowtie2/{sample}.align.log"
-#     threads: 12
-#     params:
-#         ref = join(BOWTIE_REFDIR, INDEX_PREFIX),
-#     shell:
-#         "(bowtie2 -p {threads} -x {params.ref} -U {input.r1} "
-#         " | samtools view -Sbh  -q 25 -@ {threads}  -o {output} - ) 2> {log}"
-
-
-rule botiwe_align_paired:
+rule botiwe_align:
     input:
         index=expand(join(BOWTIE_REFDIR, INDEX_PREFIX)+".{ids}.bt2", ids=range(1,4)),
-        r1 = join(FASTQ_DIR, PATTERN_R1),
-        r2 = join(FASTQ_DIR, PATTERN_R2)
+        # r1 = join(FASTQ_DIR, "{sample}.fastq")
+        fastqs = lambda wildcards: FASTQ_GE[wildcards.sample],
     output:
         temp('mapped/{sample}.bam')
     log:
@@ -93,9 +79,18 @@ rule botiwe_align_paired:
     threads: 12
     params:
         ref = join(BOWTIE_REFDIR, INDEX_PREFIX),
-    shell:
-        "(bowtie2 -p {threads} -x {params.ref} -1 {input.r1} -2 {input.r2} "
+        fastqs = lambda wildcards: FASTQ_GE[wildcards.sample],
+        u =  join(FASTQ_DIR,  PATTERN_U),
+        r1 = join(FASTQ_DIR, PATTERN_R1),
+        r2 = join(FASTQ_DIR, PATTERN_R2),
+    run:
+        reads = f"-U {params.u}"
+        if isinstance(params.fastqs, list) and len(params.fastqs) == 2: 
+            reads = f"-1 {params.r1} -2 {params.r2}"
+        cmd = "(bowtie2 -p {threads} -x {params.ref} %s "%reads +\
         " | samtools view -Sbh  -q 25 -@ {threads}  -o {output} - ) 2> {log}"
+        shell(cmd)
+
 
 rule bam_sort:
     input: "mapped/{sample}.bam"
@@ -117,7 +112,7 @@ rule bam2bw:
         bam = "mapped/{sample}.q25.sorted.bam",
         bai =   "mapped/{sample}.q25.sorted.bam.bai"
     output:
-        "mapped/{sample}.q25.bw"
+        "igv/{sample}.q25.bw"
     log: "logs/deeptools/{sample}.bam2bw.log"
     threads: 8
     params:

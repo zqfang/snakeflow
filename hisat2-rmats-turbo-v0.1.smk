@@ -22,7 +22,7 @@ GENOME = config['genome']
 # genome sequence
 FASTA_REF =      config['dna']
 # index_dir
-SALMON_INDEX_DIR=config['salmon_index']
+HISAT2_REFDIR =config['hisat2_index']
 # index basename
 INDEX_PREFIX = 'hg38'
 # gtf
@@ -39,21 +39,30 @@ GTF_Trans =      GTF_FILE.rstrip(".gtf")+".extracted.transx2gene.txt"
 
 #SAMPLES, = glob_wildcards(join(FASTQ_DIR, '{sample, SRR[^/]+}_R1.fastq.gz'))
 
-SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['sample_meta'])
-#rMATS
-uGroup=unique(GROUP)
+# SAMPLES,SAMPLES_ALIAS,GROUP,TIME = parse_samples(config['sample_meta'])
+# #rMATS
+# uGroup=unique(GROUP)
+_SAMPLES = config['sample_meta']
+with open(_SAMPLES, 'r') as s:
+    SAMPLES = [ l.strip() for l in s]
+print(SAMPLES)
+uGroup = SAMPLES
 RMATS_DICT = [[] for i in range(len(uGroup))]
-for i,g in enumerate(GROUP):
-    for j, u in enumerate(uGroup):
-        if g == u:
-            RMATS_DICT[j].append(SAMPLES[i])
+# for i,g in enumerate(GROUP):
+#     for j, u in enumerate(uGroup):
+#         if g == u:
+#             RMATS_DICT[j].append(SAMPLES[i])
 
 # Patterns for the 1st mate and the 2nd mate using the 'sample' wildcard.
 #PATTERN_R1 = '{sample}_R1.fastq.gz'
 #PATTERN_R2 = '{sample}_R2.fastq.gz'
+PATTERN_U = config['read_pattern']['u']
 PATTERN_R1 = config['read_pattern']['r1']
 PATTERN_R2 = config['read_pattern']['r2']
 
+
+FASTQ_GE = {s:[os.path.join(FASTQ_DIR, f) for f in os.listdir(FASTQ_DIR) if (f.startswith(s) and (f.endswith("fastq") or f.endswith(".gz"))) ] for s in SAMPLES}
+#SAMPLES, GROUP, IDS,= glob_wildcards(join(FASTQ_DIR, '{sample}_{group}_{id}_R1.fastq.gz'))
 # dirs
 DIRS = ['qc','mapped','alternative_splicing', 'gene_expression',
         'differential_expression','logs','temp']
@@ -66,7 +75,7 @@ BIGWIG = expand("igv/{sample}.sorted.bw", sample=SAMPLES)
 ################## Rules #######################################
 
 rule target:
-    input: RMATS_TURBO,BIGWIG
+    input: BIGWIG, # RMATS_TURBO
 
 rule hisat2_index:
     input:
@@ -85,7 +94,7 @@ rule hisat2_extract_splicesites:
     output:
         splice = join(HISAT2_REFDIR, 'splicesites.txt'),
         exon =   join(HISAT2_REFDIR, 'exon.txt')
-    threads: 8
+    threads: 1
     shell:
         """
         hisat2_extract_splice_sites.py {input} > {output.splice}
@@ -96,20 +105,28 @@ rule hisat2_align:
     input:
         index=expand(join(HISAT2_REFDIR,INDEX_PREFIX)+".{ids}.ht2", ids=range(1,9)),
         site = join(HISAT2_REFDIR, "splicesites.txt"),
-        r1 = join(FASTQ_DIR, PATTERN_R1),
-        r2 = join(FASTQ_DIR, PATTERN_R2)
+        fastqs = lambda wildcards: FASTQ_GE[wildcards.sample],
     output:
         temp('mapped/{sample}.bam')
     log:
         "logs/hisat2/{sample}.align.log"
-    threads: 8
+    threads: 16
     params:
         ref = join(HISAT2_REFDIR, INDEX_PREFIX),
-        extra="--min-intronlen 1000 --dta -t --new-summary"
-    shell:
-        "(hisat2 {params.extra} --threads {threads} -x {params.ref}"
-        " -1 {input.r1} -2 {input.r2}  --known-splicesite-infile {input.site}"
+        extra="--min-intronlen 1000 --dta -t --new-summary",
+        fastqs = lambda wildcards: FASTQ_GE[wildcards.sample],
+        u =  join(FASTQ_DIR,  PATTERN_U),
+        r1 = join(FASTQ_DIR, PATTERN_R1),
+        r2 = join(FASTQ_DIR, PATTERN_R2),
+    run:
+        reads = f"-U {params.u}"
+        if isinstance(params.fastqs, list) and len(params.fastqs) == 2: 
+            reads = f"-1 {params.r1} -2 {params.r2}"
+
+        cmd = "(hisat2 {params.extra} --threads {threads} -x {params.ref} " +\
+        "%s --known-splicesite-infile {input.site}"%reads +\
         " | samtools view -Sbh -@ {threads}  -o {output} - ) 2> {log}"
+        shell(cmd)
 
 rule bam_sort:
     input: "mapped/{sample}.bam"
@@ -130,7 +147,7 @@ rule bam2bw:
         "igv/{sample}.sorted.bw"
     threads: 8
     shell:
-        "bamCoverage --normalizeUsingRPKM -p {threads} -b {input.bam} -o {output}"
+        "bamCoverage --normalizeUsing RPKM -p {threads} -b {input.bam} -o {output}"
 
 
 rule rMATS_pre:

@@ -47,11 +47,11 @@ for s in POOL_SAMPLES:
 #### OUTPUT FILES ##########
 OUTDIR = directory(expand("{sample}_Results", sample=POOL_SAMPLES))
 CRISPResso_OUTPUT = ["%s_Results/CRISPResso_on_%s/%s.Alleles_frequency_table.zip"%(sample, split, split) for sample in POOL_SAMPLES for split in SPLIT_SAMPLES[sample]]
-AMPLICONS = ["%s_Results/%s_amplicon.fastq.gz"%(sample, split) for sample in POOL_SAMPLES for split in SPLIT_SAMPLES[sample]]
+AMPLICONS = ["%s_Results/Amplicon/%s_amplicon.fastq.gz"%(sample, split) for sample in POOL_SAMPLES for split in SPLIT_SAMPLES[sample]]
 
 
 rule all:
-    input: OUTDIR, CRISPResso_OUTPUT, AMPLICONS# ALIGNMENT
+    input: CRISPResso_OUTPUT, AMPLICONS# ALIGNMENT # OUTDIR
 
 
 rule fastp:
@@ -68,6 +68,21 @@ rule fastp:
         "-o {output.R1} -O {output.R2} "
         "--json {output.j} --html {output.h} "
 
+
+# rule demulex_fasta:
+#     input:
+#     output:
+#     run:
+#         bfwd = []
+#         brev = []
+#         os.makedirs(output.t, exist_ok=True)
+#         os.makedirs(output.d, exist_ok=True)
+#         with open(input.barcode, newline='') as f:
+#             reader = csv.DictReader(f, delimiter='\t',)
+#             for row in reader:
+#                 bfwd.append(row['barcode-fwd'])
+#                 brev.append(row['barcode-rev']) 
+#                 s = row['sample-id']
 
 
 checkpoint demulex_barcodes:
@@ -125,18 +140,20 @@ rule CRISPResso_Analysis:
     run:
         barcodes = pd.read_table(input.barcode, index_col=0)
         amplicon = barcodes.loc[wildcards.split, 'reference']
+        amplicon2 = barcodes.loc[wildcards.split, 'reference2']
         sgRNA = barcodes.loc[wildcards.split, 'sgRNA']
-        cmd = "CRISPResso --amplicon_seq " + amplicon # this could be WT allel sequences.
+        cmd = "CRISPResso --amplicon_seq " + amplicon + ","+ amplicon2 # this could be WT allel sequences.
+        cmd += " --amplicon_name Ref1,Ref2 " 
         # cmd = " --expected_hdr_amplicon_seq " + hdr_amplicon  # if you know the exepected sequence
         cmd += " --fastq_r1 {input.R1} --fastq_r2 {input.R2} "
         cmd += "--name {wildcards.split}  --output_folder {params.outdir} --file_prefix {wildcards.split} "
-        cmd += " --amplicon_name {wildcards.sample} " 
         #cmd += " --guide_seq %s "%sgRNA   # exclude PAM
         #cmd += " --guide_name %s "%name
         cmd += "--max_paired_end_reads_overlap 250 " # 250 most for amplicon seq
         cmd += "--min_paired_end_reads_overlap 10 "
         cmd += " --quantification_window_size 10 " #--quantification_window_center -10 "
         cmd += " --write_cleaned_report "# --place_report_in_output_folder"
+        #print(cmd)
         shell(cmd)
 
 
@@ -147,11 +164,12 @@ rule merge_paired_end:
     merge paired end reads into one amplicons.
     """
     input:
-        #R1="{sample}_demux/{split}_R1.fastq.gz",
-        #R2="{sample}_demux/{split}_R2.fastq.gz",
-        R1=lambda wildcards: "%s/{split}_R1.fastq.gz"%(checkpoints.demulex_barcodes.get(**wildcards).output.d),
-        R2=lambda wildcards: "%s/{split}_R2.fastq.gz"%(checkpoints.demulex_barcodes.get(**wildcards).output.d),
+        R1="{sample}_Results/{split}_R1.fastq.gz",
+        R2="{sample}_Results/{split}_R2.fastq.gz",
+        barcode = "{sample}.barcodes.txt",
+        #R1=lambda wildcards: "%s/{split}_R1.fastq.gz"%(checkpoints.demulex_barcodes.get(**wildcards).output.d),
+        #R2=lambda wildcards: "%s/{split}_R2.fastq.gz"%(checkpoints.demulex_barcodes.get(**wildcards).output.d),
     output:
-        "{sample}_demux/{split}_amplicon.fastq.gz"
+        "{sample}_Results/Amplicon/{split}_amplicon.fastq.gz"
     shell:
-        "NGmerge -1 {input.R1} -2 {input.R2} -m 10 -o {output}"
+        "/home/fangzq/miniconda/bin/NGmerge -1 {input.R1} -2 {input.R2} -m 10 -o {output}"
