@@ -23,7 +23,7 @@ rule trimmonatic:
         r1=join(FASTQ_CLEAN, "{sample}_R1_val_1.fastq.gz"),
         r2=join(FASTQ_CLEAN, "{sample}_R2_val_2.fastq.gz"),
         r1up=join(FASTQ_CLEAN, "{sample}_R1_val_upparied_1.fastq.gz"),
-        r2up=join(FASTQ_CLEAN, "{sample}_R1_val_upparied_2.fastq.gz)"
+        r2up=join(FASTQ_CLEAN, "{sample}_R1_val_upparied_2.fastq.gz)")
     log: "logs/trimmonatic/${sample}.trimmonatic.log"
     thread: 8
     shell:
