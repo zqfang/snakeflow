@@ -28,22 +28,23 @@ GENOME_SIZE =  "/home/fangzq/genome/human/GRCh38.p13.genome.size"
 GENOME_FASTA = "/home/fangzq/genome/human/GRCh38.p13.genome.fa"
 
 MACS2_GENOME = "hs"
-MACS2_PVAL = 1e-5
-MACS2_PVAL_BROAD =  1e-5
+MACS2_PVAL = 1e-2
+MACS2_PVAL_BROAD =  1e-2
 
 
 
 
 ############### OUTPUTS ##########
 ALL_BIGWIG = expand("bigwig/{sample}.bw", sample = ALL_SAMPLES)
-ALL_PEAKS = expand("peaks/{sample}.macs2_peaks.clean.broadPeak", sample = ALL_SAMPLES)
+ALL_PEAKS = expand("peaks/{sample}_macs2_peaks.clean.broadPeak", sample = ALL_SAMPLES)
 ALL_NUCLEO = expand("peaks/{sample}_nucleoATAC.occpeaks.bed.gz",  sample = ALL_SAMPLES)
-
+ALL_ANNOT = expand("peaks_annot/{sample}.peaksAnnotate.txt", sample = ALL_SAMPLES)
 ALL_QC = ["multiQC/multiQC_log.html"]
-ALL_ATAQV = expand("BAM/{sample}.sorted.bam.ataqv.json", sample = ALL_SAMPLES)
-
+ALL_ATAQV = "ATAC_qc/index.html"
+ALL_MOTIF = expand("motif/{sample}_motif/motifFindingParameters.txt", sample=ALL_SAMPLES)
+PHANTOM = expand("phantompeakqual/{sample}_phantom.txt", sample = ALL_SAMPLES)
 rule all:
-	input: ALL_PEAKS, ALL_BIGWIG, ALL_QC, ALL_ATAQV
+	input: ALL_PEAKS, ALL_BIGWIG, ALL_ANNOT, ALL_MOTIF, ALL_QC, ALL_ATAQV,
 
 
 rule fastqc:
@@ -90,13 +91,14 @@ rule align:
         markdup = "log/{sample}.markdup",
     shell:
         ## samblaster mark duplicates for read id grouped reads. I do not coordinate sort the bam
-        "bowtie2 --very-sensitive --no-discordant --threads 5  "
+        # using the following settings:
+        # --very-sensitive 
+        # --no-discordant    suppress discordant alignments for paired reads 
+        # -X/--maxins <int>  maximum fragment length (default=500). Increase to 2000 to get a better nucleosome distribution.
+        "bowtie2 --threads {threads} "
         "-X 2000 -x {params.bt2} -1 {input[0]} -2 {input[1]} 2> {log.bowtie2} "
         "| samblaster 2> {log.markdup} "
         "| samtools view -Sb - > {output[0]} "
-
-
-
 
 # check number of reads mapped by samtools flagstat
 rule flagstat_bam:
@@ -113,7 +115,10 @@ rule flagstat_bam:
 
 
 rule ataqv:
-    input: "BAM/{sample}.sorted.bam"
+    input: 
+        bam = "BAM/{sample}.sorted.bam",
+        #bai = "BAM/{sample}.sorted.bam.bai",
+        tss = "refGene.hg38.TSS.bed"
     output: "BAM/{sample}.sorted.bam.ataqv.json"
     log: "log/{sample}_ataqv.log"
     threads: 1
@@ -123,19 +128,19 @@ rule ataqv:
     message: "ataqv quality control for {input}"
     shell:
         """
-        ataqv {params.genome} {input} --metrics-file {output} 2> {log}
+        ataqv {params.genome} {input.bam} --metrics-file {output} 2> {log}
         """
 
 
 rule json_to_html:
 	input: expand("BAM/{sample}.sorted.bam.ataqv.json", sample = ALL_SAMPLES)
-	output: "ATAC_qc_html"
+	output: "ATAC_qc/index.html"
 	log: "log/ATAC_qc_html.log"
 	threads: 1
 	message: "compiling json files to html ATAC-seq QC"
 	shell:
 		"""	
-		mkarv 11ATAC_qc_html {input}
+		mkarv ATAC_qc {input}
 		"""
 
 
@@ -148,28 +153,27 @@ rule remove_chrM_bam:
 	threads: 12
 	message: "excluding chrM from bam {input} : {threads} threads"
 	params: jobname = "{sample}"
-	shell:
+	run:
 		# remove duplicates and reads on chrM, coordinate sort the bam
 		# samblaster expects name sorted bamq
-		"samtools view -h {input} | samblaster --removeDups "
-		"| grep -v -P '\tchrM\t' "
-		"| samtools view -Sb -F 4 - "
-		"| samtools sort -m 10G -@ {threads} -T {input}.tmp -o {output[0]} "
-		"samtools index {output[0]}" 
+		shell("samtools view -h {input} | samblaster --removeDups "
+              "| grep -v -P '\tchrM\t' "
+              "| samtools view -Sb -F 4 - "
+              "| samtools sort -m 10G -@ {threads} -T {input}.tmp -o {output[0]} ")
+		shell("samtools index {output[0]}") 
 
-rule phantom_peak_qual:
-    input: "BAM/{sample}_exclude_chrM.sorted.bam"
-    output: "phantompeakqual/{sample}_phantom.txt"
-    log: "log/{sample}_phantompeakqual.log"
-    threads: 4
-    params: jobname = "{sample}"
-    message: "phantompeakqual for {input} : {threads} threads"
-    shell:
-        """
-        Rscript  /home/fangzq/program/phantompeakqualtools/run_spp_nodups.R \
-                -c={input} -savp -rf  -p={threads} -odir=phantompeakqual  \
-                -out={output} -tmpdir=phantompeakqual 2> {log}
-        """
+# rule phantom_peak_qual:
+#     input: "BAM/{sample}_exclude_chrM.sorted.bam"
+#     output: "phantompeakqual/{sample}_phantom.txt"
+#     log: "log/{sample}_phantompeakqual.log"
+#     threads: 4
+#     params: jobname = "{sample}"
+#     message: "phantompeakqual for {input} : {threads} threads"
+#     shell:
+#         "/usr/bin/Rscript  /home/fangzq/program/phantompeakqualtools/run_spp.R "
+#         "-c='{input}' -savp -rf  -p={threads} -odir=phantompeakqual  "
+#         "-out='{output}' -tmpdir=phantompeakqual 2> {log} "
+
 
 rule down_sample:
     input: "BAM/{sample}_exclude_chrM.sorted.bam", "BAM/{sample}_exclude_chrM.sorted.bam.bai",
@@ -202,8 +206,23 @@ rule down_sample:
         shell("samtools index {outbam}".format(outbam = output[0]))
 
 
-rule make_bigwigs:
+rule make_bigwigs_downsample:
     input : "BAM/{sample}-downsample.sorted.bam", "BAM/{sample}-downsample.sorted.bam.bai"
+    output: "bigwig/{sample}.dowmsample.bw"
+    log: "log/{sample}.makebw"
+    threads: 8
+    params: jobname = "{sample}"
+    message: "making bigwig for {input} : {threads} threads"
+    shell:
+        """
+    	# no window smoothing is done, for paired-end, bamCoverage will extend the length to the fragement length of the paired reads
+        bamCoverage -b {input[0]} --ignoreDuplicates \
+                    --skipNonCoveredRegions --normalizeUsing RPKM \
+                    -p {threads} --extendReads -o {output} 2> {log}
+        """
+
+rule make_bigwigs:
+    input : "BAM/{sample}_exclude_chrM.sorted.bam", "BAM/{sample}_exclude_chrM.sorted.bam.bai",
     output: "bigwig/{sample}.bw"
     log: "log/{sample}.makebw"
     threads: 8
@@ -221,7 +240,7 @@ rule make_bigwigs:
 
 # https://github.com/taoliu/MACS/issues/145
 rule call_peaks_macs2:
-    input: "BAM/{sample}-downsample.sorted.bam", "BAM/{sample}-downsample.sorted.bam.bai"
+    input: "BAM/{sample}_exclude_chrM.sorted.bam", "BAM/{sample}_exclude_chrM.sorted.bam.bai",
     output: bed = "peaks/{sample}_macs2_peaks.broadPeak"
     log: "log/{sample}_call_peaks_macs2.log"
     params:
@@ -254,6 +273,19 @@ rule multiQC:
         multiqc fqc trim BAM log -o multiQC -d -f -v -n multiQC_log 2> {log}
         """
 
+
+rule genome_size:
+    input: GENOME_FASTA
+    output: GENOME_SIZE
+    shell:
+        # samtools faidx {input}
+        # cut -f1,2 {input}.fai > {input}
+        # pip install pyfaidx
+        """
+        faidx {input} -i chromsizes > {output}
+        """
+
+
 ## extend the broad peak a bit for nucelosome analysis by nuceloATAC
 rule make_bed_nucleoATAC:
     input: "peaks/{sample}_macs2_peaks.broadPeak"
@@ -272,7 +304,11 @@ rule make_bed_nucleoATAC:
 ## nucleoATAC works on the non-shifted bam, and shift the reads internally!
 # https://github.com/GreenleafLab/NucleoATAC/issues/58
 rule nucleoATAC:
-    input: "BAM/{sample}-downsample.sorted.bam", "BAM/{sample}-downsample.sorted.bam.bai", "peaks/{sample}_nucleo.bed"
+    input: 
+        "BAM/{sample}-downsample.sorted.bam", 
+        "BAM/{sample}-downsample.sorted.bam.bai", 
+        "peaks/{sample}_nucleo.bed",
+        GENOME_SIZE,
     output: "peaks/{sample}_nucleoATAC.occpeaks.bed.gz"
     log: "log/{sample}_nucleoATAC.log"
     threads: 5
@@ -294,6 +330,36 @@ rule subtract_blacklist:
         bed = "peaks/{sample}_macs2_peaks.broadPeak",
         blacklist= BLACKLIST,
     output:
-        "peaks/{sample}.macs2_peaks.clean.broadPeak"
+        "peaks/{sample}_macs2_peaks.clean.broadPeak"
     shell:
-        "sort -k1,1 -k2,2n {input.bed} | bedtools subtract -a stdin -b {input.blacklist} -A > {output}"
+        " awk '! index($1,\"_\") ' {input.bed} | "
+        "sort -k1,1 -k2,2n | "
+        "bedtools subtract -a stdin -b {input.blacklist} -A > {output}"
+
+
+rule annotate_peaks:
+    input: "peaks/{sample}_macs2_peaks.clean.broadPeak"
+    output: 
+        annot = "peaks_annot/{sample}.peaksAnnotate.txt",
+        go = "peaks_anno/{sample}.GO/biological_process.txt"
+    log: "log/{sample}.annotate_peaks.log"
+    shell:
+        "annotatePeaks.pl {input} hg38 "
+        "-go peaks_anno/{wildcards.sample}.GO "
+        "> {output.annot} 2> {log}"
+
+rule find_moitf:
+    input:
+        "peaks/{sample}_macs2_peaks.clean.broadPeak"
+    output: "motif/{sample}_motif/motifFindingParameters.txt"
+    log: "log/{sample}.find_motif.log"
+    params:
+        genome = "hg38"
+    shell:  
+        # snakemake use bash -c mode 
+        # Escape certain characters, such as \t by \\t, $ by $, and { by {{.
+        # Use triple quotation marks to surround the command line call. 
+        """ 
+        awk '{{print $4"\\t"$1"\\t"$2"\\t"$3"\\t+"}}' {input} | \
+        findMotifsGenome.pl - {params.genome} motif/{wildcards.sample}_motif -size given 2> {log}
+        """
