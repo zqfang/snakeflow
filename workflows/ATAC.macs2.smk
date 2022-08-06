@@ -73,7 +73,7 @@ PHANTOM = expand("phantompeakqual/{sample}_phantom.txt", sample = ALL_SAMPLES)
 MEME = "meme_motif/meme.html"
 HEATMAP = "figures/matrix.tss.gz"
 rule all:
-	input: ALL_PEAKS, ALL_BIGWIG, ALL_ANNOT, ALL_MOTIF, ALL_QC, ALL_ATAQV, HEATMAP, MEME
+	input: ALL_PEAKS, ALL_BIGWIG,  ALL_MOTIF, ALL_QC, ALL_ATAQV, HEATMAP, MEME, ALL_ANNOT,
 
 
 rule fastqc:
@@ -479,7 +479,8 @@ rule consensus_peak:
         peak = "peaks/consensus.peaks.bed"
     run:
         shell("cat {input.peak} | sort -k1,1 -k2,2n | bedtools merge > {output.peak} ")
-        shell("cat {input.tss} | sort -k1,1 -k2,2n | bedtools merge > {output.tss} ")
+        shell("cat {input.tss} | sort -k1,1 -k2,2n | bedtools merge | "
+              "awk 'OFS=\"\\t\" {{if ($2 == $3) $3+=1; print}}' > {output.tss} ") # end add 1 if start == end
 
         
 rule tss_enrichment:
@@ -489,8 +490,8 @@ rule tss_enrichment:
     output:
         mat = "figures/matrix.tss.gz",
         bed = "figures/genes.tss.bed",
-        profile = "figures/heatmap.tss.pdf",
-        heatmap = "figures/profile.tss.pdf",
+        heatmap = "figures/heatmap.tss.pdf",
+        profile = "figures/profile.tss.pdf",
     message: "tss enrichment heatmap and profile"
     threads: 8
     run:
@@ -528,7 +529,7 @@ rule get_peak_fasta:
     log:
     params:
     shell:
-        "awk -v FS='\\t' -v OFS='\\t' '{{midpos=($2+$10)/2;print $1,midpos-250,midpos+250;}}' {input.peak}  | "
+        "awk -v FS='\\t' -v OFS='\\t' '{{midpos=int(($2+$3)/2);print $1,midpos-250,midpos+250;}}' {input.peak}  | "
         "bedtools getfasta -fo {output} -fi {input.genome} -bed stdin "
         # cut -f 1-5 ${beddir}/${bed} | bedtools slop -i stdin -g ${genome_size} -b 100 | \
         # bedtools getfasta -fi ${genome_seq} -bed stdin -bedOut > peaks_fasta/${bed}.slop100.fasta.bed
@@ -545,9 +546,10 @@ rule meme_chip:
         "meme_motif/meme.html"
     params: 
         outdir = "meme_motif"
-    threads: 6
+    threads: 1
+    log: "log/meme-chip.log"
     shell:
-        "meme-chip -meme-maxw 30 -meme-p {threads} -oc {params.outdir} -db {input.meme_db} {input.fasta}"
+        "meme-chip -maxw 30 -meme-p {threads} -oc {params.outdir} -db {input.meme_db} {input.fasta} 2> {log}"
 
 # # # MEME-ChIP 的结果如果发现不方便批量提取结果，也可以自己单独运行它的子分析。比方说它 FIMO 只分析了部分 motif 而你需要分析全部的，那么可以单独进行 FIMO 分析。
 # # rule meme_fimo:
