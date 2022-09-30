@@ -1,4 +1,4 @@
-do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_counts, out_image, threads, sample_ids) {
+do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_image, threads, sample_ids) {
   # R code
   library(tximport)
   library(readr)
@@ -43,7 +43,10 @@ do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_counts, out_image, thr
 }
 
 do_salmon(snakemake@input[['tx2gene']], snakemake@output[['tpm']], 
-	  snakemake@output[['txtpm']],snakemake@output[['counts']], 
-	  snakemake@output[['image']], snakemake@threads, snakemake@params[['ids']])
+	  snakemake@output[['txtpm']],  
+	  snakemake@output[['image']], 
+    snakemake@threads, 
+    snakemake@params[['ids']] #snakemake@output[['counts']],
+    ) 
 
 

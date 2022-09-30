@@ -6,7 +6,7 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias, threads) {
      suppressMessages(library("gplots"))
      suppressMessages(library("pheatmap"))
      suppressMessages(library("DESeq2"))
-     suppressMessages(library('EnsDb.Hsapiens.v86'))
+     #suppressMessages(library('EnsDb.Hsapiens.v86'))
      suppressMessages(library("BiocParallel"))
      register(MulticoreParam(threads))
      # and set DESeq() et.al with parallel=TRUE
@@ -36,8 +36,8 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias, threads) {
 
      # add blind=FALSE if the function DESeq has already been run,
      # because then it is not necessary to re-estimate the dispersion values.
-     rld <- rlog(dds, blind=FALSE)
-     colnames(rld) <- alias
+     # rld <- rlog(dds, blind=FALSE)
+     # colnames(rld) <- alias
 
      vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
      #rlogMat <- assay(rld)
@@ -46,98 +46,95 @@ deseq2 <- function(txi_image, outdds, outntd, group, time, alias, threads) {
      # this gives log2(n + 1)
      ntd <- normTransform(dds)
      #ntd2 <- t(scale(t(as.matrix(assay(ntd)))))
-     colnames(ntd) <- alias
+     #colnames(ntd) <- alias
      ntd <- assay(ntd)
 
      #remove tails(versions) of gene id
      # rownames(ntd) <- gsub('\\.[0-9a-zA-Z_]+', '', rownames(ntd))
-     gene.ids <- gsub('\\.[0-9a-zA-Z_]+', '', rownames(ntd))
+    #  gene.ids <- gsub('\\.[0-9a-zA-Z_]+', '', rownames(ntd))
      #change the ensemble gene_id to gene_name for plotting
-     edb <- EnsDb.Hsapiens.v86
-     maps_names <- mapIds(edb, keys = gene.ids, column="GENENAME",
-                          keytype =  "GENEID", multiVals = "first")
-     rownames(ntd) <- maps_names
+    #  edb <- EnsDb.Hsapiens.v86
+    #  maps_names <- mapIds(edb, keys = gene.ids, column="GENENAME",
+    #                       keytype =  "GENEID", multiVals = "first")
+    #  rownames(ntd) <- maps_names
 
      #annotate columns of heatmap
      df <- data.frame(treatment=group, row.names=colnames(ntd))
 
      #save dds for further processing
-     save(dds, df,rld, vsd, ntd, group, file=outdds)
+     save(dds, df, vsd, ntd, group, file=outdds)
 
-     #save ntd
-     save(dds, ntd, df, group, file=outntd)
+    #  #clustering plot
+    #  hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(255)
+    #  distsRL <- dist(t(assay(rld)))
+    #  mat <- as.matrix(distsRL)
+    #  rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias, sep="")) #paste(alias, group, sep=":")
 
-     #clustering plot
-     hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(255)
-     distsRL <- dist(t(assay(rld)))
-     mat <- as.matrix(distsRL)
-     rownames(mat) <- colnames(mat) <- with(colData(dds), paste(alias, sep="")) #paste(alias, group, sep=":")
+    #  pdf("differential_expression/Samples.correlation.heatmap.pdf", width = 8, height = 8)
+    #  hc <- hclust(distsRL)
+    #  heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none",
+    #            col = rev(hmcol), margins=c(5,5), density="none",
+    #            main="Sample Correlation")
+    #  dev.off()
 
-     pdf("differential_expression/Samples.correlation.heatmap.pdf", width = 8, height = 8)
-     hc <- hclust(distsRL)
-     heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none",
-               col = rev(hmcol), margins=c(5,5), density="none",
-               main="Sample Correlation")
-     dev.off()
+    #  png("differential_expression/Samples.correlation.heatmap.png", width = 8, height = 8, units = 'in', res = 600)
+    #  heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none",
+    #            col = rev(hmcol), margins=c(5,5), density="none",
+    #            main="Sample Correlation")
+    #  dev.off()
 
-     png("differential_expression/Samples.correlation.heatmap.png", width = 8, height = 8, units = 'in', res = 600)
-     heatmap.2(mat, Rowv=as.dendrogram(hc), symm=TRUE, trace="none",
-               col = rev(hmcol), margins=c(5,5), density="none",
-               main="Sample Correlation")
-     dev.off()
+    #  #PCA plot.
+    #  pdf("differential_expression/Samples.PCA.pdf", width = 8, height = 8)
+    #  data <- plotPCA(rld, intgroup="condition", returnData=TRUE)
+    #  percentVar <- round(100 * attr(data, "percentVar"))
+    #  #add geom_text(check_overlap = T, to remove overlap text)
+    #  p <- ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))
+    #  p <- p+ geom_point(size=3) +
+    #          ggtitle("Principal Component Analysis") +
+    #          geom_text_repel(fontface = "bold")+
+    #          xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+    #          ylab(paste0("PC2: ",percentVar[2],"% variance"))
+    # #you have to use print() when calling ggplot and save to pdf
+    # print(p)
+    # dev.off()
 
-     #PCA plot.
-     pdf("differential_expression/Samples.PCA.pdf", width = 8, height = 8)
-     data <- plotPCA(rld, intgroup="condition", returnData=TRUE)
-     percentVar <- round(100 * attr(data, "percentVar"))
-     #add geom_text(check_overlap = T, to remove overlap text)
-     p <- ggplot(data, aes(PC1, PC2, color=condition, label=rownames(data)))
-     p <- p+ geom_point(size=3) +
-             ggtitle("Principal Component Analysis") +
-             geom_text_repel(fontface = "bold")+
-             xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-             ylab(paste0("PC2: ",percentVar[2],"% variance"))
-    #you have to use print() when calling ggplot and save to pdf
-    print(p)
-    dev.off()
+    # png("differential_expression/Samples.PCA.png", width = 8, height = 8, units = 'in', res = 600)
+    # print(p)
+    # dev.off()
 
-    png("differential_expression/Samples.PCA.png", width = 8, height = 8, units = 'in', res = 600)
-    print(p)
-    dev.off()
+    #  #save results for each group
+    #  comb <- t(combn(ugr,2))
+    #  for (i in 1:dim(comb)[1])
+    #  {
 
-     #save results for each group
-     comb <- t(combn(ugr,2))
-     for (i in 1:dim(comb)[1])
-     {
+    #      #save results to outdir
+    #      outDIR = paste0("differential_expression/diff_", comb[i,2], "_vs_", comb[i,1], "/diff")
+    #      #outRES=paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
+    #      outRES=paste(outDIR, comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
 
-         #save results to outdir
-         outDIR = paste0("differential_expression/diff_", comb[i,2], "_vs_", comb[i,1], "/diff")
-         #outRES=paste("differential_expression/diff", comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
-         outRES=paste(outDIR, comb[i,2], "vs", comb[i,1],"results.txt",sep="_")
+    #      # skip extraction if file already exists
+    #      if (!file.exists(outRES))
+    #      {
+    #          #res <- results(dds, contrast=c("condition","treated","control"))
+    #          res <- results(dds, contrast=c("condition", comb[i,2], comb[i,1]))
+    #          resOrdered <- res[order(res$padj),]
+    #          resOrdered = as.data.frame(resOrdered)
+    #          write.table(resOrdered, file=outRES, quote=F, sep="\t")
 
-         # skip extraction if file already exists
-         if (!file.exists(outRES))
-         {
-             #res <- results(dds, contrast=c("condition","treated","control"))
-             res <- results(dds, contrast=c("condition", comb[i,2], comb[i,1]))
-             resOrdered <- res[order(res$padj),]
-             resOrdered = as.data.frame(resOrdered)
-             write.table(resOrdered, file=outRES, quote=F, sep="\t")
+    #          #MAplot pdf
+    #          outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
+    #          pdf(outMA, width = 5, height = 5)
+    #          plotMA(res, ylim=c(-5,5))
+    #          dev.off()
 
-             #MAplot pdf
-             outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.pdf",sep="_")
-             pdf(outMA, width = 5, height = 5)
-             plotMA(res, ylim=c(-5,5))
-             dev.off()
+    #          #MAplot png
+    #          outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.png",sep="_")
+    #          png(outMA, width = 5, height = 5, units = 'in', res = 600)
+    #          plotMA(res, ylim=c(-5,5))
+    #          dev.off()
+    #      }
 
-             #MAplot png
-             outMA = paste(outDIR, comb[i,2], "vs", comb[i,1],"MAplot.png",sep="_")
-             png(outMA, width = 5, height = 5, units = 'in', res = 600)
-             plotMA(res, ylim=c(-5,5))
-             dev.off()
-         }
-
-     }
+    #  }
 
 }
 

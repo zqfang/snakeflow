@@ -127,7 +127,7 @@ rule hisat2_align:
         "%s --known-splicesite-infile {input.site}"%reads +\
         " | samtools view -Sbh -@ {threads}  -o {output} - ) 2> {log}"
         shell(cmd)
-
+        
 rule bam_sort:
     input: "mapped/{sample}.bam"
     output: protected("mapped/{sample}.sorted.bam")

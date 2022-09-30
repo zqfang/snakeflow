@@ -11,7 +11,7 @@ def unique(seq):
 
     return [x for x in seq if x not in seen and not seen_add(x)]
 
-def parse_samples(tab=config['sample_meta']):
+def parse_samples(tab):
     """parse samples """
     SAMPLES=[]
     SAMPLES_ALIAS=[]

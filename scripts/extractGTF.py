@@ -1,13 +1,19 @@
+import gzip
+
 def extract_gtf(gtf, gene_anno, tx2gene, threads):
     # python code
     lines_seen = set()
     tx2gene_seen = set()
-
+    
+    if gtf.endswith("gz"):
+        gtf2 = gzip.open(gtf, 'rt') # read text mode
+    else:
+        gtf2 = open(gtf)
     out1 = open(gene_anno, 'w') 
     out2 = open(tx2gene, 'w')
     out1.write("gene_id\tgene_name\tgene_type\n")
     out2.write("tx_id\tgene_id\tgene_name\n")
-    for line in open(gtf):
+    for line in gtf2:
         if line.startswith('#'): continue
         row = line.strip().split('\t')
         #if row[4] != "gene": continue

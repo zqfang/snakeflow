@@ -3,7 +3,7 @@ from itertools import combinations
 
 include: "rules/common.smk"
 
-configfile: 'config.yml'
+# configfile: 'config.yml'
 workdir: config['workdir']
 
 
@@ -59,15 +59,13 @@ SALMON_INDEX = expand(SALMON_INDEX_DIR+"/{prefix}.bin", prefix=['pos','mphf'])
 SALMON_QUANT_Trans = expand("salmon/{sample}/quant.sf", sample=SAMPLES)
 SALMON_QUANT_Genes = expand("salmon/{sample}/quant.genes.sf", sample=SAMPLES)
 
-RAW_COUNTS ="counts/sample.raw.counts.txt"
-SAMPLE_TPM ="gene_expression/gene_expression.TPM.txt"
-SAMPLE_TXTPM ="gene_expression/transcripts_expression.TPM.txt"
-SAMPLE_TPM_ANNO = "gene_expression/gene_expression.TPM.annotated.csv"
-SAMPLE_TXTPM_ANNO ="gene_expression/transcripts_expression.TPM.annotated.csv"
+# RAW_COUNTS ="quant/sample.raw.counts.txt"
+SAMPLE_TPM_ANNO = "quant/gene_expression.TPM.annotated.csv"
+SAMPLE_TXTPM_ANNO ="quant/transcripts_expression.TPM.annotated.csv"
 
-SALMON_TPM = "temp/txi.salmon.RData"
-DESEQ_DDS = "temp/deseq2.dds.RData"
-DESEQ_NTD = "temp/deseq2.ntd.Rdata"
+SALMON_OBJ= "quant/txi.salmon.RData"
+DESEQ_DDS = "quant/deseq2.dds.RData"
+DESEQ_NTD = "quant/deseq2.ntd.Rdata"
 DESEQ_RES = ["differential_expression/diff_{t}_vs_{c}/diff_{t}_vs_{c}_results.txt".format(t=j, c=i)
              for i, j in combinations(uGroup, 2)]
 DESEQ_ANNO = [res.replace(".txt", ".annotated.xls") for res in DESEQ_RES]
@@ -82,9 +80,9 @@ GSEA_FINAL=["differential_expression/GO/GSEA_%s_vs_%s/KEGG_2016/gseapy.gsea.gene
 
 
 rule target:
-    input: RAW_COUNTS, DESEQ_DDS,  DESEQ_ANNO,
+    input: DESEQ_DDS,  #DESEQ_ANNO,
            SAMPLE_TPM_ANNO, SAMPLE_TXTPM_ANNO,
-           DESEQ_RES, DESEQ_HEATMAP, GSEA_FINAL
+           #DESEQ_RES, DESEQ_HEATMAP, GSEA_FINAL
 
 rule salmon_index:
     input: CDNA
@@ -160,10 +158,10 @@ rule tximport:
         quant=expand("salmon/{sample}/quant.sf", sample=SAMPLES),
         tx2gene=GTF_Trans
     output:
-        tpm=SAMPLE_TPM,
-        txtpm=SAMPLE_TXTPM,
-        counts=RAW_COUNTS,
-        image="temp/txi.salmon.RData" #SALMON_TPM
+        tpm=temp("quant/gene_expression.TPM.txt"),
+        txtpm=temp("quant/transcripts_expression.TPM.txt"),
+        #counts=RAW_COUNTS,
+        image=SALMON_OBJ
     params:
         ids =",".join(SAMPLES)
     threads: 1
@@ -190,11 +188,11 @@ rule tximport:
         
 rule deseq2:
     input:
-        image="temp/txi.salmon.RData",#SALMON_TPM
+        image="quant/txi.salmon.RData",#SALMON_TPM
     output:
         res=DESEQ_RES,
-        ddsimage="temp/deseq2.dds.RData", #DESEQ_DDS
-        ntdimage="temp/deseq2.ntd.RData", #DESEQ_NTD
+        ddsimage="quant/deseq2.dds.RData", #DESEQ_DDS
+        ntdimage="quant/deseq2.ntd.RData", #DESEQ_NTD
     params:
         group=" ".join(GROUP),#used for grouping each sample, to dectect degs.
         time=" ".join(TIME),
@@ -232,7 +230,7 @@ rule anno_DEGs:
 rule pheatmap_degs:
     input:
         degstab="differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_results.txt",
-        image="temp/deseq2.ntd.RData"
+        image="quant/deseq2.ntd.RData"
     output:
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_all.degs.pdf",
         "differential_expression/diff_{treat}_vs_{ctrl}/diff_{treat}_vs_{ctrl}_top20genes.pdf"
@@ -248,11 +246,11 @@ rule anno_samples:
     input:
         GTF_Genes,
         GTF_Trans,
-        "gene_expression/gene_expression.TPM.txt",
-        "gene_expression/transcripts_expression.TPM.txt",
+        "quant/gene_expression.TPM.txt",
+        "quant/transcripts_expression.TPM.txt",
     output:
-        "gene_expression/gene_expression.TPM.annotated.csv",
-        "gene_expression/transcripts_expression.TPM.annotated.csv",
+        "quant/gene_expression.TPM.annotated.csv",
+        "quant/transcripts_expression.TPM.annotated.csv",
     params:
         group=GROUP,
         alias=SAMPLES_ALIAS,
