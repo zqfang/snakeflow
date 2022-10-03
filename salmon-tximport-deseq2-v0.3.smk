@@ -146,7 +146,7 @@ rule salmon_quant:
     log: "logs/salmon/{sample}_salmons_quant.log"
     shell:
         "salmon quant -l A -i {params.index_dir} -1 {params.r1} -2 {params.r2} "
-        "-p {threads} -o {params.outdir} {params.extra_paried} &> {log}"
+        "-p {threads} -g {input.gtf} -o {params.outdir} {params.extra_paried} &> {log}"
 rule tximport:
     '''used for kallisto, Salmon, Sailfish, and RSEM. see:
     http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html

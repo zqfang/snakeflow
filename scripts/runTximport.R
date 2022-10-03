@@ -19,10 +19,10 @@ do_salmon <- function(tx2gene, out_tpm, outTrans_tpm, out_image, threads, sample
   #aggregate transcripts to genes, and extract raw read counts  
   #add ignoreTxVersion to remove id versions
   txi.transcripts <- tximport(salmon.files, type = "salmon", 
-                              txOut = TRUE, tx2gene = tx2gene)
-                              #ignoreTxVersion = TRUE) #countsFromAbundance="scaledTPM" if not use DESeq2friomtximport
+                              txOut = TRUE, tx2gene = tx2gene,
+                              ignoreTxVersion = TRUE) #countsFromAbundance="scaledTPM" if not use DESeq2friomtximport
 
-  txi.salmon <- summarizeToGene(txi.transcripts, tx2gene)# ignoreTxVersion = TRUE) 
+  txi.salmon <- summarizeToGene(txi.transcripts, tx2gene ignoreTxVersion = TRUE) 
   # #countsFromAbundance="scaledTPM" if not use DESeq2friomtximport
 
   # #save raw counts after set tximport(..., countsFromAbundance="scaledTPM")

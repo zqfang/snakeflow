@@ -3,6 +3,7 @@ def anno_genes(gene_anno, tx_anno, tpms, txtpms, tpm_out, txtpm_out, samples, al
     from pandas import read_table, concat
 
     annGE = read_table(gene_anno, index_col='gene_id')
+    annGE.dropna(axis=1, how='all', inplace=True)
     annTX = read_table(tx_anno, index_col='tx_id')
 
     tpm = read_table(tpms, index_col=0)
@@ -11,8 +12,8 @@ def anno_genes(gene_anno, tx_anno, tpms, txtpms, tpm_out, txtpm_out, samples, al
     txtpm = read_table(txtpms, index_col=0)
     txtpm = txtpm[samples]
 
-    tpm.columns = ["TPM.%s.%s"%(g,a) for a, g, s in zip(alias, group, samples)]
-    txtpm.columns = ["TPM.%s.%s"%(g,a) for a, g, s in zip(alias, group, samples)]
+    tpm.columns = ["TPM_%s"%a for a in samples]
+    txtpm.columns = ["TPM_%s"%a for a in samples] # ["TPM_%s_%s"%(g,a) for a, g, s in zip(alias, group, samples)]
 
     mergeGene = concat([annGE, tpm], axis=1, join='inner')
     mergeGene.index.name ='gene_id'
