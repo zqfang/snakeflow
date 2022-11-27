@@ -1,4 +1,4 @@
-def anno_genes(gene_anno, tx_anno, tpms, txtpms, tpm_out, txtpm_out, samples, alias, group, ):
+def anno_genes(gene_anno, tx_anno, tpms, txtpms, tpm_out, txtpm_out, samples):
     # python code
     from pandas import read_table, concat
 
@@ -27,5 +27,4 @@ def anno_genes(gene_anno, tx_anno, tpms, txtpms, tpm_out, txtpm_out, samples, al
 anno_genes(snakemake.input[0], snakemake.input[1],
            snakemake.input[2], snakemake.input[3], 
            snakemake.output[0], snakemake.output[1], 
-           snakemake.params['samples'],snakemake.params['alias'],
-           snakemake.params['group'])
+           snakemake.params['samples'])

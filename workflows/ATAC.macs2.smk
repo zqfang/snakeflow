@@ -32,14 +32,14 @@ Use IGVSnapshot function with geneNames param.
 """
 
 import os
-
+import pandas as pd
 # shell.prefix("set -eo pipefail; echo BEGIN at $(date); ")
 # shell.suffix("; exitstat=$?; echo END at $(date); echo exit status was $exitstat; exit $exitstat")
 
 workdir: "/data/bases/fangzq/20220711_CC/ATAC"
 
-ALL_SAMPLES = ['Fadu_control', 'Fadu_NSD1-sh_KDM2A-sh', 'Fadu_NSD1-sh', 
-               'PCI-13_control', 'PCI-13_NSD1-sh_KDM2A-sh', 'PCI-13_NSD1-sh']
+ALL_SAMPLES = ['Fadu_control', 'Fadu_NSD1-sh', 'Fadu_NSD1-sh_KDM2A-sh', 
+               'PCI-13_control', 'PCI-13_NSD1-sh', 'PCI-13_NSD1-sh_KDM2A-sh']
 
 BOWTIE2_INDEX = "/home/fangzq/genome/human/bowtie2Indices_GRCh38_noalt_as/GRCh38_noalt_as"
 ## download from https://sites.google.com/site/anshulkundaje/projects/blacklists
@@ -50,20 +50,20 @@ TARGET_READS =  25000000 ## number of reads down sample to (25million default)
 # genome size for bedtools slop
 GENOME_SIZE =  "/home/fangzq/genome/human/GRCh38.p13.genome.size"
 ## genome fasta for nucleoATAC
-GENOME_FASTA = "/home/fangzq/genome/human/GRCh38.p13.genome.fa"
+GENOME_FASTA = "/home/fangzq/genome/human/hg38_masked.fa" # masked genome for meme-chip
 JASPAR_MOTIF = "/home/fangzq/genome/human/Jaspar_hs_core_homer.motifs"
 MEME_MOTIF = "/home/fangzq/genome/human/motif_databases/HUMAN/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme"
 TSS_BED =  "/home/fangzq/genome/human/GRCh38.refGene.TSS.chr.bed"
-MACS2_GENOME = "hs"
-MACS2_PVAL = 1e-2
-MACS2_PVAL_BROAD =  1e-2
+MACS3_GENOME = "hs"
+MACS3_PVAL = 1e-2
+MACS3_PVAL_BROAD =  1e-2
 
 
 
 
 ############### OUTPUTS ##########
 ALL_BIGWIG = expand("bigwig/{sample}.bw", sample = ALL_SAMPLES)
-ALL_PEAKS = expand("peaks/{sample}_macs2_peaks.clean.broadPeak", sample = ALL_SAMPLES)
+ALL_PEAKS = expand("peaks/{sample}_macs2_peaks.clean.narrowPeak", sample = ALL_SAMPLES)
 ALL_NUCLEO = expand("peaks/{sample}_nucleoATAC.occpeaks.bed.gz",  sample = ALL_SAMPLES)
 ALL_ANNOT = expand("peaks_annot/{sample}.peaksAnnotate.txt", sample = ALL_SAMPLES)
 ALL_QC = ["multiQC/multiQC_log.html"]
@@ -73,7 +73,7 @@ PHANTOM = expand("phantompeakqual/{sample}_phantom.txt", sample = ALL_SAMPLES)
 MEME = "meme_motif/meme.html"
 HEATMAP = "figures/matrix.tss.gz"
 rule all:
-	input: ALL_PEAKS, ALL_BIGWIG,  ALL_MOTIF, ALL_QC, ALL_ATAQV, HEATMAP, MEME, ALL_ANNOT,
+	input: ALL_PEAKS, ALL_BIGWIG,  ALL_MOTIF, ALL_QC, ALL_ATAQV, HEATMAP, ALL_ANNOT, MEME
 
 
 rule fastqc:
@@ -267,26 +267,22 @@ rule make_bigwigs:
 
 
 
-# https://github.com/taoliu/MACS/issues/145
-rule call_peaks_macs2:
+rule call_peaks_macs3:
     input: "BAM/{sample}_exclude_chrM.sorted.bam", "BAM/{sample}_exclude_chrM.sorted.bam.bai",
-    output: bed = "peaks/{sample}_macs2_peaks.broadPeak"
+    output: 
+        bed = "peaks/{sample}_macs2_peaks.narrowPeak",
+        summit = "peaks/{sample}_macs2_summits.bed"
     log: "log/{sample}_call_peaks_macs2.log"
     params:
         name = "{sample}_macs2",
         jobname = "{sample}",
-        g = MACS2_GENOME,
-        pval = MACS2_PVAL,
-        pval_broad = MACS2_PVAL_BROAD,
+        g = MACS3_GENOME,
+        qval = MACS3_PVAL,
     message: "call_peaks macs2 {input}: {threads} threads"
     shell:
-        """
-        ## for macs2, when nomodel is set, --extsize is default to 200bp, this is the same as 2 * shift-size in macs14.
-        macs2 callpeak -t {input[0]} \
-            --keep-dup all -f BAMPE -g {params.g} \
-            --outdir peaks -n {params.name} -p {params.pval} \
-            --broad --broad-cutoff {params.pval_broad} &> {log}
-        """
+        "/home/fangzq/miniconda/envs/fastai/bin/macs3 callpeak "
+        "-t {input[0]} -f BAMPE -g {params.g} --call-summits "
+        "--outdir peaks -n {params.name} --qvalue {params.qval} &> {log}"
 
 rule multiQC:
     input :
@@ -317,7 +313,7 @@ rule genome_size:
 
 ## extend the broad peak a bit for nucelosome analysis by nuceloATAC
 rule make_bed_nucleoATAC:
-    input: "peaks/{sample}_macs2_peaks.broadPeak"
+    input: "peaks/{sample}_macs2_peaks.narrowPeak"
     output: "peaks/{sample}_nucleo.bed"
     log: "log/{sample}_make_nucleoATAC_bed.log"
     threads: 1
@@ -356,12 +352,12 @@ rule nucleoATAC:
 
 rule subtract_blacklist:
     input:
-        bed = "peaks/{sample}_macs2_peaks.broadPeak",
+        bed = "peaks/{sample}_macs2_peaks.narrowPeak",
         blacklist= BLACKLIST,
     output:
-        "peaks/{sample}_macs2_peaks.clean.broadPeak"
+        "peaks/{sample}_macs2_peaks.clean.narrowPeak"
     shell:
-        " awk '! index($1,\"_\") ' {input.bed} | "
+        "grep -P 'chr[\dXY]+[ \\t]' {input.bed} | "
         "sort -k1,1 -k2,2n | "
         "bedtools subtract -a stdin -b {input.blacklist} -A > {output}"
 # bedtools intersect -v -a ${PEAK} -b ${BLACKLIST} \
@@ -384,7 +380,7 @@ rule subtract_blacklist:
 
 rule annotate_peaks:
     input: 
-        peak = "peaks/{sample}_macs2_peaks.clean.broadPeak",
+        peak = "peaks/{sample}_macs2_peaks.clean.narrowPeak",
         motif = JASPAR_MOTIF,
     output: 
         annot = "peaks_annot/{sample}.peaksAnnotate.txt",
@@ -404,7 +400,7 @@ rule annotate_peaks:
 
 rule moitf_enrichment:
     input:
-        peak = "peaks/{sample}_macs2_peaks.clean.broadPeak",
+        peak = "peaks/{sample}_macs2_peaks.clean.narrowPeak",
         motif = JASPAR_MOTIF,   
     output: "motif_enrichment/{sample}_motif/motifFindingParameters.txt"
     log: "log/{sample}.find_motif.log"
@@ -460,26 +456,29 @@ rule moitf_enrichment:
 
 rule tss_overlap:
     input:
-        peak = "peaks/{sample}_macs2_peaks.clean.broadPeak",
+        peak = "peaks/{sample}_macs2_peaks.clean.narrowPeak",
         tss = TSS_BED,
     output: temp("peaks/{sample}.tss.bed")
     message: "get tss bed that overlapped with {wildcards.sample}"
     shell:
-        # get promoters (-3k, +3k ) overlap with peaks 
-        "bedtools window -a {input.tss} -b {input.peak} " 
+        # get promoters (-3k, +3k ) overlap with peaks, only keep autochromosome using grep -P 
+        "grep -P 'chr[\dXY]+[ \\t]' {input.tss} | bedtools window -a stdin -b {input.peak} " 
         "-w 3000 -u > {output}"
         # # output regions contains -a -b, need cut to get -b regions only
         # cut -f 7- ${sample}.tss.bed > out
 rule consensus_peak:
     input: 
-        peak = expand("peaks/{sample}_macs2_peaks.clean.broadPeak", sample=ALL_SAMPLES),
+        narrow = expand("peaks/{sample}_macs2_peaks.clean.narrowPeak", sample=ALL_SAMPLES),
+        peak = expand("peaks/{sample}_macs2_summits.bed", sample=ALL_SAMPLES),
         tss = expand("peaks/{sample}.tss.bed", sample=ALL_SAMPLES)
     output:
         tss = "peaks/consensus.tss.bed",
-        peak = "peaks/consensus.peaks.bed"
+        peak = "peaks/consensus.summits.bed",
+        narrow = "peaks/consensus.narrowPeak"
     run:
-        shell("cat {input.peak} | sort -k1,1 -k2,2n | bedtools merge > {output.peak} ")
-        shell("cat {input.tss} | sort -k1,1 -k2,2n | bedtools merge | "
+        shell("cat {input.peak} | grep -P 'chr[\dXY]+[ \\t]' | sort -k1,1 -k2,2n | bedtools merge > {output.peak} ")
+        shell("cat {input.narrow} | grep -P 'chr[\dXY]+[ \\t]' | sort -k1,1 -k2,2n | bedtools merge > {output.narrow} ")
+        shell("cat {input.tss} | grep -P 'chr[\dXY]+[ \t]' | sort -k1,1 -k2,2n | bedtools merge | "
               "awk 'OFS=\"\\t\" {{if ($2 == $3) $3+=1; print}}' > {output.tss} ") # end add 1 if start == end
 
         
@@ -498,7 +497,7 @@ rule tss_enrichment:
         ## NOTE: the INPUT TSS file, each record have range length 1. so use reference-point cmd
         shell("computeMatrix reference-point --referencePoint TSS  -p {threads} "
               "-b 3000 -a 3000 -R {input.tss} -S {input.bw}  "
-              "--skipZeros  -o {output.mat}  "
+              "--skipZeros -o {output.mat}  "
               "--outFileSortedRegions {output.bed}")
         ## both plotHeatmap and plotProfile will use the output from   computeMatrix
         shell("plotHeatmap -m {output.mat} -out {output.heatmap} --plotFileFormat pdf  --dpi 720")  
@@ -521,39 +520,92 @@ rule tss_enrichment:
 # # MEME-ChIP 默认输入序列是约 500bp 长且中间 100bp 是 motif 区域。
 # # ATAC-Seq 分析得到 peak 是长度不一的，因此取 summit 向两边各延申 250bp 得到 500bp 序列。
 
+## see tutorial here https://github.com/roonysgalbi/memeMotifs
+## the ATAC-seq part
 rule get_peak_fasta:
     input: 
-        peak=  "peaks/consensus.peaks.bed",
+        peak=  "peaks/consensus.summits.bed",
         genome = GENOME_FASTA,
     output: "meme_motif/consensus.peaks.fasta"
-    log:
-    params:
     shell:
-        "awk -v FS='\\t' -v OFS='\\t' '{{midpos=int(($2+$3)/2);print $1,midpos-250,midpos+250;}}' {input.peak}  | "
+        # get  mid length
+        "awk -v FS='\\t' -v OFS='\\t' '{{midpos=$2;if ((midpos-250) > 0) print $1,midpos-250,midpos+250;}}' {input.peak}  | "
         "bedtools getfasta -fo {output} -fi {input.genome} -bed stdin "
         # cut -f 1-5 ${beddir}/${bed} | bedtools slop -i stdin -g ${genome_size} -b 100 | \
         # bedtools getfasta -fi ${genome_seq} -bed stdin -bedOut > peaks_fasta/${bed}.slop100.fasta.bed
 
+# # sort by q-value
+# sort -k9nr sample.narrowPeak >sample.sorted.narrowPeak
+# # select the top 1000 peaks
+# head -1000 sample.sorted.narrowPeak >sample.top1000.narrowPeaks
+# # create a bed file of 500bp regions centered on the peak summits
+# awk 'BEGIN{ OFS="\t";}{ midPos=$2+$10; print $1, midPos-250, midPos+250; }' sample.top1000.narrowPeaks >sample.regions.bed
+# # create fasta file
+# fastaFromBed -fi mm10_masked.fa -bed sample.regions.bed -fo sample.sequences.fa
+
+# rule get_background_model:
+#     input: "meme_motif/consensus.peaks.fasta"
+#     output: "meme_motif/background.model"
+#     shell:
+#         "fasta-get-markov -m 2 -dna -nostatus -nosummary {input} {output}"
+
 # # motif 数据库在 https://meme-suite.org/meme/db/motifs -> 下载 https://meme-suite.org/meme/doc/download.html。
 # # MEME-ChIP 输出结果在 meme.html 查看；结果的汇总在 summary.tsv 文件；combined.meme 文件包含所有被鉴定出的 Motif.
 # # motif E value 表示该 motif 多大概率是统计错误出现，而不是真的 motif. E 值越小说明发现的 motif 越大概率为真。
+
+## see tutorial here https://github.com/roonysgalbi/memeMotifs
+## the ATAC-seq part
+
 rule meme_chip:
     input: 
+        narrow = "peaks/consensus.narrowPeak",
         meme_db = MEME_MOTIF,
+        #bg_model = "meme_motif/background.model",
         fasta = "meme_motif/consensus.peaks.fasta"
     output:
         "meme_motif/summary.tsv",
         "meme_motif/meme.html"
     params: 
-        outdir = "meme_motif"
-    threads: 1
-    log: "log/meme-chip.log"
-    shell:
-        "meme-chip -maxw 30 -meme-p {threads} -oc {params.outdir} -db {input.meme_db} {input.fasta} 2> {log}"
+        outdir = "meme_motif",
+    threads: 36
+    run:
+        # peaks = pd.read_table(input.narrow, header=None)
+        # mean_peak_len = (peaks.iloc[:,2] - peaks.iloc[:,1]).abs().mean() # int number
+        # max_size = int(600 * mean_peak_len)
+        # -spamo-skip -> skip, takes too long
+        # -db: can set multiple times
+        # # -meme-maxsize -> see docs in meme -h
+        # # -ccut 0 for ATAC-seq to search whole input sequence, not the center 100
+        shell("meme-chip -maxw 30 -minw 6 -oc {params.outdir} -spamo-skip "
+              "-dna -ccut 0 -db {input.meme_db} "
+              "-meme-p {threads} -meme-mod zoops -meme-nmotifs 10 -meme-nrand {input.fasta}") 
+
+# for MEME-CHIP < v5.0
+# For each peak pf 500bp the default is to use the centre 100 for motif searching and the remaining 400 for background. 
+# but for ATAC-seq i want to search the whole 500 bases. So I must provide a background. #
+# The max data size limit is 100000, calculated by ccut x nmeme (default: 100x600=60000). 
+# To increase max size use -meme-maxsize [600 x mean peak length] and -ccut 0, 
+# so no cutting occurs and all of each region is used. Assuming MACS2 was used to call peaks:
+
+# calculate the mean peak length from narrow_peak.xls (column 4)
+# get peak summit from narrow_peak.xls (column 5) or narrow_summits.bed (column 3)
+# bed file region length = midPos+/- (1/2 mean peak length)
+# create background file (fasta-get-markov -m 2)
+# add to meme-chip command: -ccut = 0 --meme-maxsize = [600 x mean peak length]
+
 
 # # # MEME-ChIP 的结果如果发现不方便批量提取结果，也可以自己单独运行它的子分析。比方说它 FIMO 只分析了部分 motif 而你需要分析全部的，那么可以单独进行 FIMO 分析。
-# # rule meme_fimo:
-# #     input:
-# #     output:
-# #     shell:
-# #         "fimo --parse-genomic-coord -oc ${fimo_dir} --bgfile ${meme_dir}/background --motif SP1_HUMAN.H11MO.1.A ${meme_db} ${meme_dir}/${group}.fa"
+rule meme_fimo:
+    input: 
+        meme_db = MEME_MOTIF,
+        fasta = "meme_motif/consensus.peaks.fasta"
+    output: "meme_motif/fimo_out/fimo.tsv"
+    params: 
+        outdir = "meme_motif/fimo_out/"
+    shell:
+        "fimo --parse-genomic-coord -oc {params.outdir} "
+        "--motif SP1_HUMAN.H11MO.1.A "
+        "--motif SMAD1_HUMAN.H11MO.0.D "
+        "--motif SMAD2_HUMAN.H11MO.0.A "
+        "--motif SP1_HUMAN.H11MO.1.A " 
+        "{input.meme_db} {input.fasta}"

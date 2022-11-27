@@ -4,7 +4,7 @@ boxs = sns.boxplot(x='group',y='cellpct', data=cellpct2, palette=aaas, order=ord
                     showfliers=False, ax=ax[i])
 # Add in points to show each observation    
 # iterate over boxes
-for m, box in enumerate(boxs.artists):
+for m, box in enumerate(boxs.artists): // boxs.patches if matplotlib >=3.5
     box.set_edgecolor('black')
     box.set_facecolor('none')
     # iterate over whiskers and median lines

@@ -2,21 +2,21 @@
 # 2017-03-28
 
 # dir contains all indexes, genome sequences
-genome: /home/fangzq/genome"
+genome: "/home/fangzq/genome"
 # Path to an uncompressed FASTA file with all choromsome genome sequences.
 # we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
-dna: "/home/fangzq/genome/GRCh38.p13.genome.fa"
+dna: "/home/fangzq/genome/human/GRCh38.p13.genome.fa"
 
 # Path to an uncompressed FASTA file with all transcript sequences.
 # we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
-cdna: "/home/fangzq/genome/GRCh38.gencode.v33.transcripts.fa"
+cdna: "/home/fangzq/genome/human/GRCh38.gencode.v33.transcripts.fa"
 
 # GTF file path
 # we use gencode archive, downlaod from here:
 # http://www.gencodegenes.org/releases/current.html
-gtf: "/home/fangzq/genome/GRCh38.gencode.v33.annotation.gtf"
+gtf: "/home/fangzq/genome/human/GRCh38.gencode.v33.annotation.gtf"
 
 # RSeQC bed file
 # this two files are optional, if you do not need to run RSeQC.
@@ -32,21 +32,21 @@ rseqc:
 # Index dir
 hisat2_index: "/home/fangzq/genome/hisat2Indices_hg38"
 salmon_index: "/home/fangzq/genome/salmonIndices_hg38"
-
+bowtie2_index: "/home/fangzq/genome/human/bowtie2Indices_GRCh38_noalt_as"
+star_index: "/home/fangzq/genome/starIndices_hg38_100"
 # Index basebame (only for hisat2)
 index_prefix: "hg38"
 
 # Full path to a folder where output files will be created.
-workdir: "/home/fangzq/projects/bulk"
+workdir: "/data/bases/fangzq/20221015_MenYun"
 
 # extra scripts' dir for running. e.g preDEseq.py (StringTie)
 # scripts: "/home/fangzq/github/snakeflow/scripts"
-
 # Full path to a folder that holds all of your FASTQ files
-fastq_dir: "/data/bases/shared/bulk_RNA_seq/30_225476525_trim"
+fastq_dir: "/data/bases/fangzq/20221015_MenYun/raw_fastq"
 
 # Sequencing read length, only reqired for running rMATS or preDEseq.py.
-read_length: 150
+read_length: 100
 
 # Paired end sequencing library? True or False.
 paired: True
@@ -57,11 +57,12 @@ stranded: False
 # information in `samples` is used for deseq2 and rMATS
 # for trimed fastq, use suffix like: _trimmed.fq.gz
 read_pattern:
-    r1: "{sample}_R1_001.fastq.gz" # don't change {sample}
-    r2: "{sample}_R2_001.fastq.gz" # don't change {sample}
+    r1: "{sample}_1.fq.gz" # don't change {sample}
+    r2: "{sample}_2.fq.gz" # don't change {sample}
+    u: "{sample}.fastq"
 
 # sample metadata
-sample_meta: "/home/fangzq/projects/bulk/group.txt"
+sample_meta: "/data/bases/fangzq/20221015_MenYun/sample.meta.txt" # PAIRED.list.txt
 # ``dataframe``attribute works only if a file is given.
 # each column names correspond to the samples' attributes of above.
     # a sampleTable.txt look like this.

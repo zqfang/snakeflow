@@ -4,14 +4,14 @@
 # @date: May 31th, 2022
 import glob, re, os
 
-WORKSPACE = "/data/bases/fangzq/20220531_JJ_scRNAseq/pfizer"
+WORKSPACE = "/data/bases/fangzq/20220531_JJ_scRNAseq/"
 workdir: WORKSPACE
 
 ########### INPUTS ###########################################
 
 FASTQ_DIR = os.path.join(WORKSPACE, "fastq_path")
 # cellranger reference file
-TRANSCRIPTOM10X = "/home/fangzq/genome/mm10_BNT162b2_build"
+TRANSCRIPTOM10X = "/home/fangzq/genome/mm10_JJ_build"
 
 # automatic search sample names using regex
 pat = re.compile(r"(.+)_(S\d{1})_(L\d{3})_(\w{1}\d{1})_001.fastq")
@@ -21,8 +21,8 @@ names = [pat.search(f).groups() for f in files]
 # remove duplicate entries
 samples = sorted(list(set([f[0].split("/")[-1] for f in names])))
 
-PROJECT = "PfizermRNA"
-SAMPLES = samples
+PROJECT = "VaccineJJ"
+SAMPLES = ['Naive', "Day_1", "Day_3", "Day_7", "Day_28"] #samples 
 ### get fastqs for Gene Expression
 FASTQ_GE = {s:[os.path.join(FASTQ_DIR, f) for f in os.listdir(FASTQ_DIR) if f.startswith(s)] for s in SAMPLES}
 
