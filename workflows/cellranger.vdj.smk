@@ -11,7 +11,8 @@ workdir: WORKSPACE
 
 FASTQ_DIR = os.path.join(WORKSPACE, "FASTQ")
 # cellranger reference file
-TRANSCRIPTOM10X = "/home/fangzq/genome/10XRefdata/refdata-gex-GRCh38-2020-A"
+TRANSCRIPTOM10X = "/home/groups/bpulend/zqfang/refdata_mm10_YFP_CRE"
+VDJ = 
 
 # automatic search sample names using regex
 pat = re.compile(r"(.+)_(S\d{1})_(L\d{3})_(\w{1}\d{1})_\d{3}.fastq.gz")
@@ -43,16 +44,40 @@ rule target:
 # trick 1: rm {sample}_cnt/_lock file and re-run pipeline, it will be OK.
 # https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/troubleshooting
 # trick 2: rm output folder before cellranger run
-rule cellranger_count:
+rule prepare_config:
+    input: 
+        ref_tx=TRANSCRIPTOM10X,
+        ref_vdj=VDJ,
+    output: expand("{sample}.multi.config.csv", sample=SAMPLES)
+    params:
+        ref_tx=TRANSCRIPTOM10X,
+        ref_vdj=VDJ,   
+        samp_gex = SAMPLES,
+        samp_vdj = [s + "-BCR" for s in SAMPLES],
+        fastq = FASTQ_DIR
+    run:
+        for sg, sb in zip(params.samp_gex, params.vdj):
+            config="""[gene-expression]
+                    reference,{ref},
+                    [vdj]
+                    reference,{vdj},
+                    [libraries]
+                    fastq_id,fastqs,feature_types
+                    {s1},{fqdir},gene expression
+                    {s2},{fqdir},vdj-b
+                    """.format(ref=params.ref_tx, vdj=params.ref_vdj, 
+                               fqdir=params.fastq, s1=sg, s2=sb)
+            with open(output[0], "w") as out:
+                out.write(config)
+    
+rule cellranger_multi:
     input:
         fastq_ge = lambda wildcards: FASTQ_GE[wildcards.sample],
         transcriptom = os.path.join(TRANSCRIPTOM10X, "fasta/genome.fa"),
+        vdj = os.path.join(VDJ, "fasta/regions.fa"),
+        config = "{sample}.multi.config.csv"
     output:
-        bam = "{sample}_cnt/outs/possorted_genome_bam.bam",
-        barcode = "{sample}_cnt/outs/filtered_feature_bc_matrix/barcodes.tsv.gz",
-        features = "{sample}_cnt/outs/filtered_feature_bc_matrix/features.tsv.gz",
-        mtx = "{sample}_cnt/outs/filtered_feature_bc_matrix/matrix.mtx.gz",
-        mh5 =  "{sample}_cnt/outs/molecule_info.h5",
+        h5 = "{sample}/outs/per_sample_outs/{sample}/sample_filtered_feature_bc_matrix.h5",
     threads: 12
     log: "logs/{sample}.count.log"
     version: "0.1"
@@ -61,20 +86,12 @@ rule cellranger_count:
         fastqs=FASTQ_DIR,
         transcriptom=TRANSCRIPTOM10X,
     run:
-        # non antibody captured code
-        # "cellranger count --id={wildcards.sample}.cnt"
-        # "--fastqs={params.fastqs} "
-        # "--sample={wildcards.sample} "
         # rm outputdir to solve "pipestance directory" error from cellranger
-        shell("rm -rf {wildcards.sample}_cnt")
-        shell("cellranger count --id={wildcards.sample}_cnt " 
-                "--transcriptome={params.transcriptom} " 
-                "--fastqs={params.fastqs} "
-                "--sample={wildcards.sample} "
-                "--localcores={threads} {params.extra} > {log}") 
-        
+        shell("rm -rf {wildcards.sample}") # --localmem=48
+        shell("cellranger multi --id={wildcards.sample} --csv={input.config} --localcores={threads} ")  
+
 rule aggregate_list:
-    input: expand("{sample}_cnt/outs/molecule_info.h5", sample=SAMPLES)
+    input: expand("{sample}/outs/per_sample_outs/{sample}/sample_filtered_feature_bc_matrix.h5", sample=SAMPLES)
     output: "%s.aggr.csv"%PROJECT
     params: 
         samples = SAMPLES,
@@ -85,9 +102,9 @@ rule aggregate_list:
             # only add 'batch' when you need Chemistry Batch Correction
             # batch is optional, see docs if you have bath info
             # https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/aggregate
-            out.write("sample_id,molecule_h5,run\n")
+            out.write("sample_id,sample_outs,donor,origin\n")
             for s, b in zip(params.samples, params.ids):
-                out.write(f"{s},{s}_cnt/outs/molecule_info.h5,{b}\n")
+                out.write(f"{s},{s}/outs/per_sample_outs/{s},{s},{s}\n")
 
 
 rule cellranger_aggr:

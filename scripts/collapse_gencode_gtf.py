@@ -280,7 +280,9 @@ def collapse_annotation(annot, transcript_gtf, collapsed_gtf, blacklist=set(),
                         attr+f' exon_id "{g.id}_{k}; exon_number {k}";'])+'\n')
 
 
-if __name__ == '__main__':
+
+
+def collapse_annot_main(input_gtf, output_gtf):
 
     parser = argparse.ArgumentParser(description='Collapse isoforms into single transcript per gene and remove overlapping intervals between genes')
     parser.add_argument('transcript_gtf', help='Transcript annotation in GTF format')
@@ -289,7 +291,8 @@ if __name__ == '__main__':
     parser.add_argument('--collapse_only', action='store_true', help='Only collapse transcripts of each gene, do not remove overlaps.')
     parser.add_argument('--stranded', action='store_true', help='Only consider genes on the same strand when removing overlaps.')
     args = parser.parse_args()
-
+    args.transcript_gtf = input_gtf
+    args.output_gtf = output_gtf
     annotation = Annotation(args.transcript_gtf)
 
     if args.transcript_blacklist:
@@ -301,3 +304,5 @@ if __name__ == '__main__':
     print('Collapsing transcripts')
     collapse_annotation(annotation, args.transcript_gtf, args.output_gtf,
                         blacklist=blacklist, collapse_only=args.collapse_only, stranded=args.stranded)
+    
+ollapse_annot_main(snakemake.input[0], snakemake.output[0])

@@ -36,10 +36,30 @@ import pandas as pd
 # shell.prefix("set -eo pipefail; echo BEGIN at $(date); ")
 # shell.suffix("; exitstat=$?; echo END at $(date); echo exit status was $exitstat; exit $exitstat")
 
-workdir: "/data/bases/fangzq/20220711_CC/ATAC"
+workdir: "/data/bases/fangzq/External/ChenChen/20230214_CUTRUN/"
 
-ALL_SAMPLES = ['Fadu_control', 'Fadu_NSD1-sh', 'Fadu_NSD1-sh_KDM2A-sh', 
-               'PCI-13_control', 'PCI-13_NSD1-sh', 'PCI-13_NSD1-sh_KDM2A-sh']
+ALL_SAMPLES = [
+"FaDu_Control-1-H3K27me3",
+"FaDu_Control-1-H3K36me2",
+"FaDu_Control-H3K27me3",
+"FaDu_Control-H3K36me2",
+"FaDu_Control-H3K4me3_Positive",
+"FaDu_Control-IgG_Negative",
+"FaDu_NSD1-sh-1-H3K27me3",
+"FaDu_NSD1-sh-1-H3K36me2",
+"FaDu_NSD1-sh-H3K27me3",
+"FaDu_NSD1-sh-H3K36me2"
+]
+
+TREAT_CTRL_DICT = {"FaDu_Control-1-H3K27me3": "FaDu_Control-IgG_Negative",
+"FaDu_Control-1-H3K36me2": "FaDu_Control-IgG_Negative",
+"FaDu_Control-H3K27me3": "FaDu_Control-IgG_Negative",
+"FaDu_Control-H3K36me2": "FaDu_Control-IgG_Negative",
+"FaDu_Control-H3K4me3_Positive": "FaDu_Control-IgG_Negative",
+"FaDu_NSD1-sh-1-H3K27me3": "FaDu_Control-IgG_Negative",
+"FaDu_NSD1-sh-1-H3K36me2": "FaDu_Control-IgG_Negative",
+"FaDu_NSD1-sh-H3K27me3": "FaDu_Control-IgG_Negative",
+"FaDu_NSD1-sh-H3K36me2": "FaDu_Control-IgG_Negative"}
 
 BOWTIE2_INDEX = "/home/fangzq/genome/human/bowtie2Indices_GRCh38_noalt_as/GRCh38_noalt_as"
 ## download from https://sites.google.com/site/anshulkundaje/projects/blacklists
@@ -62,18 +82,16 @@ MACS3_PVAL_BROAD =  1e-2
 
 
 ############### OUTPUTS ##########
-ALL_BIGWIG = expand("bigwig/{sample}.bw", sample = ALL_SAMPLES)
-ALL_PEAKS = expand("peaks/{sample}_macs2_peaks.clean.narrowPeak", sample = ALL_SAMPLES)
-ALL_NUCLEO = expand("peaks/{sample}_nucleoATAC.occpeaks.bed.gz",  sample = ALL_SAMPLES)
-ALL_ANNOT = expand("peaks_annot/{sample}.peaksAnnotate.txt", sample = ALL_SAMPLES)
+ALL_BIGWIG = expand("bigwig/{sample}.cpm.bw", sample = ALL_SAMPLES)
+ALL_PEAKS = expand("peaks/{sample}_macs2_peaks.clean.narrowPeak", sample = list(TREAT_CTRL_DICT.keys()))
+ALL_ANNOT = expand("peaks_annot/{sample}.peaksAnnotate.txt", sample = list(TREAT_CTRL_DICT.keys()))
 ALL_QC = ["multiQC/multiQC_log.html"]
 ALL_ATAQV = "ATAC_qc/index.html"
-ALL_MOTIF = expand("motif_enrichment/{sample}_motif/motifFindingParameters.txt", sample=ALL_SAMPLES)
-PHANTOM = expand("phantompeakqual/{sample}_phantom.txt", sample = ALL_SAMPLES)
+ALL_MOTIF = expand("motif_enrichment/{sample}_motif/motifFindingParameters.txt", sample=list(TREAT_CTRL_DICT.keys()))
 MEME = "meme_motif/meme.html"
 HEATMAP = "figures/matrix.tss.gz"
 rule all:
-	input: ALL_PEAKS, ALL_BIGWIG,  ALL_MOTIF, ALL_QC, ALL_ATAQV, HEATMAP, ALL_ANNOT, MEME
+	input: ALL_BIGWIG, ALL_QC, # ALL_PEAKS,  ALL_MOTIF, ALL_QC,# HEATMAP, ALL_ANNOT, MEME
 
 
 rule fastqc:
@@ -127,7 +145,24 @@ rule align:
         "bowtie2 --very-sensitive --threads {threads} "
         "-X 2000 -x {params.bt2} -1 {input[0]} -2 {input[1]} 2> {log.bowtie2} "
         "| samblaster 2> {log.markdup} "
-        "| samtools view -Sb - > {output[0]} "
+        "| samtools view -Sb -@ {threads}  - > {output} "
+
+
+# rule sort_filter_bam:
+#     input: "BAM/{sample}.bam"
+#     output:
+#         OUTPUT_DIR + "samples/align/{sample}.cleaned.bam"
+#     params:
+#         tmp = OUTPUT_DIR + "samples/align/{sample}"
+#     threads: 12
+#     shell:
+#         "samtools fixmate -m -@ {threads} {input} - | "
+#         "samtools sort -@ {threads} -T {params.tmp} - | "
+#         "samtools markdup - - | "
+#         "samtools view -b -f 0x3 -F 0x400 - > {output}"
+#         # "samtools sort -n - > {output}"
+
+
 
 # check number of reads mapped by samtools flagstat
 rule flagstat_bam:
@@ -141,39 +176,10 @@ rule flagstat_bam:
         """
         samtools flagstat {input} > {output} 2> {log}
         """
+        
 
-
-rule ataqv:
-    input: 
-        bam = "BAM/{sample}.sorted.bam",
-        #bai = "BAM/{sample}.sorted.bam.bai",
-        tss = "refGene.hg38.TSS.bed"
-    output: "BAM/{sample}.sorted.bam.ataqv.json"
-    log: "log/{sample}_ataqv.log"
-    threads: 1
-    params:
-        jobname = "{sample}",
-        genome = 'human'
-    message: "ataqv quality control for {input}"
-    shell:
-        """
-        ataqv {params.genome} {input.bam} --metrics-file {output} 2> {log}
-        """
-
-
-rule json_to_html:
-	input: expand("BAM/{sample}.sorted.bam.ataqv.json", sample = ALL_SAMPLES)
-	output: "ATAC_qc/index.html"
-	log: "log/ATAC_qc_html.log"
-	threads: 1
-	message: "compiling json files to html ATAC-seq QC"
-	shell:
-		"""	
-		mkarv --force ATAC_qc  {input}
-		"""
-
-
-## shifting the reads are only critical for TF footprint, for peak calling and making bigwigs, it should be fine using the bams without shifting
+## shifting the reads are only critical for TF footprint.
+#  for peak calling and making bigwigs, it should be fine using the bams without shifting
 # https://sites.google.com/site/atacseqpublic/atac-seq-analysis-methods/offsetmethods
 rule remove_chrM_bam:
 	input: "BAM/{sample}.sorted.bam"
@@ -191,98 +197,85 @@ rule remove_chrM_bam:
               "| samtools sort -m 10G -@ {threads} -T {input}.tmp -o {output[0]} ")
 		shell("samtools index {output[0]}") 
 
-# rule phantom_peak_qual:
-#     input: "BAM/{sample}_exclude_chrM.sorted.bam"
-#     output: "phantompeakqual/{sample}_phantom.txt"
-#     log: "log/{sample}_phantompeakqual.log"
-#     threads: 4
-#     params: jobname = "{sample}"
-#     message: "phantompeakqual for {input} : {threads} threads"
+# rule shift_bam:
+#     input:
+#         bam="BAM/{sample}_exclude_chrM.sorted.bam", 
+#         bai="BAM/{sample}_exclude_chrM.sorted.bam.bai"
+#     output:
+#         bam="BAM/{sample}.shifted.bam"
+#     threads: 8
 #     shell:
-#         "/usr/bin/Rscript  /home/fangzq/program/phantompeakqualtools/run_spp.R "
-#         "-c='{input}' -savp -rf  -p={threads} -odir=phantompeakqual  "
-#         "-out='{output}' -tmpdir=phantompeakqual 2> {log} "
+#         # deeptools
+#         "alignmentSieve --numberOfProcessors {threads} "
+#         "-b {input.bam} -o {output.bam} --ATACshift"
 
+# rule sort_shift:
+#     input: "BAM/{sample}.shifted.bam"
+#     output:
+#         bam="BAM/{sample}.shifted.sorted.bam",
+#         bai="BAM/{sample}.shifted.sorted.bam.bai"
+#     threads:8
+#     run:
+#         shell("samtools sort -@ {threads} {input} > {output.bam}")
+#         shell("samtools index {output.bam}")
 
-rule down_sample:
-    input: "BAM/{sample}_exclude_chrM.sorted.bam", "BAM/{sample}_exclude_chrM.sorted.bam.bai",
-	 	   "BAM/{sample}_exclude_chrM.sorted.bam.flagstat"
-    output: "BAM/{sample}-downsample.sorted.bam", "BAM/{sample}-downsample.sorted.bam.bai"
-    log: "log/{sample}_downsample.log"
-    threads: 12
-    params: 
-        jobname = "{sample}",
-        target_reads = TARGET_READS,
-    message: "downsampling for {input}"
-    run:
-        import re
-        import subprocess
-        with open (input[2], "r") as f:
-            # fifth line contains the number of mapped reads
-            line = f.readlines()[5]
-            match_number = re.match(r'(\d.+) \+.+', line)
-			## how many paired reads, roughly total #reads/2
-            total_reads = float(match_number.group(1))/2
-
-        target_reads = params.target_reads # 15million reads  by default, set up in the config.yaml file
-        if total_reads > target_reads:
-            down_rate = target_reads/total_reads
-        else:
-            down_rate = 1
-
-        shell("sambamba view -f bam -t {threads} --subsampling-seed=3 -s %s {input[0]} | "%down_rate +\
-              "samtools sort -m 2G -@ {threads} -T {output[0]}.tmp > {output[0]} 2> {log}")
-        shell("samtools index {outbam}".format(outbam = output[0]))
-
-
-rule make_bigwigs_downsample:
-    input : "BAM/{sample}-downsample.sorted.bam", "BAM/{sample}-downsample.sorted.bam.bai"
-    output: "bigwig/{sample}.dowmsample.bw"
-    log: "log/{sample}.makebw"
-    threads: 8
-    params: jobname = "{sample}"
-    message: "making bigwig for {input} : {threads} threads"
-    shell:
-        """
-    	# no window smoothing is done, for paired-end, bamCoverage will extend the length to the fragement length of the paired reads
-        bamCoverage -b {input[0]} --ignoreDuplicates \
-                    --skipNonCoveredRegions --normalizeUsing RPKM \
-                    -p {threads} --extendReads -o {output} 2> {log}
-        """
 
 rule make_bigwigs:
-    input : "BAM/{sample}_exclude_chrM.sorted.bam", "BAM/{sample}_exclude_chrM.sorted.bam.bai",
-    output: "bigwig/{sample}.bw"
+    input:
+        bam="BAM/{sample}_exclude_chrM.sorted.bam", 
+        bai="BAM/{sample}_exclude_chrM.sorted.bam.bai"
+    output: "bigwig/{sample}.cpm.bw"
     log: "log/{sample}.makebw"
     threads: 8
     params: jobname = "{sample}"
     message: "making bigwig for {input} : {threads} threads"
     shell:
-        """
     	# no window smoothing is done, for paired-end, bamCoverage will extend the length to the fragement length of the paired reads
-        bamCoverage -b {input[0]} --ignoreDuplicates \
-                    --skipNonCoveredRegions --normalizeUsing RPKM \
-                    -p {threads} --extendReads -o {output} 2> {log}
-        """
+        "bamCoverage -b {input.bam} --ignoreDuplicates "
+        "--skipNonCoveredRegions --normalizeUsing CPM "
+        "-p {threads} --extendReads -o {output} 2> {log}"
 
-
-
-rule call_peaks_macs3:
-    input: "BAM/{sample}_exclude_chrM.sorted.bam", "BAM/{sample}_exclude_chrM.sorted.bam.bai",
+rule call_peaks_histome_macs3:
+    input: 
+        tbam = "BAM/{treat}_exclude_chrM.sorted.bam", 
+        tbai = "BAM/{treat}_exclude_chrM.sorted.bam.bai",
+        cbam = lambda wildcards: "BAM/%s_exclude_chrM.sorted.bam"%(TREAT_CTRL_DICT[wildcards.treat]),
+        cbai = lambda wildcards: "BAM/%s_exclude_chrM.sorted.bam.bai"%(TREAT_CTRL_DICT[wildcards.treat]),
     output: 
-        bed = "peaks/{sample}_macs2_peaks.narrowPeak",
-        summit = "peaks/{sample}_macs2_summits.bed"
-    log: "log/{sample}_call_peaks_macs2.log"
+        bed = "peaks/{treat}_macs2_peaks.broadPeak",
+        #summit = "peaks/{sample}_macs2_summits.bed"
+    log: "log/{treat}_call_peaks_macs2.log"
     params:
-        name = "{sample}_macs2",
-        jobname = "{sample}",
+        name = "{treat}_macs2",
+        jobname = "{treat}",
         g = MACS3_GENOME,
-        qval = MACS3_PVAL,
-    message: "call_peaks macs2 {input}: {threads} threads"
+        qval = MACS3_PVAL_BROAD,
+        broad = "--broad --broad-cutoff 0.1 "
+    message: "call_peaks macs2 {treat}: {threads} threads"
     shell:
-        "/home/fangzq/miniconda/envs/fastai/bin/macs3 callpeak "
-        "-t {input[0]} -f BAMPE -g {params.g} --call-summits "
+        "/home/fangzq/miniconda/envs/fastai/bin/macs3 callpeak " 
+        "--broad --broad-cutoff 0.1 -f BAMPE "
+        "-t {tbam} -c {cbam} -g {params.g} " +\
         "--outdir peaks -n {params.name} --qvalue {params.qval} &> {log}"
+
+
+#rule call_peaks:
+#    input:
+#        sorted_shifted_bam = rules.sort_shifted_bam.output.sorted_shifted_bam
+#    resources: time_min=360, mem_mb=20000, cpus=1
+#    output:
+#        narrowPeak = config["dir_names"]["peak_calling_dir"] + "/{sample_id}.narrowPeak",
+#        broadPeak = config["dir_names"]["peak_calling_dir"] + "/{sample_id}.broadPeak"
+#    params:
+#        genome = config["params"]["macs2"]["genome"],
+#        output_directory = config["dir_names"]["peak_calling_dir"]
+#    shell:
+#        """
+#        macs2 callpeak -t {input.sorted_shifted_bam} -g {params.genome} -f BAMPE -n {output.narrowPeak} --outdir {params.output_directory} -q 0.01 -B --SPMR --keep-dup all;
+#        macs2 callpeak -t {input.sorted_shifted_bam} -g {params.genome} -f BAMPE -n {output.broadPeak} --broad --broad-cutoff 0.1 -B --SPMR --keep-dup all;
+#        """
+
+
 
 rule multiQC:
     input :
@@ -311,43 +304,6 @@ rule genome_size:
         """
 
 
-## extend the broad peak a bit for nucelosome analysis by nuceloATAC
-rule make_bed_nucleoATAC:
-    input: "peaks/{sample}_macs2_peaks.narrowPeak"
-    output: "peaks/{sample}_nucleo.bed"
-    log: "log/{sample}_make_nucleoATAC_bed.log"
-    threads: 1
-    message: "making bed for nucleoATAC from {input}"
-    params: 
-        jobname= "{sample}",
-        gs = GENOME_SIZE
-    shell:
-        """
-        cat {input} | bedtools slop -b 200 -g {params.gs]} | sort -k1,1 -k2,2n | bedtools merge > {output} 2> {log}
-        """
-
-## nucleoATAC works on the non-shifted bam, and shift the reads internally!
-# https://github.com/GreenleafLab/NucleoATAC/issues/58
-rule nucleoATAC:
-    input: 
-        "BAM/{sample}-downsample.sorted.bam", 
-        "BAM/{sample}-downsample.sorted.bam.bai", 
-        "peaks/{sample}_nucleo.bed",
-        GENOME_SIZE,
-    output: "peaks/{sample}_nucleoATAC.occpeaks.bed.gz"
-    log: "log/{sample}_nucleoATAC.log"
-    threads: 5
-    message: "calling nucleosome by nucleoATAC for {input} : {threads} threads"
-    params:
-        jobname = "{sample}",
-        outputdir = os.path.dirname(srcdir("log")),
-        fa = GENOME_FASTA
-    shell:
-        """
-        cd nucleoATAC
-        nucleoatac run --bed {params.outputdir}/{input[2]} --bam {params.outputdir}/{input[0]} --cores {threads} \
-                        --fasta {params.fa} --out {wildcards.sample} 2> {params.outputdir}/{log}
-        """
 
 
 rule subtract_blacklist:

@@ -27,7 +27,7 @@ FASTA_REF =      config['dna']
 # index_dir
 STAR_REFDIR =    config['star_index']
 # index basename
-INDEX_PREFIX = 'hg38'
+INDEX_PREFIX =   config['index_prefix']
 # gtf
 GTF_FILE =       config['gtf']
 # transcriptiome cdna
@@ -80,7 +80,7 @@ MULTIQC = 'multiqc/multiqc_report.html'
 ################## Rules #######################################
 
 rule target:
-    input: COUNTS, QUANT, RMATS_TURBO, MULTIQC#BIGWIG, # RMATS_TURBO
+    input: COUNTS, QUANT, MULTIQC, BIGWIG, # RMATS_TURBO
 
 # rule fastqc:
 #     input:  
@@ -379,9 +379,9 @@ rule read_distribution:
 rule collopase_annotation:
     input: GTF_FILE
     output: "temp/gencode.collopased.annotation.gtf"
-    shell:
+    script:
         ## note: works for gencode gtf
-        "python3 collapse_annotation.py {input} {output}"
+        "scripts/collapse_gencode_gtf.py"
 
 rule rnaseqc:
     input:
