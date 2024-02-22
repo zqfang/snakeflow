@@ -225,7 +225,7 @@ rule ensemble_vep:
         "--plugin TSSDistance --domains --plugin StructuralVariantOverlap "
         "--plugin phenotypes --symbol --gencode_basic --gene_phenotype MGI"
         "--nearest gene --regulatory --distance 5000 --individual all "
-        "--no_check_variants_order –max_sv_size 100000 " # --check_svs " 
+        "--no_check_variants_order --max_sv_size 100000 " # --check_svs " 
         "--compress_output gzip -o {output} --tab"
 
 rule merged_callset_filtering:
@@ -294,5 +294,17 @@ rule ensemble_vep_joint:
         "--plugin TSSDistance --domains --plugin StructuralVariantOverlap "
         "--plugin phenotypes --symbol --gencode_basic --gene_phenotype MGI"
         "--nearest gene --regulatory --distance 5000 --individual all "
-        "--no_check_variants_order –max_sv_size 500000 " # --check_svs " 
+        "--no_check_variants_order --max_sv_size 500000 " # --check_svs " 
         "--compress_output gzip -o {output} --tab -i {input}"
+
+
+
+
+# bcftools view -f PASS -i 'INFO/SVTYPE!="BND"' strains39.all.vcf.gz | \
+# /home/fangzq/github/ensembl-vep/vep -a GRCm38 --species mus_musculus \
+# --compress_output gzip -o {output} --tab \
+# --fork 4 --offline --uniprot --cache --format vcf --force_overwrite -overlaps \
+# --plugin TSSDistance --domains --plugin StructuralVariantOverlap \
+# --plugin phenotypes --symbol --gencode_basic --gene_phenotype MGI \
+# --nearest gene --regulatory --distance 5000 --individual all \
+# --no_check_variants_order --max_sv_size 100000

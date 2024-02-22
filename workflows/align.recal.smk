@@ -30,6 +30,21 @@ files = {s[0]: { x[1]: x[0] for x in files } for s in files}
 rule target:
     input: BAMS
 
+rule fastp_pe:
+    input:
+        r1="fastq/{sample}_R1.fastq.gz",
+        r2="fastq/{sample}_R2.fastq.gz",
+    output:
+        r1="trim/{sample}_R1.fastq.gz", 
+        r2="trim/{sample}_R2.fastq.gz",
+        html="report/{sample}.fastp.html",
+        json="report/{sample}.fastp.json",
+    log:
+        "logs/fastp.log"
+    threads: 32
+    shell:
+        "fastp -i {input.r1} -I {input.r2} -o {output.r1} -O {output.r2}"
+
 rule bwa_index:
     input: GENOME,
     output: GENOME +".bwt"
@@ -41,8 +56,8 @@ rule bwa_index:
 
 rule bwa_men:
     input:
-        r1="fastq/{sample}_R1.fastq.gz",
-        r2="fastq/{sample}_R2.fastq.gz",
+        r1="trim/{sample}_R1.fastq.gz", 
+        r2="trim/{sample}_R2.fastq.gz",
         index= GENOME + ".bwt"
     ouput: temp("{sample}.sam")
     threads: 8

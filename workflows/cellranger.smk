@@ -21,11 +21,43 @@ names = [pat.search(f).groups() for f in files]
 # remove duplicate entries
 samples = sorted(list(set([f[0].split("/")[-1] for f in names])))
 
+
+
+WORKSPACE = "/oak/stanford/groups/bpulend/lab.members/zhuoqing/X202SC23010264-Z01-F002-Pulendran-ShengyangWu-031023/"
+workdir: WORKSPACE
+
+########### INPUTS ###########################################
+
+FASTQ_DIR = os.path.join(WORKSPACE, "01.RawData")
+# cellranger reference file
+TRANSCRIPTOM10X = "/oak/stanford/projects/genomics/references/refdata-gex-Mmul_10.109"
+
+# automatic search sample names using regex
+pat = re.compile(r"(.+)_(S\d{1})_(L\d{3})_(\w{1}\d{1})_001.fastq.gz")
+# name, capture, lane, reads = pat.search(f).groups()
+files = glob.glob(os.path.join(FASTQ_DIR, "**/*fastq.gz"), recursive = True)
+names = [pat.search(f).groups() for f in files]
+# remove duplicate entries
+samples = sorted(list(set([f[0].split("/")[-1] for f in names])))
+
+
+
 PROJECT = "iPSC-NK"
 SAMPLES = ["CiNK", "FiNK", "PBNK", "PBNKIL15"] #samples 
 ### get fastqs for Gene Expression
-FASTQ_GE = {s:[os.path.join(FASTQ_DIR, f) for f in os.listdir(FASTQ_DIR) if f.startswith(s)] for s in SAMPLES}
+# SAMPLES = ['RNA_%s'%i for i in range(1,7) ] #samples
+#FASTQ_SAMPLES = ['RNA_1_CKDL230004165-1A_HT3KFDSX5',
+# 'RNA_2_CKDL230004166-1A_HT3KFDSX5',
+# 'RNA_3_CKDL230004167-1A_HT3KFDSX5',
+# 'RNA_4_CKDL230004168-1A_HT3KFDSX5',
+# 'RNA_5_CKDL230004169-1A_HT3KFDSX5',
+# 'RNA_6_CKDL230004170-1A_HT3KFDSX5']
+FASTQ_SAMPLES = { s : s for s in samples} # in case in have a shorted name in SAMPLES than the FASTQ_name prefiex (samples)
+SAMPLES = sorted(list(FASTQ_SAMPLES.keys()))
 
+### get fastqs for Gene Expression
+FASTQ_GE = { k:[f for f in files if os.path.basename(f).startswith(s+"_")] for k,s in FASTQ_SAMPL
+ES.items() }
 #### Target output files #####
 MTX =  expand("{sample}_cnt/outs/filtered_feature_bc_matrix/matrix.mtx.gz",sample=SAMPLES)
 BARCODE = expand("{sample}_cnt/outs/filtered_feature_bc_matrix/barcodes.tsv.gz", sample=SAMPLES)
@@ -58,7 +90,8 @@ rule cellranger_count:
     version: "0.1"
     params:
         extra=" --expect-cells=6000 --nosecondary", # loading cells 9000
-        fastqs=FASTQ_DIR,
+        fastqs=  lambda wildcards: os.path.dirname(FASTQ_GE[wildcards.sample][0]),
+        sample = lambda wildcards: FASTQ_SAMPLES[wildcards.sample],
         transcriptom=TRANSCRIPTOM10X,
     run:
         # non antibody captured code
@@ -67,11 +100,11 @@ rule cellranger_count:
         # "--sample={wildcards.sample} "
         # rm outputdir to solve "pipestance directory" error from cellranger
         shell("rm -rf {wildcards.sample}_cnt")
-        shell("cellranger count --id={wildcards.sample}_cnt " 
-                "--transcriptome={params.transcriptom} " 
+        shell("cellranger count --id={wildcards.sample}_cnt "
+                "--transcriptome={params.transcriptom} "
                 "--fastqs={params.fastqs} "
-                "--sample={wildcards.sample} "
-                "--localcores={threads} {params.extra} > {log}") 
+                "--sample={params.sample} "
+                "--localcores={threads} {params.extra} > {log}")
         
 rule aggregate_list:
     input: expand("{sample}_cnt/outs/molecule_info.h5", sample=SAMPLES)

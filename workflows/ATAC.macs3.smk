@@ -36,13 +36,20 @@ import pandas as pd
 # shell.prefix("set -eo pipefail; echo BEGIN at $(date); ")
 # shell.suffix("; exitstat=$?; echo END at $(date); echo exit status was $exitstat; exit $exitstat")
 
-workdir: "/data/bases/fangzq/External/ChenChen/20230221_ATAC/"
+workdir: "/data/bases/fangzq/NK/20231212/ATAC-seq"
 
 # ALL_SAMPLES = ['Fadu_control', 'Fadu_NSD1-sh', 'Fadu_NSD1-sh_KDM2A-sh', 
 #                'PCI-13_control', 'PCI-13_NSD1-sh', 'PCI-13_NSD1-sh_KDM2A-sh']
 
-ALL_SAMPLES = ['FaDu_Control', 'FaDu_Control-1', 'FaDu_NSD1-sh', 'FaDu_NSD1-sh-1']
-
+#ALL_SAMPLES = ['FaDu_Control', 'FaDu_Control-1', 'FaDu_NSD1-sh', 'FaDu_NSD1-sh-1']
+ALL_SAMPLES  = ['S1-D0-atacseq',
+'S1-D2-atacseq',
+'S1-D8K-atacseq',
+'S1-D8P-atacseq',
+'S4-D0-atacseq',
+'S4-D2-atacseq',
+'S4-D8K-atacseq',
+'S4-D8P-atacseq']
 
 BOWTIE2_INDEX = "/home/fangzq/genome/human/bowtie2Indices_GRCh38_noalt_as/GRCh38_noalt_as"
 ## download from https://sites.google.com/site/anshulkundaje/projects/blacklists
@@ -60,6 +67,7 @@ TSS_BED =  "/home/fangzq/genome/human/GRCh38.refGene.TSS.chr.bed"
 MACS3_GENOME = "hs"
 MACS3_PVAL = 1e-2
 MACS3_PVAL_BROAD =  1e-2
+MACS3_BIN = "/home/fangzq/miniconda/envs/fastai/bin/macs3"
 
 
 
@@ -280,10 +288,11 @@ rule call_peaks_macs3:
         name = "{sample}_macs2",
         jobname = "{sample}",
         g = MACS3_GENOME,
+        macs3=MACS3_BIN,
         qval = MACS3_PVAL,
     message: "call_peaks macs2 {input}: {threads} threads"
     shell:
-        "/home/fangzq/miniconda/envs/fastai/bin/macs3 callpeak "
+        "{params.macs3} callpeak "
         "-t {input[0]} -f BAMPE -g {params.g} --call-summits "
         "--outdir peaks -n {params.name} --qvalue {params.qval} &> {log}"
 

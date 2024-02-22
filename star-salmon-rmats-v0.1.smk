@@ -80,7 +80,7 @@ MULTIQC = 'multiqc/multiqc_report.html'
 ################## Rules #######################################
 
 rule target:
-    input: COUNTS, QUANT, MULTIQC, BIGWIG, # RMATS_TURBO
+    input: COUNTS, QUANT, MULTIQC, #BIGWIG, # RMATS_TURBO
 
 # rule fastqc:
 #     input:  
@@ -136,11 +136,14 @@ rule star_align:
         "logs/star/{sample}.align.log"
     threads: 12
     params:
-        ref = STAR_REFDIR
+        ref = STAR_REFDIR,
+        gzcmd = lambda wildcards: "--readFilesCommand zcat" if FASTQ_GE[wildcards.sample]['fastq'][0].endswith("gz") else "",
     shell:
         "STAR --genomeDir {params.ref}  "
-        "--readFilesIn   {input.fastqs} "
-        "--readFilesCommand zcat --runThreadN {threads} " 
+        "--readFilesIn {input.fastqs} "
+        #"--readFilesCommand zcat "
+        "{params.gzcmd} "
+        "--runThreadN {threads} " 
         "--outFileNamePrefix BAMs/{wildcards.sample}.  " 
         "--outSAMtype BAM SortedByCoordinate "
         "--outSAMstrandField intronMotif " 
@@ -214,7 +217,7 @@ rule count_matrix:
     run:
         header = "gene_id\t" + "\t".join(params.samples) + "\n"
         # retrieve the 2th column of each "ReadsPerGene.out.tab" file + the first column that contains the gene IDs
-        shell("""paste {input} | grep -v "_" | awk '{{printf "%s", $1}} {{for (i=2;i<=NF;i+=4) printf "\\t%s", $i; printf "\\n" }}' > {output}
+        shell("""paste {input} | grep -v "^N_" | awk '{{printf "%s", $1}} {{for (i=2;i<=NF;i+=4) printf "\\t%s", $i; printf "\\n" }}' > {output}
               """)
         # insert header in the first line
         shell("sed  -i '1i %s' {output} "%header)
