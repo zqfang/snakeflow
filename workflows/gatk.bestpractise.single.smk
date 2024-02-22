@@ -16,7 +16,9 @@ CHROMSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,
 #outputs
 BAMS = expand("BAM/{sample}.sorted.bam", sample=SAMPLES)
 BQSR = expand("BAM/{sample}.markdup.fixed.BQSR.bam", sample=SAMPLES)
-VCFS = expand("VCF/{sample}.call.raw.vcf.gz", sample=SAMPLES)
+VCFS = expand("VCFs/{sample}.call.raw.vcf.gz", sample=SAMPLES)
+SNPS = expand("VCFs/{sample}.snp.filter.vcf.gz",sample=SAMPLES)
+INDELS = expand("VCFs/{sample}.indel.filter.vcf.gz",sample=SAMPLES)
 ### refined each time running !!!
 # automatic search sample names using regex
 # pat = re.compile(r"([A-Z0-9-]+)-([A-Z0-9a-z]{2,4})_[0-9A-Z]{2}_(L[0-9]{3})_([RI][12])_[0-9]{3}.fastq.gz")
@@ -28,7 +30,7 @@ VCFS = expand("VCF/{sample}.call.raw.vcf.gz", sample=SAMPLES)
 
 #################### rules #######################
 rule target:
-    input: BAMS, BQSR, VCFS
+    input: BAMS, BQSR, VCFS, SNPS, INDELS
 
 # rule fastp_pe:
 #     input:
@@ -158,6 +160,79 @@ rule call:
     input:
         bam="BAM/{sample}.markdup.fixed.BQSR.bam",
         genome=GENOME,
-    output: protected("VCF/{sample}.call.raw.vcf.gz")
+    output: 
+        vcf = protected("VCFs/{sample}.call.raw.vcf.gz"),
+        vcfi = "VCFs/{sample}.call.raw.vcf.gz.tbi"
     shell:
         "gatk HaplotypeCaller -R {input.genome} -I {input.bam} -O {output}"
+
+################# Hard filering ######################
+rule selectSNPs:
+    input: 
+        vcf="VCFs/{sample}.call.raw.vcf.gz",
+        vcfi="VCFs/{sample}.call.raw.vcf.gz.tbi",
+    output: 
+        vcf=temp("VCFs/{sample}.snp.vcf.gz"), # snp only, before filter
+        vcfi=temp("VCFs/{sample}.snp.vcf.gz.tbi"), # 
+    shell:
+        "gatk SelectVariants -select-type SNP " 
+        "-V {input.vcf} -O {output.vcf} 2>/dev/null"
+
+rule hardFilterSNPs:
+    input: 
+        vcf="VCFs/{sample}.snp.vcf.gz",
+        vcfi="VCFs/{sample}.snp.vcf.gz.tbi",
+    output: 
+        vcf="VCFs/{sample}.snp.filter.vcf.gz",
+        vcfi="VCFs/{sample}.snp.filter.vcf.gz.tbi",
+    log: "logs/{sample}.snp.filter.log"
+    shell:
+        "gatk VariantFiltration "
+        "-filter 'QD < 2.0' --filter-name 'QD2' " 
+        "-filter 'QUAL < 30.0' --filter-name 'QUAL30' " 
+        "-filter 'SOR > 3.0' --filter-name 'SOR3' " 
+        "-filter 'FS > 60.0' --filter-name 'FS60' " 
+        "-filter 'MQ < 40.0' --filter-name 'MQ40' " 
+        "-filter 'MQRankSum < -12.5' --filter-name 'MQRankSum-12.5' " 
+        "-filter 'ReadPosRankSum < -8.0' --filter-name 'ReadPosRankSum-8' " 
+        "-V {input.vcf} -O {output.vcf} 2> {log}"
+
+rule selectINDELs:
+    input: 
+        vcf="VCFs/{sample}.call.raw.vcf.gz",
+        vcfi="VCFs/{sample}.call.raw.vcf.gz.tbi",
+    output: 
+        vcf=temp("VCFs/{sample}.indel.vcf.gz"),
+        vcfi=temp("VCFs/{sample}.indel.vcf.gz.tbi"),
+    shell:
+        "gatk SelectVariants -select-type INDEL " 
+        "-V {input.vcf} -O {output.vcf} 2>/dev/null "   
+
+rule hardFilterINDELs:
+    input: 
+        vcf="VCFs/{sample}.indel.vcf.gz",
+        vcfi="VCFs/{sample}.indel.vcf.gz.tbi",
+    output: 
+        vcf="VCFs/{sample}.indel.filter.vcf.gz",
+        vcfi="VCFs/{sample}.indel.filter.vcf.gz.tbi",
+    log: "logs/{sample}.indel.filter.log"
+    shell:
+        "gatk VariantFiltration " 
+        "-filter 'QD < 2.0' --filter-name 'QD2' " 
+        "-filter 'QUAL < 30.0' --filter-name 'QUAL30' " 
+        "-filter 'FS > 200.0' --filter-name 'FS200' " 
+        "-filter 'ReadPosRankSum < -20.0' --filter-name 'ReadPosRankSum-20' " 
+        "-V {input.vcf} -O {output.vcf} 2> {log}"     
+
+# rule mergeHardVCFs:
+#     input:
+#         snp= "VCFs/{sample}.snp.filter.vcf.gz",
+#         snpi= "VCFs/{sample}.snp.filter.vcf.gz.tbi",
+#         indel= "VCFs/{sample}.indel.filter.vcf.gz",
+#         indeli= "VCFs/{sample}.indel.filter.vcf.gz.tbi",
+#     output: 
+#         vcf=protected("VCFs/{sample}.hardfilter.vcf.gz"),
+#         vcfi=protected("VCFs/{sample}.hardfilter.vcf.gz.tbi")
+#     shell:
+#         "gatk MergeVcfs -I {input.snp} -I {input.indel} "
+#         "-O {output.vcf} 2>/dev/null "
