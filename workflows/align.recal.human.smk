@@ -68,10 +68,10 @@ rule bwa_men:
         # PL has to be one of ILLUMINA，SLX，SOLEXA，SOLID，454，LS454，COMPLETE，
         # PACBIO，IONTORRENT，CAPILLARY，HELICOS, or UNKNOWN
         # ID：input read group's ID； LB： read group's library name； SM：sample name； PL：sequencing platform
-        RG="@RG\tID:{sample}\tPL:illumina\tSM:{sample}"
+        RG="@RG\\tID:{sample}\\tPL:illumina\\tLB:library\\tSM:{sample}"
     shell:
         "bwa mem -t {threads} -R '{params.RG}' {input.genome} "
-        "{input.r1} {input.r2} | samtools view -S -b - > {output}"
+        "{input.r1} {input.r2} | samtools view -Sb - > {output}"
         
 rule bam_sort:
     input: "BAM/{sample}.temp.bam"
