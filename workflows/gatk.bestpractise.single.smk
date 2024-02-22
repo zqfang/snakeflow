@@ -8,7 +8,7 @@ GENOME = os.path.join(BUNDLE, "Homo_sapiens_assembly38.fasta")
 dbSNP =  os.path.join(BUNDLE, "dbsnp_146.hg38.vcf.gz")
 db1K =  os.path.join(BUNDLE, "1000G_phase1.snps.high_confidence.hg38.vcf.gz")
 dbINDEL =  os.path.join(BUNDLE,"Mills_and_1000G_gold_standard.indels.hg38.vcf.gz")
-
+VEPBIN = "/home/fangzq/github/ensembl-vep"
 SAMPLES = ["RQ82599"]
 #CHROMSOME = [ str(c) for c in range(1,20)] + ["X", "Y", "MT"]
 CHROMSOME = ['1'] + [ str(c) for c in range(10,20)] + [ str(c) for c in range(2,10)]+ ["X", "Y"]
@@ -19,6 +19,7 @@ BQSR = expand("BAM/{sample}.markdup.fixed.BQSR.bam", sample=SAMPLES)
 VCFS = expand("VCFs/{sample}.call.raw.vcf.gz", sample=SAMPLES)
 SNPS = expand("VCFs/{sample}.snp.filter.vcf.gz",sample=SAMPLES)
 INDELS = expand("VCFs/{sample}.indel.filter.vcf.gz",sample=SAMPLES)
+VEP = expand("VEP/{sample}.{snv}.vep.txt.gz",sample=SAMPLES, snv=["snp", "indel"])
 ### refined each time running !!!
 # automatic search sample names using regex
 # pat = re.compile(r"([A-Z0-9-]+)-([A-Z0-9a-z]{2,4})_[0-9A-Z]{2}_(L[0-9]{3})_([RI][12])_[0-9]{3}.fastq.gz")
@@ -30,7 +31,7 @@ INDELS = expand("VCFs/{sample}.indel.filter.vcf.gz",sample=SAMPLES)
 
 #################### rules #######################
 rule target:
-    input: BAMS, BQSR, VCFS, SNPS, INDELS
+    input: BAMS, BQSR, VCFS, SNPS, INDELS, VEP
 
 # rule fastp_pe:
 #     input:
@@ -236,3 +237,46 @@ rule hardFilterINDELs:
 #     shell:
 #         "gatk MergeVcfs -I {input.snp} -I {input.indel} "
 #         "-O {output.vcf} 2>/dev/null "
+
+
+
+rule VEP4SNPs:
+    """emsemble-vep"""
+    input: 
+        vcf="VCFs/{sample}.snp.filter.vcf.gz",
+        reference=GENOME,
+    output: "VEP/{sample}.snp.vep.txt.gz"
+    params:
+        genome_build = " -a GRCh38 --species homo_sapiens ",
+        #genome_build = "GRCh38",
+        VEPBIN = VEPBIN,
+        #extra=" --dir_cache "  + config['VEP']['CACHE_DIR']
+    threads: 4
+    shell:
+        ## emsemble-vep
+        # https://github.com/Ensembl/ensembl-vep
+        "bcftools view {input.vcf} | {params.VEPBIN}/vep --fasta {input.reference} {params.genome_build} "
+        "--format vcf --fork {threads} --force_overwrite "
+        "--everything --sift --polyphen "
+        "-o {output} --tab --compress_output gzip --database"
+
+
+rule VEP4Indels:
+    """emsemble-vep"""
+    input: 
+        vcf="VCFs/{sample}.indel.filter.vcf.gz",
+        reference=GENOME,
+    output: "VEP/{sample}.indel.vep.txt.gz"
+    params:
+        genome_build = " -a GRCh38 --species homo_sapiens ",
+        #genome_build = "GRCh38",
+        VEPBIN = VEPBIN,
+        # extra=" --dir_cache "  + config['VEP']['CACHE_DIR']
+    threads: 4
+    shell:
+        ## emsemble-vep
+        # https://github.com/Ensembl/ensembl-vep
+        "bcftools view {input.vcf} | {params.VEPBIN}/vep --fasta {input.reference} {params.genome_build} "
+        "--format vcf --fork {threads} --force_overwrite "
+        "--everything --sift --polyphen "
+        "-o {output} --tab --compress_output gzip --database"
